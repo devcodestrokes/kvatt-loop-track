@@ -11,10 +11,12 @@ import {
   Leaf,
   Globe,
   Lightbulb,
-  Truck
+  LogOut
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import kvattLogo from '@/assets/kvatt-logo.jpeg';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 import {
   Sidebar,
   SidebarContent,
@@ -62,6 +64,11 @@ const settingsItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
+  const { user, signOut } = useAuthContext();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   const renderMenuItems = (items: typeof overviewItems) => (
     <SidebarMenu>
@@ -142,6 +149,22 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             {renderMenuItems(settingsItems)}
+            <div className="mt-2 px-2">
+              {!isCollapsed && user && (
+                <p className="text-xs text-muted-foreground mb-2 truncate">
+                  {user.email}
+                </p>
+              )}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-full justify-start text-muted-foreground hover:text-destructive"
+                onClick={handleSignOut}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                {!isCollapsed && 'Sign Out'}
+              </Button>
+            </div>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarFooter>

@@ -3,7 +3,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import Analytics from "./pages/Analytics";
 import Labels from "./pages/Labels";
 import QRTracking from "./pages/QRTracking";
@@ -16,6 +18,7 @@ import LandingPages from "./pages/LandingPages";
 import Insights from "./pages/Insights";
 import Settings from "./pages/Settings";
 import Help from "./pages/Help";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,23 +29,35 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <DashboardLayout>
+        <AuthProvider>
           <Routes>
-            <Route path="/" element={<Analytics />} />
-            <Route path="/labels" element={<Labels />} />
-            <Route path="/qr-tracking" element={<QRTracking />} />
-            <Route path="/merchants" element={<Merchants />} />
-            <Route path="/outbound" element={<Outbound />} />
-            <Route path="/inbound" element={<Inbound />} />
-            <Route path="/stock" element={<StockManagement />} />
-            <Route path="/circularity" element={<CircularityReports />} />
-            <Route path="/landing-pages" element={<LandingPages />} />
-            <Route path="/insights" element={<Insights />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/help" element={<Help />} />
-            <Route path="*" element={<NotFound />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Routes>
+                      <Route path="/" element={<Analytics />} />
+                      <Route path="/labels" element={<Labels />} />
+                      <Route path="/qr-tracking" element={<QRTracking />} />
+                      <Route path="/merchants" element={<Merchants />} />
+                      <Route path="/outbound" element={<Outbound />} />
+                      <Route path="/inbound" element={<Inbound />} />
+                      <Route path="/stock" element={<StockManagement />} />
+                      <Route path="/circularity" element={<CircularityReports />} />
+                      <Route path="/landing-pages" element={<LandingPages />} />
+                      <Route path="/insights" element={<Insights />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/help" element={<Help />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
           </Routes>
-        </DashboardLayout>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
