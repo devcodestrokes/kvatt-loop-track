@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,7 @@ const passwordSchema = z.string().min(8, 'Password must be at least 8 characters
 
 export default function Auth() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, isAdmin, loading, signIn, signUp } = useAuthContext();
   
   const [email, setEmail] = useState('');
@@ -24,6 +25,9 @@ export default function Auth() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [signUpSuccess, setSignUpSuccess] = useState(false);
+  
+  // Get default tab from URL param
+  const defaultTab = searchParams.get('tab') === 'signup' ? 'signup' : 'signin';
 
   useEffect(() => {
     if (!loading && user && isAdmin) {
@@ -152,7 +156,7 @@ export default function Auth() {
               </AlertDescription>
             </Alert>
           ) : (
-            <Tabs defaultValue="signin" className="w-full">
+            <Tabs defaultValue={defaultTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
                 <TabsTrigger value="signup">Sign Up</TabsTrigger>
