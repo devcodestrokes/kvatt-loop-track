@@ -13,5 +13,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.send-admin-invite]
-verify_jwt = true
+verify_jwt = false
+
+[functions.import-orders-csv]
 verify_jwt = false
