@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.get-customer-data]
 verify_jwt = false
+
+[functions.fetch-mysql-customers]
+verify_jwt = false
+
+[functions.analyze-cro-patterns]
+verify_jwt = false
