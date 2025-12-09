@@ -131,6 +131,29 @@ const impactColors = {
   low: 'bg-muted text-muted-foreground',
 };
 
+const STORAGE_KEYS = {
+  ORDER_ANALYTICS: 'kvatt_order_analytics',
+  CRO_ANALYSIS: 'kvatt_cro_analysis',
+  LAST_ANALYZED: 'kvatt_last_analyzed',
+};
+
+const loadFromStorage = <T,>(key: string): T | null => {
+  try {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : null;
+  } catch {
+    return null;
+  }
+};
+
+const saveToStorage = (key: string, data: any) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (e) {
+    console.warn('Failed to save to localStorage:', e);
+  }
+};
+
 const Insights = () => {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [merchants, setMerchants] = useState<{ id: string; name: string }[]>([]);
@@ -138,9 +161,16 @@ const Insights = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('cro');
   
-  // CRO Analysis state
-  const [orderAnalytics, setOrderAnalytics] = useState<OrderAnalytics | null>(null);
-  const [croAnalysis, setCroAnalysis] = useState<CROAnalysis | null>(null);
+  // CRO Analysis state - load from storage initially
+  const [orderAnalytics, setOrderAnalytics] = useState<OrderAnalytics | null>(() => 
+    loadFromStorage<OrderAnalytics>(STORAGE_KEYS.ORDER_ANALYTICS)
+  );
+  const [croAnalysis, setCroAnalysis] = useState<CROAnalysis | null>(() => 
+    loadFromStorage<CROAnalysis>(STORAGE_KEYS.CRO_ANALYSIS)
+  );
+  const [lastAnalyzed, setLastAnalyzed] = useState<string | null>(() => 
+    localStorage.getItem(STORAGE_KEYS.LAST_ANALYZED)
+  );
   const [isFetchingData, setIsFetchingData] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -200,6 +230,10 @@ const Insights = () => {
       
       if (data?.data) {
         setOrderAnalytics(data.data);
+        saveToStorage(STORAGE_KEYS.ORDER_ANALYTICS, data.data);
+        const now = new Date().toISOString();
+        setLastAnalyzed(now);
+        localStorage.setItem(STORAGE_KEYS.LAST_ANALYZED, now);
         toast.success(`Analyzed ${data.data.summary.totalOrders.toLocaleString()} orders`);
       } else if (data?.error) {
         throw new Error(data.error);
@@ -272,6 +306,10 @@ const Insights = () => {
       
       if (data?.data?.analysis) {
         setCroAnalysis(data.data.analysis);
+        saveToStorage(STORAGE_KEYS.CRO_ANALYSIS, data.data.analysis);
+        const now = new Date().toISOString();
+        setLastAnalyzed(now);
+        localStorage.setItem(STORAGE_KEYS.LAST_ANALYZED, now);
         toast.success('CRO analysis complete');
       } else if (data?.error) {
         throw new Error(data.error);
@@ -363,7 +401,7 @@ const Insights = () => {
           </div>
 
           {/* Action Bar */}
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Button 
               onClick={fetchOrderAnalytics} 
               disabled={isFetchingData || orderCount === 0}
@@ -379,6 +417,12 @@ const Insights = () => {
               <Brain className={`h-4 w-4 mr-2 ${isAnalyzing ? 'animate-pulse' : ''}`} />
               {isAnalyzing ? 'Analyzing...' : 'Run AI CRO Analysis'}
             </Button>
+            {lastAnalyzed && (
+              <span className="text-sm text-muted-foreground flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                Last analyzed: {new Date(lastAnalyzed).toLocaleDateString()} {new Date(lastAnalyzed).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
           </div>
 
           {/* Summary Cards */}
