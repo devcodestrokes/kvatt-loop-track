@@ -54,7 +54,23 @@ const Settings = () => {
 
       if (error) throw error;
 
-      toast.success(`Invite sent to ${inviteEmail}`);
+      // Send email notification
+      try {
+        const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-admin-invite', {
+          body: { email: inviteEmail.trim() }
+        });
+
+        if (emailError) {
+          console.error('Email send error:', emailError);
+          toast.success(`Invite created for ${inviteEmail} (email delivery may be delayed)`);
+        } else {
+          toast.success(`Invite sent to ${inviteEmail}`);
+        }
+      } catch (emailErr) {
+        console.error('Email function error:', emailErr);
+        toast.success(`Invite created for ${inviteEmail}`);
+      }
+
       setInviteEmail('');
     } catch (error: any) {
       console.error('Error inviting admin:', error);

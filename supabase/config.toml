@@ -11,3 +11,7 @@ verify_jwt = false
 
 [functions.analyze-cro-patterns]
 verify_jwt = false
+
+[functions.send-admin-invite]
+verify_jwt = true
+verify_jwt = false
