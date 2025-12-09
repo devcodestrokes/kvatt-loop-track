@@ -1,1 +1,7 @@
 project_id = "chuwqlhqmythlccnychv"
+
+[functions.sync-mintsoft]
+verify_jwt = false
+
+[functions.get-customer-data]
+verify_jwt = false

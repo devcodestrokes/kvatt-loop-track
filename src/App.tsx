@@ -10,6 +10,10 @@ import QRTracking from "./pages/QRTracking";
 import Merchants from "./pages/Merchants";
 import Outbound from "./pages/Outbound";
 import Inbound from "./pages/Inbound";
+import StockManagement from "./pages/StockManagement";
+import CircularityReports from "./pages/CircularityReports";
+import LandingPages from "./pages/LandingPages";
+import Insights from "./pages/Insights";
 import Settings from "./pages/Settings";
 import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
@@ -30,6 +34,10 @@ const App = () => (
             <Route path="/merchants" element={<Merchants />} />
             <Route path="/outbound" element={<Outbound />} />
             <Route path="/inbound" element={<Inbound />} />
+            <Route path="/stock" element={<StockManagement />} />
+            <Route path="/circularity" element={<CircularityReports />} />
+            <Route path="/landing-pages" element={<LandingPages />} />
+            <Route path="/insights" element={<Insights />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/help" element={<Help />} />
             <Route path="*" element={<NotFound />} />
