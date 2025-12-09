@@ -11,7 +11,8 @@ import {
   Leaf,
   Globe,
   Lightbulb,
-  LogOut
+  LogOut,
+  ChevronRight
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import kvattLogo from '@/assets/kvatt-logo.jpeg';
@@ -71,18 +72,25 @@ export function AppSidebar() {
   };
 
   const renderMenuItems = (items: typeof overviewItems) => (
-    <SidebarMenu>
+    <SidebarMenu className="space-y-1">
       {items.map((item) => (
         <SidebarMenuItem key={item.title}>
           <SidebarMenuButton asChild>
             <NavLink 
               to={item.url} 
               end={item.url === '/'}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-              activeClassName="bg-primary/10 text-primary font-medium"
+              className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-muted-foreground transition-all duration-200 hover:bg-primary/5 hover:text-foreground"
+              activeClassName="bg-primary/10 text-primary font-semibold shadow-sm"
             >
-              <item.icon className="h-5 w-5 shrink-0" />
-              {!isCollapsed && <span>{item.title}</span>}
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-secondary/60 transition-all duration-200 group-hover:bg-primary/10 group-hover:text-primary group-[.bg-primary\\/10]:bg-primary/15 group-[.bg-primary\\/10]:text-primary">
+                <item.icon className="h-4 w-4" />
+              </div>
+              {!isCollapsed && (
+                <span className="flex-1 text-sm">{item.title}</span>
+              )}
+              {!isCollapsed && (
+                <ChevronRight className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-50" />
+              )}
             </NavLink>
           </SidebarMenuButton>
         </SidebarMenuItem>
@@ -91,77 +99,93 @@ export function AppSidebar() {
   );
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border">
-      <SidebarHeader className="p-4">
+    <Sidebar collapsible="icon" className="border-r border-border/50 bg-sidebar/80 backdrop-blur-xl">
+      <SidebarHeader className="p-5">
         <div className="flex items-center gap-3">
-          <img 
-            src={kvattLogo} 
-            alt="Kvatt" 
-            className="h-10 w-10 rounded-lg object-cover shadow-sm"
-          />
+          <div className="relative">
+            <img 
+              src={kvattLogo} 
+              alt="Kvatt" 
+              className="h-11 w-11 rounded-xl object-cover ring-2 ring-primary/20"
+            />
+            <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-primary ring-2 ring-sidebar" />
+          </div>
           {!isCollapsed && (
             <div>
-              <h2 className="text-lg font-semibold text-foreground">Kvatt</h2>
-              <p className="text-xs text-muted-foreground">Admin Dashboard</p>
+              <h2 className="text-lg font-bold text-foreground">Kvatt</h2>
+              <p className="text-xs font-medium text-muted-foreground">Admin Dashboard</p>
             </div>
           )}
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="overflow-y-auto">
+      <SidebarContent className="overflow-y-auto px-3">
         <SidebarGroup>
-          <SidebarGroupLabel>Overview</SidebarGroupLabel>
+          <SidebarGroupLabel className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+            Overview
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             {renderMenuItems(overviewItems)}
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Packaging</SidebarGroupLabel>
+        <SidebarGroup className="mt-6">
+          <SidebarGroupLabel className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+            Packaging
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             {renderMenuItems(packagingItems)}
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Logistics</SidebarGroupLabel>
+        <SidebarGroup className="mt-6">
+          <SidebarGroupLabel className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+            Logistics
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             {renderMenuItems(logisticsItems)}
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Merchants</SidebarGroupLabel>
+        <SidebarGroup className="mt-6">
+          <SidebarGroupLabel className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+            Merchants
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             {renderMenuItems(merchantItems)}
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Sustainability</SidebarGroupLabel>
+        <SidebarGroup className="mt-6">
+          <SidebarGroupLabel className="mb-2 px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
+            Sustainability
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             {renderMenuItems(sustainabilityItems)}
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="border-t border-border/50 p-4">
         <SidebarGroup>
           <SidebarGroupContent>
             {renderMenuItems(settingsItems)}
-            <div className="mt-2 px-2">
+            <div className="mt-4 px-1">
               {!isCollapsed && user && (
-                <p className="text-xs text-muted-foreground mb-2 truncate">
-                  {user.email}
-                </p>
+                <div className="mb-3 rounded-xl bg-secondary/50 p-3">
+                  <p className="text-xs font-medium text-muted-foreground">Signed in as</p>
+                  <p className="mt-0.5 truncate text-sm font-semibold text-foreground">
+                    {user.email}
+                  </p>
+                </div>
               )}
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="w-full justify-start text-muted-foreground hover:text-destructive"
+                className="w-full justify-start gap-2 rounded-xl text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                 onClick={handleSignOut}
               >
-                <LogOut className="h-4 w-4 mr-2" />
+                <LogOut className="h-4 w-4" />
                 {!isCollapsed && 'Sign Out'}
               </Button>
             </div>
