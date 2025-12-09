@@ -6,6 +6,7 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,6 +23,7 @@ export function useAuth() {
           }, 0);
         } else {
           setIsAdmin(false);
+          setIsSuperAdmin(false);
           setLoading(false);
         }
       }
@@ -53,12 +55,15 @@ export function useAuth() {
       if (error) {
         console.error('Error checking admin status:', error);
         setIsAdmin(false);
+        setIsSuperAdmin(false);
       } else {
         setIsAdmin(data && data.length > 0);
+        setIsSuperAdmin(data?.some(r => r.role === 'super_admin') ?? false);
       }
     } catch (err) {
       console.error('Error checking admin status:', err);
       setIsAdmin(false);
+      setIsSuperAdmin(false);
     } finally {
       setLoading(false);
     }
@@ -97,6 +102,7 @@ export function useAuth() {
     user,
     session,
     isAdmin,
+    isSuperAdmin,
     loading,
     signIn,
     signUp,
