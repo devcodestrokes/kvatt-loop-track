@@ -64,33 +64,47 @@ interface CROAnalysis {
 interface CustomerAnalytics {
   summary: {
     totalCustomers: number;
-    totalOptIns: number;
-    totalOptOuts: number;
+    optInCustomers?: number;
+    totalOptIns?: number;
+    optOutCustomers?: number;
+    totalOptOuts?: number;
     optInRate: string;
     totalOrders: number;
-    avgOptInOrderValue: string;
-    avgOptOutOrderValue: string;
+    totalLineItems?: number;
+    avgOptInOrderValue?: string;
+    avgOptOutOrderValue?: string;
   };
-  geographic: {
-    optInByCountry: [string, number][];
-    optInByCity: [string, number][];
-    optOutByCountry: [string, number][];
+  geographic?: {
+    topCountries?: Array<{ name: string; total: number; optIn: number; optInRate: string }>;
+    topCities?: Array<{ name: string; total: number; optIn: number; optInRate: string }>;
+    optInByCountry?: [string, number][];
+    optInByCity?: [string, number][];
+    optOutByCountry?: [string, number][];
   };
-  stores: {
-    optInByStore: Array<{
-      store: string;
-      optIns: number;
-      total: number;
-      rate: string;
-    }>;
+  stores?: Array<{
+    name: string;
+    total: number;
+    optIn: number;
+    optInRate: string;
+  }>;
+  products?: {
+    optInTopProducts?: Array<{ name: string; quantity: number; revenue: number }>;
+    optOutTopProducts?: Array<{ name: string; quantity: number; revenue: number }>;
+    topOptInProducts?: Array<{ product: string; count: number; revenue: number }>;
+    topOptOutProducts?: Array<{ product: string; count: number; revenue: number }>;
   };
-  products: {
-    topOptInProducts: Array<{ product: string; count: number; revenue: number }>;
-    topOptOutProducts: Array<{ product: string; count: number; revenue: number }>;
+  orderValue?: {
+    avgOrderValueOptIn: string;
+    avgOrderValueOptOut: string;
+    difference: string;
+    percentDifference: string;
   };
-  temporal: {
-    optInsByHour: Array<{ hour: number; count: number }>;
-    optInsByDayOfWeek: Array<{ day: string; count: number }>;
+  temporal?: {
+    optInsByHour?: Record<number, number> | Array<{ hour: number; count: number }>;
+    optInsByDay?: Record<number, number>;
+    optInsByDayOfWeek?: Array<{ day: string; count: number }>;
+    peakHour?: string | null;
+    peakDay?: string | null;
   };
 }
 
@@ -296,14 +310,14 @@ const Insights = () => {
                   <ShoppingCart className="h-5 w-5 text-primary" />
                   <span className="text-sm text-muted-foreground">Avg Opt-In Order</span>
                 </div>
-                <p className="text-3xl font-bold">${customerData.summary.avgOptInOrderValue}</p>
+                <p className="text-3xl font-bold">${customerData.orderValue?.avgOrderValueOptIn || customerData.summary.avgOptInOrderValue || '0'}</p>
               </div>
               <div className="metric-card">
                 <div className="flex items-center gap-3 mb-2">
                   <ShoppingCart className="h-5 w-5 text-muted-foreground" />
                   <span className="text-sm text-muted-foreground">Avg Opt-Out Order</span>
                 </div>
-                <p className="text-3xl font-bold">${customerData.summary.avgOptOutOrderValue}</p>
+                <p className="text-3xl font-bold">${customerData.orderValue?.avgOrderValueOptOut || customerData.summary.avgOptOutOrderValue || '0'}</p>
               </div>
             </div>
           )}
@@ -480,7 +494,7 @@ const Insights = () => {
           )}
 
           {/* Store Performance Table from Raw Data */}
-          {customerData && customerData.stores.optInByStore.length > 0 && (
+          {customerData && customerData.stores && customerData.stores.length > 0 && (
             <div className="metric-card">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <Store className="h-5 w-5 text-primary" />
@@ -497,14 +511,14 @@ const Insights = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {customerData.stores.optInByStore.slice(0, 10).map((store, i) => (
+                    {customerData.stores.slice(0, 10).map((store, i) => (
                       <tr key={i}>
-                        <td className="font-medium">{formatStoreName(store.store)}</td>
-                        <td className="text-right text-primary">{store.optIns}</td>
+                        <td className="font-medium">{formatStoreName(store.name)}</td>
+                        <td className="text-right text-primary">{store.optIn}</td>
                         <td className="text-right text-muted-foreground">{store.total}</td>
                         <td className="text-right">
-                          <span className={`font-semibold ${parseFloat(store.rate) > 10 ? 'text-primary' : 'text-muted-foreground'}`}>
-                            {store.rate}%
+                          <span className={`font-semibold ${parseFloat(store.optInRate) > 10 ? 'text-primary' : 'text-muted-foreground'}`}>
+                            {store.optInRate}%
                           </span>
                         </td>
                       </tr>
@@ -516,7 +530,7 @@ const Insights = () => {
           )}
 
           {/* Product Preferences */}
-          {customerData && customerData.products.topOptInProducts.length > 0 && (
+          {customerData?.products && ((customerData.products.optInTopProducts?.length || 0) > 0 || (customerData.products.topOptInProducts?.length || 0) > 0) && (
             <div className="grid gap-6 lg:grid-cols-2">
               <div className="metric-card">
                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -524,10 +538,10 @@ const Insights = () => {
                   Top Products (Opt-In Customers)
                 </h2>
                 <div className="space-y-2">
-                  {customerData.products.topOptInProducts.slice(0, 8).map((product, i) => (
+                  {(customerData.products.optInTopProducts || customerData.products.topOptInProducts || []).slice(0, 8).map((product: any, i: number) => (
                     <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/50">
-                      <span className="text-sm truncate flex-1">{product.product}</span>
-                      <span className="text-sm font-medium text-primary ml-2">{product.count} sold</span>
+                      <span className="text-sm truncate flex-1">{product.name || product.product}</span>
+                      <span className="text-sm font-medium text-primary ml-2">{product.quantity || product.count} sold</span>
                     </div>
                   ))}
                 </div>
@@ -538,10 +552,10 @@ const Insights = () => {
                   Top Products (Opt-Out Customers)
                 </h2>
                 <div className="space-y-2">
-                  {customerData.products.topOptOutProducts.slice(0, 8).map((product, i) => (
+                  {(customerData.products.optOutTopProducts || customerData.products.topOptOutProducts || []).slice(0, 8).map((product: any, i: number) => (
                     <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/50">
-                      <span className="text-sm truncate flex-1">{product.product}</span>
-                      <span className="text-sm font-medium text-muted-foreground ml-2">{product.count} sold</span>
+                      <span className="text-sm truncate flex-1">{product.name || product.product}</span>
+                      <span className="text-sm font-medium text-muted-foreground ml-2">{product.quantity || product.count} sold</span>
                     </div>
                   ))}
                 </div>
