@@ -80,11 +80,11 @@ export function AppSidebar() {
               to={item.url} 
               end={item.url === '/'}
               className="group flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-muted-foreground/80 transition-all duration-200 hover:bg-kvatt-coral/8 hover:text-foreground"
-              activeClassName="bg-kvatt-coral/12 text-kvatt-coral font-medium"
+              activeClassName="bg-kvatt-coral/12 text-kvatt-coral font-semibold"
             >
               <item.icon className="h-4 w-4 shrink-0 transition-colors group-hover:text-kvatt-coral group-[.bg-kvatt-coral\\/12]:text-kvatt-coral" />
               {!isCollapsed && (
-                <span className="text-[12px]">{item.title}</span>
+                <span className="text-sm font-medium">{item.title}</span>
               )}
             </NavLink>
           </SidebarMenuButton>
