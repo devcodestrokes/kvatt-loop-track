@@ -19,9 +19,9 @@ interface AnalyticsChartProps {
 }
 
 const COLORS = {
-  optIn: 'hsl(10, 75%, 55%)',
-  optOut: 'hsl(20, 10%, 45%)',
-  total: 'hsl(200, 70%, 50%)',
+  optIn: 'hsl(10, 75%, 55%)',  // Coral/Orange
+  optOut: 'hsl(20, 10%, 45%)', // Grey
+  total: 'hsl(20, 15%, 30%)',  // Dark brown/black
 };
 
 export function AnalyticsChart({ data, type = 'bar' }: AnalyticsChartProps) {
