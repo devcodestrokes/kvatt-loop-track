@@ -82,7 +82,7 @@ const Index = () => {
         />
 
         {/* Filters */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-border bg-card/50 p-4">
+        <div className="filter-bar flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <StoreSelector
             stores={stores}
             selectedStore={selectedStore}
@@ -113,21 +113,21 @@ const Index = () => {
                 title="Opt-ins"
                 value={totals.totalOptIns.toLocaleString()}
                 icon={<CheckCircle className="h-5 w-5" />}
-                color="green"
+                color="coral"
                 delay={100}
               />
               <MetricCard
                 title="Opt-outs"
                 value={totals.totalOptOuts.toLocaleString()}
                 icon={<XCircle className="h-5 w-5" />}
-                color="red"
+                color="muted"
                 delay={200}
               />
               <MetricCard
                 title="Opt-in Rate"
                 value={`${optInRate}%`}
                 icon={<Percent className="h-5 w-5" />}
-                color="amber"
+                color="brown"
                 delay={300}
               />
             </div>

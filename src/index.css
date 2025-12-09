@@ -6,96 +6,113 @@
 
 @layer base {
   :root {
-    --background: 220 16% 6%;
-    --foreground: 220 14% 96%;
+    /* Kvatt Light Theme - Cream & Coral */
+    --background: 40 20% 95%;
+    --foreground: 20 10% 15%;
 
-    --card: 220 16% 8%;
-    --card-foreground: 220 14% 96%;
+    --card: 40 15% 97%;
+    --card-foreground: 20 10% 15%;
 
-    --popover: 220 16% 10%;
-    --popover-foreground: 220 14% 96%;
+    --popover: 40 15% 98%;
+    --popover-foreground: 20 10% 15%;
 
-    --primary: 142 76% 46%;
-    --primary-foreground: 220 16% 6%;
+    /* Coral/Salmon primary - matches Kvatt bird */
+    --primary: 10 75% 55%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 14%;
-    --secondary-foreground: 220 14% 96%;
+    --secondary: 40 10% 90%;
+    --secondary-foreground: 20 10% 15%;
 
-    --muted: 220 14% 14%;
-    --muted-foreground: 220 14% 55%;
+    --muted: 40 10% 88%;
+    --muted-foreground: 20 10% 45%;
 
-    --accent: 142 76% 46%;
-    --accent-foreground: 220 16% 6%;
+    --accent: 10 75% 55%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
-    --destructive-foreground: 220 14% 96%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 220 14% 16%;
-    --input: 220 14% 16%;
-    --ring: 142 76% 46%;
+    --border: 40 10% 85%;
+    --input: 40 10% 85%;
+    --ring: 10 75% 55%;
 
     --radius: 0.75rem;
 
     /* Custom Kvatt tokens */
-    --kvatt-green: 142 76% 46%;
-    --kvatt-green-glow: 142 76% 46%;
-    --kvatt-blue: 210 100% 56%;
-    --kvatt-purple: 270 70% 60%;
-    --kvatt-amber: 38 92% 50%;
-    --kvatt-red: 0 72% 51%;
+    --kvatt-coral: 10 75% 55%;
+    --kvatt-coral-light: 10 75% 65%;
+    --kvatt-brown: 20 30% 25%;
+    --kvatt-cream: 40 20% 95%;
+    --kvatt-cream-dark: 40 15% 90%;
 
     /* Chart colors */
-    --chart-opt-in: 142 76% 46%;
-    --chart-opt-out: 0 72% 51%;
-    --chart-total: 210 100% 56%;
+    --chart-opt-in: 10 75% 55%;
+    --chart-opt-out: 20 10% 45%;
+    --chart-total: 200 70% 50%;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(142 76% 46%), hsl(142 76% 36%));
-    --gradient-card: linear-gradient(180deg, hsl(220 16% 10%), hsl(220 16% 7%));
-    --gradient-glow: radial-gradient(circle at 50% 0%, hsl(142 76% 46% / 0.15), transparent 50%);
+    --gradient-primary: linear-gradient(135deg, hsl(10 75% 55%), hsl(10 75% 45%));
+    --gradient-card: linear-gradient(180deg, hsl(40 15% 98%), hsl(40 15% 96%));
+    --gradient-subtle: linear-gradient(180deg, hsl(40 20% 96%), hsl(40 20% 94%));
 
     /* Shadows */
-    --shadow-glow: 0 0 40px hsl(142 76% 46% / 0.15);
-    --shadow-card: 0 4px 24px hsl(0 0% 0% / 0.4);
+    --shadow-soft: 0 4px 20px hsl(20 10% 15% / 0.06);
+    --shadow-card: 0 2px 12px hsl(20 10% 15% / 0.04);
+    --shadow-hover: 0 8px 30px hsl(20 10% 15% / 0.08);
 
-    --sidebar-background: 220 16% 6%;
-    --sidebar-foreground: 220 14% 96%;
-    --sidebar-primary: 142 76% 46%;
-    --sidebar-primary-foreground: 220 16% 6%;
-    --sidebar-accent: 220 14% 14%;
-    --sidebar-accent-foreground: 220 14% 96%;
-    --sidebar-border: 220 14% 16%;
-    --sidebar-ring: 142 76% 46%;
+    --sidebar-background: 40 20% 95%;
+    --sidebar-foreground: 20 10% 15%;
+    --sidebar-primary: 10 75% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 10% 90%;
+    --sidebar-accent-foreground: 20 10% 15%;
+    --sidebar-border: 40 10% 85%;
+    --sidebar-ring: 10 75% 55%;
   }
 
   .dark {
-    --background: 220 16% 6%;
-    --foreground: 220 14% 96%;
+    --background: 20 15% 8%;
+    --foreground: 40 20% 95%;
 
-    --card: 220 16% 8%;
-    --card-foreground: 220 14% 96%;
+    --card: 20 15% 10%;
+    --card-foreground: 40 20% 95%;
 
-    --popover: 220 16% 10%;
-    --popover-foreground: 220 14% 96%;
+    --popover: 20 15% 12%;
+    --popover-foreground: 40 20% 95%;
 
-    --primary: 142 76% 46%;
-    --primary-foreground: 220 16% 6%;
+    --primary: 10 75% 55%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 14%;
-    --secondary-foreground: 220 14% 96%;
+    --secondary: 20 15% 15%;
+    --secondary-foreground: 40 20% 95%;
 
-    --muted: 220 14% 14%;
-    --muted-foreground: 220 14% 55%;
+    --muted: 20 15% 18%;
+    --muted-foreground: 40 10% 60%;
 
-    --accent: 142 76% 46%;
-    --accent-foreground: 220 16% 6%;
+    --accent: 10 75% 55%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
-    --destructive-foreground: 220 14% 96%;
+    --destructive-foreground: 40 20% 95%;
 
-    --border: 220 14% 16%;
-    --input: 220 14% 16%;
-    --ring: 142 76% 46%;
+    --border: 20 15% 18%;
+    --input: 20 15% 18%;
+    --ring: 10 75% 55%;
+
+    --kvatt-coral: 10 75% 55%;
+    --kvatt-coral-light: 10 75% 65%;
+    --kvatt-brown: 40 20% 85%;
+    --kvatt-cream: 20 15% 8%;
+    --kvatt-cream-dark: 20 15% 12%;
+
+    --chart-opt-in: 10 75% 55%;
+    --chart-opt-out: 40 10% 60%;
+    --chart-total: 200 70% 55%;
+
+    --gradient-card: linear-gradient(180deg, hsl(20 15% 11%), hsl(20 15% 9%));
+    --shadow-soft: 0 4px 20px hsl(0 0% 0% / 0.3);
+    --shadow-card: 0 2px 12px hsl(0 0% 0% / 0.2);
+    --shadow-hover: 0 8px 30px hsl(0 0% 0% / 0.4);
   }
 }
 
@@ -110,8 +127,6 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    background-image: var(--gradient-glow);
-    background-attachment: fixed;
   }
 
   .font-mono {
@@ -121,43 +136,32 @@
 
 @layer components {
   .metric-card {
-    @apply relative overflow-hidden rounded-xl border border-border bg-card p-6;
-    background: var(--gradient-card);
+    @apply relative overflow-hidden rounded-xl border border-border bg-card p-6 transition-all duration-300;
     box-shadow: var(--shadow-card);
   }
 
-  .metric-card::before {
-    content: '';
-    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
-    background: var(--gradient-glow);
-  }
-
-  .metric-card:hover::before {
-    @apply opacity-100;
-  }
-
-  .glow-text {
-    text-shadow: 0 0 20px hsl(var(--kvatt-green) / 0.5);
+  .metric-card:hover {
+    box-shadow: var(--shadow-hover);
+    @apply border-primary/20;
   }
 
   .chart-container {
     @apply rounded-xl border border-border bg-card p-6;
-    background: var(--gradient-card);
     box-shadow: var(--shadow-card);
   }
 
   .data-table {
-    @apply rounded-xl border border-border overflow-hidden;
-    background: var(--gradient-card);
+    @apply rounded-xl border border-border overflow-hidden bg-card;
     box-shadow: var(--shadow-card);
+  }
+
+  .filter-bar {
+    @apply rounded-xl border border-border bg-card/80 backdrop-blur-sm p-4;
+    box-shadow: var(--shadow-soft);
   }
 }
 
 @layer utilities {
-  .animate-pulse-slow {
-    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
   .animate-fade-in {
     animation: fadeIn 0.5s ease-out forwards;
   }
@@ -180,5 +184,12 @@
       opacity: 1;
       transform: translateY(0);
     }
+  }
+
+  .text-gradient {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }

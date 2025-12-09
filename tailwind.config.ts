@@ -62,11 +62,11 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
         kvatt: {
-          green: "hsl(var(--kvatt-green))",
-          blue: "hsl(var(--kvatt-blue))",
-          purple: "hsl(var(--kvatt-purple))",
-          amber: "hsl(var(--kvatt-amber))",
-          red: "hsl(var(--kvatt-red))",
+          coral: "hsl(var(--kvatt-coral))",
+          "coral-light": "hsl(var(--kvatt-coral-light))",
+          brown: "hsl(var(--kvatt-brown))",
+          cream: "hsl(var(--kvatt-cream))",
+          "cream-dark": "hsl(var(--kvatt-cream-dark))",
         },
         chart: {
           "opt-in": "hsl(var(--chart-opt-in))",

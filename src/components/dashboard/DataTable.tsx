@@ -80,7 +80,7 @@ export function DataTable({ data }: DataTableProps) {
   return (
     <div className="data-table">
       <div className="flex items-center justify-between border-b border-border p-4">
-        <h3 className="text-lg font-semibold">Store Details</h3>
+        <h3 className="text-lg font-semibold text-foreground">Store Details</h3>
         <Button variant="outline" size="sm" onClick={exportToCSV} className="gap-2">
           <Download className="h-4 w-4" />
           Export CSV
@@ -120,26 +120,26 @@ export function DataTable({ data }: DataTableProps) {
                     : '0';
                 return (
                   <TableRow key={index} className="border-border hover:bg-secondary/50">
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium text-foreground">
                       {item.store.replace('.myshopify.com', '')}
                     </TableCell>
-                    <TableCell className="text-right font-mono">
+                    <TableCell className="text-right font-mono text-foreground">
                       {item.total_checkouts.toLocaleString()}
                     </TableCell>
-                    <TableCell className="text-right font-mono text-kvatt-green">
+                    <TableCell className="text-right font-mono text-primary">
                       {item.opt_ins.toLocaleString()}
                     </TableCell>
-                    <TableCell className="text-right font-mono text-kvatt-red">
+                    <TableCell className="text-right font-mono text-muted-foreground">
                       {item.opt_outs.toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right">
                       <span
-                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                        className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
                           parseFloat(optInRate) >= 50
-                            ? 'bg-kvatt-green/10 text-kvatt-green'
+                            ? 'bg-primary/10 text-primary'
                             : parseFloat(optInRate) >= 25
-                            ? 'bg-kvatt-amber/10 text-kvatt-amber'
-                            : 'bg-kvatt-red/10 text-kvatt-red'
+                            ? 'bg-chart-total/10 text-chart-total'
+                            : 'bg-muted text-muted-foreground'
                         }`}
                       >
                         {optInRate}%
