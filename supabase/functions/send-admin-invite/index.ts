@@ -93,7 +93,7 @@ serve(async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Kvatt Admin <onboarding@resend.dev>",
+        from: "Kvatt Admin <noreply@codestrokes.com>",
         to: [email],
         subject: "You've been invited to Kvatt Admin Dashboard",
         html: emailHtml,
