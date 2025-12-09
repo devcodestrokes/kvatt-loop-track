@@ -174,7 +174,7 @@
 
   .metric-card::before {
     content: '';
-    @apply absolute inset-0 opacity-0 transition-opacity duration-300;
+    @apply absolute inset-0 opacity-0 transition-opacity duration-300 pointer-events-none;
     background: var(--gradient-primary-soft);
   }
 
@@ -196,7 +196,7 @@
 
   .metric-card-highlight::after {
     content: '';
-    @apply absolute -top-24 -right-24 h-48 w-48 rounded-full;
+    @apply absolute -top-24 -right-24 h-48 w-48 rounded-full pointer-events-none;
     background: radial-gradient(circle, hsl(var(--primary) / 0.1) 0%, transparent 70%);
   }
 
