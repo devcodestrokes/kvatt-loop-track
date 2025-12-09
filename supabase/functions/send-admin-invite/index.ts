@@ -104,6 +104,12 @@ serve(async (req: Request): Promise<Response> => {
 
     if (!response.ok) {
       console.error("Resend API error:", emailResponse);
+      
+      // Check for domain verification error
+      if (emailResponse.message?.includes("verify a domain")) {
+        throw new Error("Email domain not verified. In test mode, emails can only be sent to the Resend account owner's email. Please verify your domain at resend.com/domains for production use.");
+      }
+      
       throw new Error(emailResponse.message || "Failed to send email");
     }
 
