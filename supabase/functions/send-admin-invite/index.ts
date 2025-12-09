@@ -27,8 +27,8 @@ serve(async (req: Request): Promise<Response> => {
 
     console.log(`Sending admin invite to: ${email}`);
 
-    // Get the app URL for the invite link
-    const appUrl = "https://5dc6de10-4e17-4275-aeff-1624618334bd.lovableproject.com";
+    // Get the app URL for the invite link - use deployed URL
+    const appUrl = Deno.env.get("APP_URL") || "https://5dc6de10-4e17-4275-aeff-1624618334bd.lovable.app";
     const inviteLink = `${appUrl}/auth`;
 
     const emailHtml = `
