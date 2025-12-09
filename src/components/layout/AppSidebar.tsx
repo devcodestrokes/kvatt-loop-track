@@ -59,7 +59,6 @@ const sustainabilityItems = [
 
 const settingsItems = [
   { title: 'Settings', url: '/settings', icon: Settings },
-  { title: 'Help', url: '/help', icon: HelpCircle },
 ];
 
 export function AppSidebar() {
