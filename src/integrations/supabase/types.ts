@@ -14,7 +14,142 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      customers: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string
+          email: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          opt_in: boolean | null
+          phone: string | null
+          province: string | null
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          email: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          opt_in?: boolean | null
+          phone?: string | null
+          province?: string | null
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          opt_in?: boolean | null
+          phone?: string | null
+          province?: string | null
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      line_items: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string
+          price: number
+          product_id: string | null
+          product_title: string
+          quantity: number
+          sku: string | null
+          variant_title: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id: string
+          price?: number
+          product_id?: string | null
+          product_title: string
+          quantity?: number
+          sku?: string | null
+          variant_title?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string
+          price?: number
+          product_id?: string | null
+          product_title?: string
+          quantity?: number
+          sku?: string | null
+          variant_title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "line_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          currency: string | null
+          customer_id: string
+          financial_status: string | null
+          fulfillment_status: string | null
+          id: string
+          order_number: string
+          store_id: string
+          total_price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          customer_id: string
+          financial_status?: string | null
+          fulfillment_status?: string | null
+          id?: string
+          order_number: string
+          store_id: string
+          total_price?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          customer_id?: string
+          financial_status?: string | null
+          fulfillment_status?: string | null
+          id?: string
+          order_number?: string
+          store_id?: string
+          total_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
