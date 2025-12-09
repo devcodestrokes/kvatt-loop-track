@@ -24,6 +24,23 @@ const COLORS = {
   total: 'hsl(0, 0%, 15%)',   // Black
 };
 
+// Generate distinct colors for each store
+const generateStoreColors = (count: number) => {
+  const baseColors = [
+    '#fe655b', // Kvatt coral
+    '#2d2d2d', // Black
+    '#737373', // Grey
+    '#ff8a80', // Light coral
+    '#4a4a4a', // Dark grey
+    '#ffa69e', // Lighter coral
+    '#5c5c5c', // Medium grey
+    '#ffb8b0', // Very light coral
+    '#8c8c8c', // Light grey
+    '#a3a3a3', // Lighter grey
+  ];
+  return baseColors.slice(0, count);
+};
+
 export function AnalyticsChart({ data, type = 'bar' }: AnalyticsChartProps) {
   const chartData = data.map((item) => ({
     name: item.store.replace('.myshopify.com', ''),
@@ -32,15 +49,20 @@ export function AnalyticsChart({ data, type = 'bar' }: AnalyticsChartProps) {
     'Total Checkouts': item.total_checkouts || 0,
   }));
 
-  const pieData = [
-    { name: 'Opt-ins', value: data.reduce((acc, item) => acc + (item.opt_ins || 0), 0), color: COLORS.optIn },
-    { name: 'Opt-outs', value: data.reduce((acc, item) => acc + (item.opt_outs || 0), 0), color: COLORS.optOut },
-  ];
+  // Pie data showing opt-ins by store (filter out stores with 0 opt-ins)
+  const pieData = data
+    .filter(item => (item.opt_ins || 0) > 0)
+    .map((item) => ({
+      name: item.store.replace('.myshopify.com', ''),
+      value: item.opt_ins || 0,
+    }));
+
+  const storeColors = generateStoreColors(pieData.length);
 
   if (type === 'pie') {
     return (
       <div className="chart-container h-full">
-        <h3 className="mb-4 text-lg font-semibold text-foreground">Opt-in Distribution</h3>
+        <h3 className="mb-4 text-lg font-semibold text-foreground">Opt-ins by Store</h3>
         <div className="h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -50,13 +72,13 @@ export function AnalyticsChart({ data, type = 'bar' }: AnalyticsChartProps) {
                 cy="50%"
                 innerRadius={55}
                 outerRadius={90}
-                paddingAngle={5}
+                paddingAngle={2}
                 dataKey="value"
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                label={({ name, percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
                 labelLine={false}
               >
                 {pieData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
+                  <Cell key={`cell-${index}`} fill={storeColors[index % storeColors.length]} />
                 ))}
               </Pie>
               <Tooltip
@@ -66,8 +88,13 @@ export function AnalyticsChart({ data, type = 'bar' }: AnalyticsChartProps) {
                   borderRadius: '8px',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                 }}
+                formatter={(value: number, name: string) => [`${value} opt-ins`, name]}
               />
-              <Legend />
+              <Legend 
+                layout="horizontal" 
+                verticalAlign="bottom"
+                wrapperStyle={{ paddingTop: '10px' }}
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>
