@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { Client } from "https://deno.land/x/mysql@v2.12.1/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,245 +7,260 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const dbHost = Deno.env.get('KVATT_DB_HOST');
-    const dbName = Deno.env.get('KVATT_DB_DATABASE');
-    const dbUser = Deno.env.get('KVATT_DB_USERNAME');
-    const dbPass = Deno.env.get('KVATT_DB_PASSWORD');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    if (!dbHost || !dbName || !dbUser || !dbPass) {
-      throw new Error('Database credentials not configured');
+    console.log('Fetching customer data from Supabase...');
+
+    // Fetch customers
+    const { data: customers, error: customersError } = await supabase
+      .from('customers')
+      .select('*')
+      .limit(5000);
+
+    if (customersError) {
+      console.error('Error fetching customers:', customersError);
+      throw customersError;
     }
 
-    console.log(`Connecting to MySQL database: ${dbName} at ${dbHost}`);
+    console.log(`Fetched ${customers?.length || 0} customers`);
 
-    const client = await new Client().connect({
-      hostname: dbHost,
-      username: dbUser,
-      db: dbName,
-      password: dbPass,
-      port: 3306,
-    });
+    // Fetch orders
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select('*')
+      .limit(10000);
 
-    // Fetch customers with opt-in status
-    const customers = await client.query(`
-      SELECT 
-        id,
-        email,
-        first_name,
-        last_name,
-        phone,
-        city,
-        province,
-        country,
-        opt_in,
-        store_id,
-        created_at,
-        updated_at
-      FROM customers
-      ORDER BY created_at DESC
-      LIMIT 1000
-    `);
+    if (ordersError) {
+      console.error('Error fetching orders:', ordersError);
+      throw ordersError;
+    }
 
-    // Fetch orders with customer data
-    const orders = await client.query(`
-      SELECT 
-        o.id,
-        o.order_number,
-        o.customer_id,
-        o.store_id,
-        o.total_price,
-        o.currency,
-        o.financial_status,
-        o.fulfillment_status,
-        o.created_at,
-        c.email as customer_email,
-        c.opt_in as customer_opt_in,
-        c.city,
-        c.province,
-        c.country
-      FROM orders o
-      LEFT JOIN customers c ON o.customer_id = c.id
-      ORDER BY o.created_at DESC
-      LIMIT 2000
-    `);
+    console.log(`Fetched ${orders?.length || 0} orders`);
 
-    // Fetch line items for product analysis
-    const lineItems = await client.query(`
-      SELECT 
-        li.id,
-        li.order_id,
-        li.product_id,
-        li.product_title,
-        li.variant_title,
-        li.sku,
-        li.quantity,
-        li.price,
-        o.customer_id,
-        c.opt_in as customer_opt_in
-      FROM line_items li
-      LEFT JOIN orders o ON li.order_id = o.id
-      LEFT JOIN customers c ON o.customer_id = c.id
-      ORDER BY li.created_at DESC
-      LIMIT 5000
-    `);
+    // Fetch line items
+    const { data: lineItems, error: lineItemsError } = await supabase
+      .from('line_items')
+      .select('*')
+      .limit(20000);
 
-    await client.close();
+    if (lineItemsError) {
+      console.error('Error fetching line items:', lineItemsError);
+      throw lineItemsError;
+    }
 
-    // Process data for CRO analysis
-    const optInCustomers = customers.filter((c: any) => c.opt_in === 1 || c.opt_in === true);
-    const optOutCustomers = customers.filter((c: any) => c.opt_in === 0 || c.opt_in === false);
+    console.log(`Fetched ${lineItems?.length || 0} line items`);
+
+    // Process and analyze the data
+    const optInCustomers = customers?.filter(c => c.opt_in === true) || [];
+    const optOutCustomers = customers?.filter(c => c.opt_in === false || c.opt_in === null) || [];
+
+    console.log(`Opt-in customers: ${optInCustomers.length}, Opt-out customers: ${optOutCustomers.length}`);
 
     // Geographic analysis
-    const optInByCountry: Record<string, number> = {};
-    const optInByCity: Record<string, number> = {};
-    const optOutByCountry: Record<string, number> = {};
+    const customersByCountry: Record<string, { total: number; optIn: number }> = {};
+    const customersByCity: Record<string, { total: number; optIn: number }> = {};
 
-    optInCustomers.forEach((c: any) => {
-      if (c.country) optInByCountry[c.country] = (optInByCountry[c.country] || 0) + 1;
-      if (c.city) optInByCity[c.city] = (optInByCity[c.city] || 0) + 1;
-    });
+    customers?.forEach(customer => {
+      const country = customer.country || 'Unknown';
+      const city = customer.city || 'Unknown';
+      
+      if (!customersByCountry[country]) {
+        customersByCountry[country] = { total: 0, optIn: 0 };
+      }
+      customersByCountry[country].total++;
+      if (customer.opt_in) customersByCountry[country].optIn++;
 
-    optOutCustomers.forEach((c: any) => {
-      if (c.country) optOutByCountry[c.country] = (optOutByCountry[c.country] || 0) + 1;
+      if (!customersByCity[city]) {
+        customersByCity[city] = { total: 0, optIn: 0 };
+      }
+      customersByCity[city].total++;
+      if (customer.opt_in) customersByCity[city].optIn++;
     });
 
     // Store analysis
-    const optInByStore: Record<string, number> = {};
-    const optOutByStore: Record<string, number> = {};
-    const totalByStore: Record<string, number> = {};
-
-    customers.forEach((c: any) => {
-      const store = c.store_id || 'unknown';
-      totalByStore[store] = (totalByStore[store] || 0) + 1;
-      if (c.opt_in === 1 || c.opt_in === true) {
-        optInByStore[store] = (optInByStore[store] || 0) + 1;
-      } else {
-        optOutByStore[store] = (optOutByStore[store] || 0) + 1;
+    const customersByStore: Record<string, { total: number; optIn: number; optInRate: number }> = {};
+    customers?.forEach(customer => {
+      const store = customer.store_id || 'Unknown';
+      if (!customersByStore[store]) {
+        customersByStore[store] = { total: 0, optIn: 0, optInRate: 0 };
       }
+      customersByStore[store].total++;
+      if (customer.opt_in) customersByStore[store].optIn++;
     });
 
-    // Product preference analysis for opt-in vs opt-out customers
-    const productsOptIn: Record<string, { count: number; revenue: number }> = {};
-    const productsOptOut: Record<string, { count: number; revenue: number }> = {};
+    // Calculate opt-in rates per store
+    Object.keys(customersByStore).forEach(store => {
+      const data = customersByStore[store];
+      data.optInRate = data.total > 0 ? (data.optIn / data.total) * 100 : 0;
+    });
 
-    lineItems.forEach((li: any) => {
-      const productKey = li.product_title || li.product_id || 'Unknown';
-      const isOptIn = li.customer_opt_in === 1 || li.customer_opt_in === true;
-      const target = isOptIn ? productsOptIn : productsOptOut;
+    // Product analysis - what products do opt-in customers buy?
+    const optInCustomerIds = new Set(optInCustomers.map(c => c.id));
+    const optOutCustomerIds = new Set(optOutCustomers.map(c => c.id));
+
+    const optInOrderIds = new Set(
+      orders?.filter(o => optInCustomerIds.has(o.customer_id)).map(o => o.id) || []
+    );
+    const optOutOrderIds = new Set(
+      orders?.filter(o => optOutCustomerIds.has(o.customer_id)).map(o => o.id) || []
+    );
+
+    const optInProducts: Record<string, { quantity: number; revenue: number }> = {};
+    const optOutProducts: Record<string, { quantity: number; revenue: number }> = {};
+
+    lineItems?.forEach(item => {
+      const productName = item.product_title || 'Unknown';
       
-      if (!target[productKey]) {
-        target[productKey] = { count: 0, revenue: 0 };
+      if (optInOrderIds.has(item.order_id)) {
+        if (!optInProducts[productName]) {
+          optInProducts[productName] = { quantity: 0, revenue: 0 };
+        }
+        optInProducts[productName].quantity += item.quantity || 1;
+        optInProducts[productName].revenue += (item.price || 0) * (item.quantity || 1);
       }
-      target[productKey].count += li.quantity || 1;
-      target[productKey].revenue += parseFloat(li.price || 0) * (li.quantity || 1);
+
+      if (optOutOrderIds.has(item.order_id)) {
+        if (!optOutProducts[productName]) {
+          optOutProducts[productName] = { quantity: 0, revenue: 0 };
+        }
+        optOutProducts[productName].quantity += item.quantity || 1;
+        optOutProducts[productName].revenue += (item.price || 0) * (item.quantity || 1);
+      }
     });
 
-    // Order value analysis
-    const optInOrderValues = orders
-      .filter((o: any) => o.customer_opt_in === 1 || o.customer_opt_in === true)
-      .map((o: any) => parseFloat(o.total_price || 0));
-    
-    const optOutOrderValues = orders
-      .filter((o: any) => o.customer_opt_in === 0 || o.customer_opt_in === false)
-      .map((o: any) => parseFloat(o.total_price || 0));
+    // Calculate average order values
+    const optInOrders = orders?.filter(o => optInCustomerIds.has(o.customer_id)) || [];
+    const optOutOrders = orders?.filter(o => optOutCustomerIds.has(o.customer_id)) || [];
 
-    const avgOptInOrderValue = optInOrderValues.length > 0 
-      ? optInOrderValues.reduce((a: number, b: number) => a + b, 0) / optInOrderValues.length 
+    const avgOrderValueOptIn = optInOrders.length > 0 
+      ? optInOrders.reduce((sum, o) => sum + (o.total_price || 0), 0) / optInOrders.length 
       : 0;
-    
-    const avgOptOutOrderValue = optOutOrderValues.length > 0 
-      ? optOutOrderValues.reduce((a: number, b: number) => a + b, 0) / optOutOrderValues.length 
+    const avgOrderValueOptOut = optOutOrders.length > 0 
+      ? optOutOrders.reduce((sum, o) => sum + (o.total_price || 0), 0) / optOutOrders.length 
       : 0;
 
-    // Time-based analysis (when do opt-ins happen)
+    // Temporal analysis - when do opt-ins happen?
     const optInsByHour: Record<number, number> = {};
-    const optInsByDayOfWeek: Record<number, number> = {};
+    const optInsByDay: Record<number, number> = {};
 
-    optInCustomers.forEach((c: any) => {
-      if (c.created_at) {
-        const date = new Date(c.created_at);
+    optInCustomers.forEach(customer => {
+      if (customer.created_at) {
+        const date = new Date(customer.created_at);
         const hour = date.getHours();
-        const dayOfWeek = date.getDay();
+        const day = date.getDay();
+        
         optInsByHour[hour] = (optInsByHour[hour] || 0) + 1;
-        optInsByDayOfWeek[dayOfWeek] = (optInsByDayOfWeek[dayOfWeek] || 0) + 1;
+        optInsByDay[day] = (optInsByDay[day] || 0) + 1;
       }
     });
+
+    // Sort products by quantity
+    const topOptInProducts = Object.entries(optInProducts)
+      .sort((a, b) => b[1].quantity - a[1].quantity)
+      .slice(0, 10)
+      .map(([name, data]) => ({ name, ...data }));
+
+    const topOptOutProducts = Object.entries(optOutProducts)
+      .sort((a, b) => b[1].quantity - a[1].quantity)
+      .slice(0, 10)
+      .map(([name, data]) => ({ name, ...data }));
+
+    // Sort geographic data
+    const topCountries = Object.entries(customersByCountry)
+      .sort((a, b) => b[1].total - a[1].total)
+      .slice(0, 10)
+      .map(([name, data]) => ({ 
+        name, 
+        ...data, 
+        optInRate: data.total > 0 ? ((data.optIn / data.total) * 100).toFixed(1) : '0' 
+      }));
+
+    const topCities = Object.entries(customersByCity)
+      .sort((a, b) => b[1].total - a[1].total)
+      .slice(0, 15)
+      .map(([name, data]) => ({ 
+        name, 
+        ...data, 
+        optInRate: data.total > 0 ? ((data.optIn / data.total) * 100).toFixed(1) : '0' 
+      }));
+
+    const storeAnalysis = Object.entries(customersByStore)
+      .sort((a, b) => b[1].total - a[1].total)
+      .map(([name, data]) => ({ 
+        name: name.replace('.myshopify.com', ''), 
+        ...data,
+        optInRate: data.optInRate.toFixed(1)
+      }));
 
     const analytics = {
       summary: {
-        totalCustomers: customers.length,
-        totalOptIns: optInCustomers.length,
-        totalOptOuts: optOutCustomers.length,
-        optInRate: customers.length > 0 ? ((optInCustomers.length / customers.length) * 100).toFixed(2) : 0,
-        totalOrders: orders.length,
-        avgOptInOrderValue: avgOptInOrderValue.toFixed(2),
-        avgOptOutOrderValue: avgOptOutOrderValue.toFixed(2),
+        totalCustomers: customers?.length || 0,
+        optInCustomers: optInCustomers.length,
+        optOutCustomers: optOutCustomers.length,
+        optInRate: customers?.length ? ((optInCustomers.length / customers.length) * 100).toFixed(2) : '0',
+        totalOrders: orders?.length || 0,
+        totalLineItems: lineItems?.length || 0,
       },
       geographic: {
-        optInByCountry: Object.entries(optInByCountry)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 10),
-        optInByCity: Object.entries(optInByCity)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 10),
-        optOutByCountry: Object.entries(optOutByCountry)
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 10),
+        topCountries,
+        topCities,
       },
-      stores: {
-        optInByStore: Object.entries(optInByStore)
-          .map(([store, count]) => ({
-            store,
-            optIns: count,
-            total: totalByStore[store] || 0,
-            rate: totalByStore[store] ? ((count / totalByStore[store]) * 100).toFixed(2) : 0,
-          }))
-          .sort((a, b) => parseFloat(b.rate as string) - parseFloat(a.rate as string)),
-      },
+      stores: storeAnalysis,
       products: {
-        topOptInProducts: Object.entries(productsOptIn)
-          .sort((a, b) => b[1].count - a[1].count)
-          .slice(0, 15)
-          .map(([product, data]) => ({ product, ...data })),
-        topOptOutProducts: Object.entries(productsOptOut)
-          .sort((a, b) => b[1].count - a[1].count)
-          .slice(0, 15)
-          .map(([product, data]) => ({ product, ...data })),
+        optInTopProducts: topOptInProducts,
+        optOutTopProducts: topOptOutProducts,
+      },
+      orderValue: {
+        avgOrderValueOptIn: avgOrderValueOptIn.toFixed(2),
+        avgOrderValueOptOut: avgOrderValueOptOut.toFixed(2),
+        difference: (avgOrderValueOptIn - avgOrderValueOptOut).toFixed(2),
+        percentDifference: avgOrderValueOptOut > 0 
+          ? (((avgOrderValueOptIn - avgOrderValueOptOut) / avgOrderValueOptOut) * 100).toFixed(1)
+          : '0',
       },
       temporal: {
-        optInsByHour: Object.entries(optInsByHour)
-          .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
-          .map(([hour, count]) => ({ hour: parseInt(hour), count })),
-        optInsByDayOfWeek: Object.entries(optInsByDayOfWeek)
-          .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
-          .map(([day, count]) => ({ 
-            day: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][parseInt(day)], 
-            count 
-          })),
+        optInsByHour,
+        optInsByDay,
+        peakHour: Object.entries(optInsByHour).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
+        peakDay: Object.entries(optInsByDay).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
       },
-      rawData: {
-        customers: customers.slice(0, 100),
-        recentOrders: orders.slice(0, 100),
+      rawSamples: {
+        customers: customers?.slice(0, 5) || [],
+        orders: orders?.slice(0, 5) || [],
+        lineItems: lineItems?.slice(0, 5) || [],
       }
     };
 
-    console.log(`Successfully fetched ${customers.length} customers, ${orders.length} orders, ${lineItems.length} line items`);
+    console.log('Analytics generated successfully');
 
     return new Response(
       JSON.stringify({ status: 200, data: analytics }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200 
+      }
     );
+
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Error fetching MySQL data:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch customer data';
+    console.error('Error fetching data:', error);
     return new Response(
-      JSON.stringify({ status: 500, error: errorMessage }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+      JSON.stringify({ 
+        status: 500, 
+        error: errorMessage
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500 
+      }
     );
   }
 });
