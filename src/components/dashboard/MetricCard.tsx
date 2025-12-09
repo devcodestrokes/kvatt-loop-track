@@ -17,12 +17,12 @@ const colorStyles = {
     border: 'hover:border-primary/30',
   },
   blue: {
-    icon: 'bg-chart-total/10 text-chart-total',
-    border: 'hover:border-chart-total/30',
+    icon: 'bg-foreground/10 text-foreground',
+    border: 'hover:border-foreground/30',
   },
   brown: {
-    icon: 'bg-kvatt-brown/10 text-kvatt-brown',
-    border: 'hover:border-kvatt-brown/30',
+    icon: 'bg-foreground/10 text-foreground',
+    border: 'hover:border-foreground/30',
   },
   muted: {
     icon: 'bg-muted-foreground/10 text-muted-foreground',

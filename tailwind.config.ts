@@ -64,7 +64,7 @@ export default {
         kvatt: {
           coral: "hsl(var(--kvatt-coral))",
           "coral-light": "hsl(var(--kvatt-coral-light))",
-          brown: "hsl(var(--kvatt-brown))",
+          black: "hsl(var(--kvatt-black))",
           cream: "hsl(var(--kvatt-cream))",
           "cream-dark": "hsl(var(--kvatt-cream-dark))",
         },

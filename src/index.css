@@ -16,17 +16,17 @@
     --popover: 40 15% 98%;
     --popover-foreground: 20 10% 15%;
 
-    /* Coral/Salmon primary - matches Kvatt bird */
-    --primary: 10 75% 55%;
+    /* Coral primary - #fe655b */
+    --primary: 4 99% 68%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 40 10% 90%;
-    --secondary-foreground: 20 10% 15%;
+    --secondary-foreground: 0 0% 10%;
 
     --muted: 40 10% 88%;
-    --muted-foreground: 20 10% 45%;
+    --muted-foreground: 0 0% 35%;
 
-    --accent: 10 75% 55%;
+    --accent: 4 99% 68%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
@@ -34,24 +34,24 @@
 
     --border: 40 10% 85%;
     --input: 40 10% 85%;
-    --ring: 10 75% 55%;
+    --ring: 4 99% 68%;
 
     --radius: 0.75rem;
 
     /* Custom Kvatt tokens */
-    --kvatt-coral: 10 75% 55%;
-    --kvatt-coral-light: 10 75% 65%;
-    --kvatt-brown: 20 30% 25%;
+    --kvatt-coral: 4 99% 68%;
+    --kvatt-coral-light: 4 99% 75%;
+    --kvatt-black: 0 0% 10%;
     --kvatt-cream: 40 20% 95%;
     --kvatt-cream-dark: 40 15% 90%;
 
     /* Chart colors - Kvatt palette only */
-    --chart-opt-in: 10 75% 55%;
-    --chart-opt-out: 20 10% 45%;
-    --chart-total: 20 15% 30%;
+    --chart-opt-in: 4 99% 68%;
+    --chart-opt-out: 0 0% 45%;
+    --chart-total: 0 0% 15%;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(10 75% 55%), hsl(10 75% 45%));
+    --gradient-primary: linear-gradient(135deg, hsl(4 99% 68%), hsl(4 99% 58%));
     --gradient-card: linear-gradient(180deg, hsl(40 15% 98%), hsl(40 15% 96%));
     --gradient-subtle: linear-gradient(180deg, hsl(40 20% 96%), hsl(40 20% 94%));
 
@@ -62,12 +62,12 @@
 
     --sidebar-background: 40 20% 95%;
     --sidebar-foreground: 20 10% 15%;
-    --sidebar-primary: 10 75% 55%;
+    --sidebar-primary: 4 99% 68%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 40 10% 90%;
-    --sidebar-accent-foreground: 20 10% 15%;
+    --sidebar-accent-foreground: 0 0% 10%;
     --sidebar-border: 40 10% 85%;
-    --sidebar-ring: 10 75% 55%;
+    --sidebar-ring: 4 99% 68%;
   }
 
   .dark {
@@ -80,7 +80,7 @@
     --popover: 20 15% 12%;
     --popover-foreground: 40 20% 95%;
 
-    --primary: 10 75% 55%;
+    --primary: 4 99% 68%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 20 15% 15%;
@@ -89,7 +89,7 @@
     --muted: 20 15% 18%;
     --muted-foreground: 40 10% 60%;
 
-    --accent: 10 75% 55%;
+    --accent: 4 99% 68%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
@@ -97,17 +97,17 @@
 
     --border: 20 15% 18%;
     --input: 20 15% 18%;
-    --ring: 10 75% 55%;
+    --ring: 4 99% 68%;
 
-    --kvatt-coral: 10 75% 55%;
-    --kvatt-coral-light: 10 75% 65%;
-    --kvatt-brown: 40 20% 85%;
+    --kvatt-coral: 4 99% 68%;
+    --kvatt-coral-light: 4 99% 75%;
+    --kvatt-black: 0 0% 90%;
     --kvatt-cream: 20 15% 8%;
     --kvatt-cream-dark: 20 15% 12%;
 
-    --chart-opt-in: 10 75% 55%;
-    --chart-opt-out: 40 10% 60%;
-    --chart-total: 40 15% 70%;
+    --chart-opt-in: 4 99% 68%;
+    --chart-opt-out: 0 0% 60%;
+    --chart-total: 0 0% 75%;
 
     --gradient-card: linear-gradient(180deg, hsl(20 15% 11%), hsl(20 15% 9%));
     --shadow-soft: 0 4px 20px hsl(0 0% 0% / 0.3);
