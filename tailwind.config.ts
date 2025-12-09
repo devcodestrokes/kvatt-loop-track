@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
       colors: {
@@ -64,9 +64,13 @@ export default {
         kvatt: {
           coral: "hsl(var(--kvatt-coral))",
           "coral-light": "hsl(var(--kvatt-coral-light))",
+          "coral-dark": "hsl(var(--kvatt-coral-dark))",
+          orange: "hsl(var(--kvatt-orange))",
           black: "hsl(var(--kvatt-black))",
           cream: "hsl(var(--kvatt-cream))",
+          "cream-light": "hsl(var(--kvatt-cream-light))",
           "cream-dark": "hsl(var(--kvatt-cream-dark))",
+          brown: "hsl(var(--kvatt-brown))",
         },
         chart: {
           "opt-in": "hsl(var(--chart-opt-in))",
@@ -75,9 +79,15 @@ export default {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        "2xl": "1rem",
+        xl: "0.875rem",
+        lg: "0.75rem",
+        md: "0.5rem",
+        sm: "0.375rem",
+      },
+      boxShadow: {
+        "glow": "0 0 40px hsl(var(--primary) / 0.15)",
+        "glow-sm": "0 0 20px hsl(var(--primary) / 0.1)",
       },
       keyframes: {
         "accordion-down": {
@@ -92,11 +102,24 @@ export default {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        pulse: {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.5" },
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-8px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         shimmer: "shimmer 2s linear infinite",
+        pulse: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        float: "float 3s ease-in-out infinite",
+      },
+      backgroundImage: {
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
       },
     },
   },

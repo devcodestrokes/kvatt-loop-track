@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { subDays } from 'date-fns';
-import { ShoppingCart, CheckCircle, XCircle, Percent } from 'lucide-react';
+import { ShoppingCart, CheckCircle, XCircle, TrendingUp, Sparkles } from 'lucide-react';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { DateRange } from '@/types/analytics';
 import { MetricCard } from '@/components/dashboard/MetricCard';
@@ -74,27 +74,32 @@ const Analytics = () => {
   const optInRate = getOptInRate();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Analytics</h1>
-          <p className="text-sm text-muted-foreground">
-            Track opt-in rates and packaging adoption across stores
+          <div className="flex items-center gap-3 mb-2">
+            <div className="icon-glow">
+              <Sparkles className="h-5 w-5 text-white" />
+            </div>
+            <span className="badge-premium">Live Data</span>
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Analytics</h1>
+          <p className="mt-1 text-base text-muted-foreground">
+            Track opt-in rates and packaging adoption across your stores
           </p>
         </div>
         <div className="flex items-center gap-3">
           {lastUpdated && (
-            <span className="text-xs text-muted-foreground">
-              Updated {lastUpdated.toLocaleTimeString()}
+            <span className="text-sm text-muted-foreground">
+              Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           )}
           <Button
             variant="outline"
-            size="sm"
             onClick={handleRefresh}
             disabled={isLoading}
-            className="gap-2"
+            className="gap-2 rounded-xl border-border/50 bg-card/50 backdrop-blur-sm transition-all hover:bg-card hover:shadow-md"
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
@@ -122,7 +127,7 @@ const Analytics = () => {
       ) : (
         <>
           {/* Metrics Grid */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <MetricCard
               title="Total Checkouts"
               value={totals.totalCheckouts.toLocaleString()}
@@ -147,7 +152,7 @@ const Analytics = () => {
             <MetricCard
               title="Opt-in Rate"
               value={`${optInRate}%`}
-              icon={<Percent className="h-5 w-5" />}
+              icon={<TrendingUp className="h-5 w-5" />}
               color="brown"
               delay={300}
             />

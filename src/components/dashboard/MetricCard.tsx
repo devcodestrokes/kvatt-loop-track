@@ -13,20 +13,20 @@ interface MetricCardProps {
 
 const colorStyles = {
   coral: {
-    icon: 'bg-primary/10 text-primary',
-    border: 'hover:border-primary/30',
+    icon: 'icon-subtle',
+    gradient: true,
   },
   blue: {
-    icon: 'bg-foreground/10 text-foreground',
-    border: 'hover:border-foreground/30',
+    icon: 'flex h-11 w-11 items-center justify-center rounded-xl bg-foreground/10 text-foreground',
+    gradient: false,
   },
   brown: {
-    icon: 'bg-foreground/10 text-foreground',
-    border: 'hover:border-foreground/30',
+    icon: 'flex h-11 w-11 items-center justify-center rounded-xl bg-kvatt-brown/10 text-kvatt-brown',
+    gradient: false,
   },
   muted: {
-    icon: 'bg-muted-foreground/10 text-muted-foreground',
-    border: 'hover:border-muted-foreground/30',
+    icon: 'flex h-11 w-11 items-center justify-center rounded-xl bg-muted text-muted-foreground',
+    gradient: false,
   },
 };
 
@@ -44,45 +44,47 @@ export function MetricCard({
 
   return (
     <div
-      className={cn(
-        'metric-card group animate-slide-up',
-        styles.border
-      )}
-      style={{ animationDelay: `${delay}ms` }}
+      className="metric-card group animate-slide-up"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: 'backwards' }}
     >
-      <div className="flex items-start justify-between">
-        <div
-          className={cn(
-            'flex h-11 w-11 items-center justify-center rounded-xl',
-            styles.icon
-          )}
-        >
+      {/* Decorative gradient orb */}
+      {styles.gradient && (
+        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-primary/20 to-kvatt-orange/10 blur-2xl transition-all duration-500 group-hover:scale-110" />
+      )}
+      
+      <div className="relative flex items-start justify-between">
+        <div className={styles.icon}>
           {icon}
         </div>
         {change !== undefined && (
           <div
             className={cn(
-              'flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium',
+              'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold',
               isPositive
                 ? 'bg-primary/10 text-primary'
                 : 'bg-destructive/10 text-destructive'
             )}
           >
             {isPositive ? (
-              <TrendingUp className="h-3 w-3" />
+              <TrendingUp className="h-3.5 w-3.5" />
             ) : (
-              <TrendingDown className="h-3 w-3" />
+              <TrendingDown className="h-3.5 w-3.5" />
             )}
             {Math.abs(change)}%
           </div>
         )}
       </div>
 
-      <div className="mt-4">
+      <div className="relative mt-5">
         <p className="text-sm font-medium text-muted-foreground">{title}</p>
-        <p className="mt-1 text-3xl font-semibold tracking-tight text-foreground">{value}</p>
+        <p className={cn(
+          "mt-2 text-4xl font-bold tracking-tight",
+          styles.gradient ? "text-gradient" : "text-foreground"
+        )}>
+          {value}
+        </p>
         {changeLabel && (
-          <p className="mt-1 text-xs text-muted-foreground">{changeLabel}</p>
+          <p className="mt-2 text-xs font-medium text-muted-foreground">{changeLabel}</p>
         )}
       </div>
     </div>
