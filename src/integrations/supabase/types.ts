@@ -139,6 +139,57 @@ export type Database = {
         }
         Relationships: []
       }
+      imported_orders: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string
+          customer_external_id: string | null
+          external_id: string
+          id: string
+          opt_in: boolean | null
+          order_number: string | null
+          payment_status: string | null
+          province: string | null
+          shopify_created_at: string | null
+          shopify_order_id: string | null
+          store_id: string | null
+          total_price: number | null
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          customer_external_id?: string | null
+          external_id: string
+          id?: string
+          opt_in?: boolean | null
+          order_number?: string | null
+          payment_status?: string | null
+          province?: string | null
+          shopify_created_at?: string | null
+          shopify_order_id?: string | null
+          store_id?: string | null
+          total_price?: number | null
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          customer_external_id?: string | null
+          external_id?: string
+          id?: string
+          opt_in?: boolean | null
+          order_number?: string | null
+          payment_status?: string | null
+          province?: string | null
+          shopify_created_at?: string | null
+          shopify_order_id?: string | null
+          store_id?: string | null
+          total_price?: number | null
+        }
+        Relationships: []
+      }
       insights: {
         Row: {
           created_at: string

@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Lightbulb, TrendingUp, TrendingDown, Minus, Package, Users, Recycle, Target, 
-  RefreshCw, Brain, MapPin, Clock, ShoppingCart, Store, Zap, AlertCircle, CheckCircle 
+  RefreshCw, Brain, MapPin, Clock, ShoppingCart, Store, Zap, AlertCircle, CheckCircle,
+  Upload, FileSpreadsheet, Database
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -146,6 +147,10 @@ const Insights = () => {
   const [croAnalysis, setCroAnalysis] = useState<CROAnalysis | null>(null);
   const [isFetchingCustomers, setIsFetchingCustomers] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
+  const [orderCount, setOrderCount] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -183,24 +188,178 @@ const Insights = () => {
     }
   };
 
+  const fetchOrderCount = async () => {
+    const { count } = await supabase
+      .from('imported_orders')
+      .select('*', { count: 'exact', head: true });
+    setOrderCount(count || 0);
+  };
+
   const fetchCustomerData = async () => {
     setIsFetchingCustomers(true);
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-mysql-customers');
+      // Query from imported_orders table
+      const { data: orders, error } = await supabase
+        .from('imported_orders')
+        .select('*');
       
       if (error) throw error;
       
-      if (data?.data) {
-        setCustomerData(data.data);
-        toast.success(`Loaded ${data.data.summary.totalCustomers} customers`);
-      } else if (data?.error) {
-        throw new Error(data.error);
+      if (!orders || orders.length === 0) {
+        toast.error('No orders found. Please import CSV data first.');
+        return;
       }
+
+      // Calculate analytics from the imported orders
+      const totalOrders = orders.length;
+      const optInOrders = orders.filter(o => o.opt_in);
+      const optOutOrders = orders.filter(o => !o.opt_in);
+      const optInRate = ((optInOrders.length / totalOrders) * 100).toFixed(2);
+
+      // Geographic analysis
+      const cityStats = new Map<string, { total: number; optIn: number }>();
+      const countryStats = new Map<string, { total: number; optIn: number }>();
+      const storeStats = new Map<string, { total: number; optIn: number }>();
+
+      orders.forEach(order => {
+        // City stats
+        if (order.city) {
+          const cityKey = order.city;
+          const existing = cityStats.get(cityKey) || { total: 0, optIn: 0 };
+          cityStats.set(cityKey, {
+            total: existing.total + 1,
+            optIn: existing.optIn + (order.opt_in ? 1 : 0)
+          });
+        }
+
+        // Country stats
+        if (order.country) {
+          const countryKey = order.country;
+          const existing = countryStats.get(countryKey) || { total: 0, optIn: 0 };
+          countryStats.set(countryKey, {
+            total: existing.total + 1,
+            optIn: existing.optIn + (order.opt_in ? 1 : 0)
+          });
+        }
+
+        // Store stats
+        if (order.store_id) {
+          const storeKey = order.store_id;
+          const existing = storeStats.get(storeKey) || { total: 0, optIn: 0 };
+          storeStats.set(storeKey, {
+            total: existing.total + 1,
+            optIn: existing.optIn + (order.opt_in ? 1 : 0)
+          });
+        }
+      });
+
+      // Calculate average order values
+      const avgOptInOrderValue = optInOrders.length > 0 
+        ? (optInOrders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0) / optInOrders.length).toFixed(2)
+        : '0';
+      const avgOptOutOrderValue = optOutOrders.length > 0 
+        ? (optOutOrders.reduce((sum, o) => sum + (Number(o.total_price) || 0), 0) / optOutOrders.length).toFixed(2)
+        : '0';
+
+      const analytics: CustomerAnalytics = {
+        summary: {
+          totalCustomers: totalOrders,
+          totalOptIns: optInOrders.length,
+          totalOptOuts: optOutOrders.length,
+          optInRate,
+          totalOrders,
+          avgOptInOrderValue,
+          avgOptOutOrderValue,
+        },
+        geographic: {
+          topCities: Array.from(cityStats.entries())
+            .map(([name, stats]) => ({
+              name,
+              total: stats.total,
+              optIn: stats.optIn,
+              optInRate: ((stats.optIn / stats.total) * 100).toFixed(1)
+            }))
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 10),
+          topCountries: Array.from(countryStats.entries())
+            .map(([name, stats]) => ({
+              name,
+              total: stats.total,
+              optIn: stats.optIn,
+              optInRate: ((stats.optIn / stats.total) * 100).toFixed(1)
+            }))
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 10),
+        },
+        stores: Array.from(storeStats.entries())
+          .map(([name, stats]) => ({
+            name,
+            total: stats.total,
+            optIn: stats.optIn,
+            optInRate: ((stats.optIn / stats.total) * 100).toFixed(1)
+          }))
+          .sort((a, b) => b.total - a.total),
+        orderValue: {
+          avgOrderValueOptIn: avgOptInOrderValue,
+          avgOrderValueOptOut: avgOptOutOrderValue,
+          difference: (parseFloat(avgOptInOrderValue) - parseFloat(avgOptOutOrderValue)).toFixed(2),
+          percentDifference: avgOptOutOrderValue !== '0' 
+            ? (((parseFloat(avgOptInOrderValue) - parseFloat(avgOptOutOrderValue)) / parseFloat(avgOptOutOrderValue)) * 100).toFixed(1)
+            : '0'
+        }
+      };
+
+      setCustomerData(analytics);
+      toast.success(`Analyzed ${totalOrders.toLocaleString()} orders`);
     } catch (error: any) {
       console.error('Error fetching customer data:', error);
       toast.error(error.message || 'Failed to fetch customer data');
     } finally {
       setIsFetchingCustomers(false);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsImporting(true);
+    setImportProgress({ current: 0, total: files.length });
+
+    let totalImported = 0;
+    let totalErrors = 0;
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        setImportProgress({ current: i + 1, total: files.length });
+        
+        toast.info(`Processing file ${i + 1}/${files.length}: ${file.name}`);
+
+        const text = await file.text();
+        
+        const { data, error } = await supabase.functions.invoke('import-orders-csv', {
+          body: { csvData: text, batchNumber: i + 1 }
+        });
+
+        if (error) {
+          console.error(`Error importing ${file.name}:`, error);
+          totalErrors++;
+        } else if (data) {
+          totalImported += data.inserted || 0;
+        }
+      }
+
+      toast.success(`Imported ${totalImported.toLocaleString()} orders from ${files.length} files`);
+      fetchOrderCount();
+    } catch (error: any) {
+      console.error('Import error:', error);
+      toast.error(error.message || 'Failed to import CSV files');
+    } finally {
+      setIsImporting(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -234,6 +393,7 @@ const Insights = () => {
 
   useEffect(() => {
     fetchData();
+    fetchOrderCount();
   }, [selectedMerchant]);
 
   const formatStoreName = (store: string) => {
@@ -266,15 +426,58 @@ const Insights = () => {
 
         {/* CRO Analysis Tab */}
         <TabsContent value="cro" className="space-y-6">
+          {/* CSV Import Section */}
+          <div className="metric-card">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <Database className="h-5 w-5 text-primary" />
+                <div>
+                  <h3 className="font-semibold">Order Data</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {orderCount > 0 
+                      ? `${orderCount.toLocaleString()} orders in database`
+                      : 'No orders imported yet'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv"
+                  multiple
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  id="csv-upload"
+                />
+                <Button 
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isImporting}
+                >
+                  <Upload className={`h-4 w-4 mr-2 ${isImporting ? 'animate-pulse' : ''}`} />
+                  {isImporting 
+                    ? `Importing ${importProgress.current}/${importProgress.total}...`
+                    : 'Import CSV Files'}
+                </Button>
+              </div>
+            </div>
+            {isImporting && (
+              <div className="mt-4">
+                <Progress value={(importProgress.current / importProgress.total) * 100} className="h-2" />
+              </div>
+            )}
+          </div>
+
           {/* Action Bar */}
           <div className="flex flex-wrap gap-3">
             <Button 
               onClick={fetchCustomerData} 
-              disabled={isFetchingCustomers}
+              disabled={isFetchingCustomers || orderCount === 0}
               variant="outline"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${isFetchingCustomers ? 'animate-spin' : ''}`} />
-              {isFetchingCustomers ? 'Fetching...' : 'Fetch Customer Data'}
+              {isFetchingCustomers ? 'Analyzing...' : 'Analyze Order Data'}
             </Button>
             <Button 
               onClick={runCROAnalysis} 
@@ -566,10 +769,14 @@ const Insights = () => {
           {/* Empty State */}
           {!customerData && !isFetchingCustomers && (
             <div className="text-center py-12">
-              <Brain className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No Customer Data Yet</h3>
+              <FileSpreadsheet className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">
+                {orderCount === 0 ? 'No Order Data Yet' : 'Ready to Analyze'}
+              </h3>
               <p className="text-muted-foreground mb-4">
-                Click "Fetch Customer Data" to load data from your MySQL database, then run AI analysis.
+                {orderCount === 0 
+                  ? 'Import your order CSV files to get started with analytics.'
+                  : `Click "Analyze Order Data" to process ${orderCount.toLocaleString()} orders.`}
               </p>
             </div>
           )}
