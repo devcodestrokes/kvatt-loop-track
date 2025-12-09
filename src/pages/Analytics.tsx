@@ -32,14 +32,14 @@ const Analytics = () => {
   });
   const [lastUpdated, setLastUpdated] = useState<Date>();
 
-  const loadData = useCallback(async () => {
-    await fetchStores();
-    await fetchAnalytics(dateRange, selectedStore);
-    setLastUpdated(new Date());
-  }, [fetchStores, fetchAnalytics, dateRange, selectedStore]);
-
   useEffect(() => {
-    loadData();
+    const loadInitialData = async () => {
+      await fetchStores();
+      await fetchAnalytics(dateRange, selectedStore);
+      setLastUpdated(new Date());
+    };
+    loadInitialData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
