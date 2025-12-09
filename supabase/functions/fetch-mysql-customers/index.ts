@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Client } from "https://deno.land/x/mysql@v2.12.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,153 +12,177 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let client: Client | null = null;
+
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const dbHost = Deno.env.get('KVATT_DB_HOST');
+    const dbUser = Deno.env.get('KVATT_DB_USERNAME');
+    const dbPassword = Deno.env.get('KVATT_DB_PASSWORD');
+    const dbName = Deno.env.get('KVATT_DB_DATABASE');
 
-    console.log('Fetching customer data from Supabase...');
-
-    // Fetch customers
-    const { data: customers, error: customersError } = await supabase
-      .from('customers')
-      .select('*')
-      .limit(5000);
-
-    if (customersError) {
-      console.error('Error fetching customers:', customersError);
-      throw customersError;
+    if (!dbHost || !dbUser || !dbPassword || !dbName) {
+      throw new Error('Missing MySQL database credentials');
     }
 
-    console.log(`Fetched ${customers?.length || 0} customers`);
+    console.log(`Connecting to MySQL database: ${dbName} at ${dbHost}...`);
 
-    // Fetch orders
-    const { data: orders, error: ordersError } = await supabase
-      .from('orders')
-      .select('*')
-      .limit(10000);
-
-    if (ordersError) {
-      console.error('Error fetching orders:', ordersError);
-      throw ordersError;
-    }
-
-    console.log(`Fetched ${orders?.length || 0} orders`);
-
-    // Fetch line items
-    const { data: lineItems, error: lineItemsError } = await supabase
-      .from('line_items')
-      .select('*')
-      .limit(20000);
-
-    if (lineItemsError) {
-      console.error('Error fetching line items:', lineItemsError);
-      throw lineItemsError;
-    }
-
-    console.log(`Fetched ${lineItems?.length || 0} line items`);
-
-    // Process and analyze the data
-    const optInCustomers = customers?.filter(c => c.opt_in === true) || [];
-    const optOutCustomers = customers?.filter(c => c.opt_in === false || c.opt_in === null) || [];
-
-    console.log(`Opt-in customers: ${optInCustomers.length}, Opt-out customers: ${optOutCustomers.length}`);
-
-    // Geographic analysis
-    const customersByCountry: Record<string, { total: number; optIn: number }> = {};
-    const customersByCity: Record<string, { total: number; optIn: number }> = {};
-
-    customers?.forEach(customer => {
-      const country = customer.country || 'Unknown';
-      const city = customer.city || 'Unknown';
-      
-      if (!customersByCountry[country]) {
-        customersByCountry[country] = { total: 0, optIn: 0 };
-      }
-      customersByCountry[country].total++;
-      if (customer.opt_in) customersByCountry[country].optIn++;
-
-      if (!customersByCity[city]) {
-        customersByCity[city] = { total: 0, optIn: 0 };
-      }
-      customersByCity[city].total++;
-      if (customer.opt_in) customersByCity[city].optIn++;
+    // Connect to MySQL
+    client = await new Client().connect({
+      hostname: dbHost,
+      username: dbUser,
+      password: dbPassword,
+      db: dbName,
+      port: 3306,
     });
 
-    // Store analysis
-    const customersByStore: Record<string, { total: number; optIn: number; optInRate: number }> = {};
-    customers?.forEach(customer => {
-      const store = customer.store_id || 'Unknown';
-      if (!customersByStore[store]) {
-        customersByStore[store] = { total: 0, optIn: 0, optInRate: 0 };
+    console.log('Connected to MySQL successfully');
+
+    // Fetch customers from MySQL
+    const customersResult = await client.execute(
+      `SELECT id, user_id, shopify_customer_id, name, email, telephone, created_at, updated_at 
+       FROM customers 
+       LIMIT 10000`
+    );
+    const customers = customersResult.rows || [];
+    console.log(`Fetched ${customers.length} customers from MySQL`);
+
+    // Fetch orders from MySQL (opt_in is on orders table)
+    const ordersResult = await client.execute(
+      `SELECT id, user_id, shopify_order_id, name, opt_in, payment_status, total_price, 
+              customer_id, destination, shopify_created_at, created_at, updated_at 
+       FROM orders 
+       LIMIT 20000`
+    );
+    const orders = ordersResult.rows || [];
+    console.log(`Fetched ${orders.length} orders from MySQL`);
+
+    // Fetch line items from MySQL
+    const lineItemsResult = await client.execute(
+      `SELECT id, order_id, shopify_line_item_id, shopify_product_id, shopify_variant_id,
+              product_title, variant_title, quantity, properties, total_price, created_at 
+       FROM line_items 
+       LIMIT 50000`
+    );
+    const lineItems = lineItemsResult.rows || [];
+    console.log(`Fetched ${lineItems.length} line items from MySQL`);
+
+    // Close MySQL connection
+    await client.close();
+    client = null;
+
+    // Process and analyze the data
+    // Note: opt_in is on the orders table, not customers
+    const optInOrders = orders.filter((o: any) => o.opt_in === 1 || o.opt_in === true);
+    const optOutOrders = orders.filter((o: any) => o.opt_in === 0 || o.opt_in === false || o.opt_in === null);
+
+    console.log(`Opt-in orders: ${optInOrders.length}, Opt-out orders: ${optOutOrders.length}`);
+
+    // Get unique customers from opt-in and opt-out orders
+    const optInCustomerIds = new Set(optInOrders.map((o: any) => o.customer_id));
+    const optOutCustomerIds = new Set(optOutOrders.map((o: any) => o.customer_id));
+
+    // Store analysis based on user_id (which represents the store/merchant)
+    const ordersByStore: Record<string, { total: number; optIn: number; optInRate: number }> = {};
+    orders.forEach((order: any) => {
+      const storeId = String(order.user_id || 'Unknown');
+      if (!ordersByStore[storeId]) {
+        ordersByStore[storeId] = { total: 0, optIn: 0, optInRate: 0 };
       }
-      customersByStore[store].total++;
-      if (customer.opt_in) customersByStore[store].optIn++;
+      ordersByStore[storeId].total++;
+      if (order.opt_in === 1 || order.opt_in === true) {
+        ordersByStore[storeId].optIn++;
+      }
     });
 
     // Calculate opt-in rates per store
-    Object.keys(customersByStore).forEach(store => {
-      const data = customersByStore[store];
+    Object.keys(ordersByStore).forEach(store => {
+      const data = ordersByStore[store];
       data.optInRate = data.total > 0 ? (data.optIn / data.total) * 100 : 0;
     });
 
-    // Product analysis - what products do opt-in customers buy?
-    const optInCustomerIds = new Set(optInCustomers.map(c => c.id));
-    const optOutCustomerIds = new Set(optOutCustomers.map(c => c.id));
+    // Geographic analysis from destination JSON
+    const ordersByCountry: Record<string, { total: number; optIn: number }> = {};
+    const ordersByCity: Record<string, { total: number; optIn: number }> = {};
 
-    const optInOrderIds = new Set(
-      orders?.filter(o => optInCustomerIds.has(o.customer_id)).map(o => o.id) || []
-    );
-    const optOutOrderIds = new Set(
-      orders?.filter(o => optOutCustomerIds.has(o.customer_id)).map(o => o.id) || []
-    );
+    orders.forEach((order: any) => {
+      let destination: any = null;
+      try {
+        destination = typeof order.destination === 'string' 
+          ? JSON.parse(order.destination) 
+          : order.destination;
+      } catch (e) {
+        // Ignore parse errors
+      }
+
+      const country = destination?.country || destination?.country_code || 'Unknown';
+      const city = destination?.city || 'Unknown';
+      const isOptIn = order.opt_in === 1 || order.opt_in === true;
+
+      if (!ordersByCountry[country]) {
+        ordersByCountry[country] = { total: 0, optIn: 0 };
+      }
+      ordersByCountry[country].total++;
+      if (isOptIn) ordersByCountry[country].optIn++;
+
+      if (!ordersByCity[city]) {
+        ordersByCity[city] = { total: 0, optIn: 0 };
+      }
+      ordersByCity[city].total++;
+      if (isOptIn) ordersByCity[city].optIn++;
+    });
+
+    // Product analysis - what products do opt-in customers buy?
+    const optInOrderIds = new Set(optInOrders.map((o: any) => o.id));
+    const optOutOrderIds = new Set(optOutOrders.map((o: any) => o.id));
 
     const optInProducts: Record<string, { quantity: number; revenue: number }> = {};
     const optOutProducts: Record<string, { quantity: number; revenue: number }> = {};
 
-    lineItems?.forEach(item => {
+    lineItems.forEach((item: any) => {
       const productName = item.product_title || 'Unknown';
-      
+      const quantity = Number(item.quantity) || 1;
+      const price = Number(item.total_price) || 0;
+
       if (optInOrderIds.has(item.order_id)) {
         if (!optInProducts[productName]) {
           optInProducts[productName] = { quantity: 0, revenue: 0 };
         }
-        optInProducts[productName].quantity += item.quantity || 1;
-        optInProducts[productName].revenue += (item.price || 0) * (item.quantity || 1);
+        optInProducts[productName].quantity += quantity;
+        optInProducts[productName].revenue += price;
       }
 
       if (optOutOrderIds.has(item.order_id)) {
         if (!optOutProducts[productName]) {
           optOutProducts[productName] = { quantity: 0, revenue: 0 };
         }
-        optOutProducts[productName].quantity += item.quantity || 1;
-        optOutProducts[productName].revenue += (item.price || 0) * (item.quantity || 1);
+        optOutProducts[productName].quantity += quantity;
+        optOutProducts[productName].revenue += price;
       }
     });
 
     // Calculate average order values
-    const optInOrders = orders?.filter(o => optInCustomerIds.has(o.customer_id)) || [];
-    const optOutOrders = orders?.filter(o => optOutCustomerIds.has(o.customer_id)) || [];
-
     const avgOrderValueOptIn = optInOrders.length > 0 
-      ? optInOrders.reduce((sum, o) => sum + (o.total_price || 0), 0) / optInOrders.length 
+      ? optInOrders.reduce((sum: number, o: any) => sum + (Number(o.total_price) || 0), 0) / optInOrders.length 
       : 0;
     const avgOrderValueOptOut = optOutOrders.length > 0 
-      ? optOutOrders.reduce((sum, o) => sum + (o.total_price || 0), 0) / optOutOrders.length 
+      ? optOutOrders.reduce((sum: number, o: any) => sum + (Number(o.total_price) || 0), 0) / optOutOrders.length 
       : 0;
 
     // Temporal analysis - when do opt-ins happen?
     const optInsByHour: Record<number, number> = {};
     const optInsByDay: Record<number, number> = {};
 
-    optInCustomers.forEach(customer => {
-      if (customer.created_at) {
-        const date = new Date(customer.created_at);
-        const hour = date.getHours();
-        const day = date.getDay();
-        
-        optInsByHour[hour] = (optInsByHour[hour] || 0) + 1;
-        optInsByDay[day] = (optInsByDay[day] || 0) + 1;
+    optInOrders.forEach((order: any) => {
+      const createdAt = order.shopify_created_at || order.created_at;
+      if (createdAt) {
+        const date = new Date(createdAt);
+        if (!isNaN(date.getTime())) {
+          const hour = date.getHours();
+          const day = date.getDay();
+          
+          optInsByHour[hour] = (optInsByHour[hour] || 0) + 1;
+          optInsByDay[day] = (optInsByDay[day] || 0) + 1;
+        }
       }
     });
 
@@ -174,7 +198,8 @@ serve(async (req) => {
       .map(([name, data]) => ({ name, ...data }));
 
     // Sort geographic data
-    const topCountries = Object.entries(customersByCountry)
+    const topCountries = Object.entries(ordersByCountry)
+      .filter(([name]) => name !== 'Unknown')
       .sort((a, b) => b[1].total - a[1].total)
       .slice(0, 10)
       .map(([name, data]) => ({ 
@@ -183,7 +208,8 @@ serve(async (req) => {
         optInRate: data.total > 0 ? ((data.optIn / data.total) * 100).toFixed(1) : '0' 
       }));
 
-    const topCities = Object.entries(customersByCity)
+    const topCities = Object.entries(ordersByCity)
+      .filter(([name]) => name !== 'Unknown')
       .sort((a, b) => b[1].total - a[1].total)
       .slice(0, 15)
       .map(([name, data]) => ({ 
@@ -192,22 +218,22 @@ serve(async (req) => {
         optInRate: data.total > 0 ? ((data.optIn / data.total) * 100).toFixed(1) : '0' 
       }));
 
-    const storeAnalysis = Object.entries(customersByStore)
+    const storeAnalysis = Object.entries(ordersByStore)
       .sort((a, b) => b[1].total - a[1].total)
       .map(([name, data]) => ({ 
-        name: name.replace('.myshopify.com', ''), 
+        storeId: name,
         ...data,
         optInRate: data.optInRate.toFixed(1)
       }));
 
     const analytics = {
       summary: {
-        totalCustomers: customers?.length || 0,
-        optInCustomers: optInCustomers.length,
-        optOutCustomers: optOutCustomers.length,
-        optInRate: customers?.length ? ((optInCustomers.length / customers.length) * 100).toFixed(2) : '0',
-        totalOrders: orders?.length || 0,
-        totalLineItems: lineItems?.length || 0,
+        totalCustomers: customers.length,
+        totalOrders: orders.length,
+        optInOrders: optInOrders.length,
+        optOutOrders: optOutOrders.length,
+        optInRate: orders.length ? ((optInOrders.length / orders.length) * 100).toFixed(2) : '0',
+        totalLineItems: lineItems.length,
       },
       geographic: {
         topCountries,
@@ -233,13 +259,13 @@ serve(async (req) => {
         peakDay: Object.entries(optInsByDay).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
       },
       rawSamples: {
-        customers: customers?.slice(0, 5) || [],
-        orders: orders?.slice(0, 5) || [],
-        lineItems: lineItems?.slice(0, 5) || [],
+        customers: customers.slice(0, 5),
+        orders: orders.slice(0, 5),
+        lineItems: lineItems.slice(0, 5),
       }
     };
 
-    console.log('Analytics generated successfully');
+    console.log('MySQL analytics generated successfully');
 
     return new Response(
       JSON.stringify({ status: 200, data: analytics }),
@@ -251,7 +277,17 @@ serve(async (req) => {
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch customer data';
-    console.error('Error fetching data:', error);
+    console.error('Error fetching MySQL data:', error);
+    
+    // Ensure connection is closed on error
+    if (client) {
+      try {
+        await client.close();
+      } catch (e) {
+        console.error('Error closing MySQL connection:', e);
+      }
+    }
+
     return new Response(
       JSON.stringify({ 
         status: 500, 
