@@ -19,9 +19,9 @@ interface AnalyticsChartProps {
 }
 
 const COLORS = {
-  optIn: 'hsl(142, 76%, 46%)',
-  optOut: 'hsl(0, 72%, 51%)',
-  total: 'hsl(210, 100%, 56%)',
+  optIn: 'hsl(10, 75%, 55%)',
+  optOut: 'hsl(20, 10%, 45%)',
+  total: 'hsl(200, 70%, 50%)',
 };
 
 export function AnalyticsChart({ data, type = 'bar' }: AnalyticsChartProps) {
@@ -39,17 +39,17 @@ export function AnalyticsChart({ data, type = 'bar' }: AnalyticsChartProps) {
 
   if (type === 'pie') {
     return (
-      <div className="chart-container">
-        <h3 className="mb-4 text-lg font-semibold">Opt-in Distribution</h3>
-        <div className="h-[300px]">
+      <div className="chart-container h-full">
+        <h3 className="mb-4 text-lg font-semibold text-foreground">Opt-in Distribution</h3>
+        <div className="h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={pieData}
                 cx="50%"
                 cy="50%"
-                innerRadius={60}
-                outerRadius={100}
+                innerRadius={55}
+                outerRadius={90}
                 paddingAngle={5}
                 dataKey="value"
                 label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
@@ -61,9 +61,10 @@ export function AnalyticsChart({ data, type = 'bar' }: AnalyticsChartProps) {
               </Pie>
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'hsl(220, 16%, 10%)',
-                  border: '1px solid hsl(220, 14%, 16%)',
+                  backgroundColor: 'hsl(40, 15%, 98%)',
+                  border: '1px solid hsl(40, 10%, 85%)',
                   borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                 }}
               />
               <Legend />
@@ -76,25 +77,26 @@ export function AnalyticsChart({ data, type = 'bar' }: AnalyticsChartProps) {
 
   return (
     <div className="chart-container">
-      <h3 className="mb-4 text-lg font-semibold">Store Performance</h3>
-      <div className="h-[400px]">
+      <h3 className="mb-4 text-lg font-semibold text-foreground">Store Performance</h3>
+      <div className="h-[350px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 14%, 16%)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(40, 10%, 85%)" />
             <XAxis
               dataKey="name"
-              stroke="hsl(220, 14%, 55%)"
-              tick={{ fill: 'hsl(220, 14%, 55%)', fontSize: 12 }}
+              stroke="hsl(20, 10%, 45%)"
+              tick={{ fill: 'hsl(20, 10%, 45%)', fontSize: 12 }}
               angle={-45}
               textAnchor="end"
               height={80}
             />
-            <YAxis stroke="hsl(220, 14%, 55%)" tick={{ fill: 'hsl(220, 14%, 55%)' }} />
+            <YAxis stroke="hsl(20, 10%, 45%)" tick={{ fill: 'hsl(20, 10%, 45%)' }} />
             <Tooltip
               contentStyle={{
-                backgroundColor: 'hsl(220, 16%, 10%)',
-                border: '1px solid hsl(220, 14%, 16%)',
+                backgroundColor: 'hsl(40, 15%, 98%)',
+                border: '1px solid hsl(40, 10%, 85%)',
                 borderRadius: '8px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
               }}
             />
             <Legend />
