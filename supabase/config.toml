@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.import-orders-csv]
 verify_jwt = false
+
+[functions.analyze-order-data]
+verify_jwt = false
