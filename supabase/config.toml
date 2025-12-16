@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.analyze-order-data]
 verify_jwt = false
+
+[functions.mysql-data]
+verify_jwt = false

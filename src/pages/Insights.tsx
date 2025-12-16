@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Lightbulb, TrendingUp, TrendingDown, Minus, Package, Users, Recycle, Target, 
-  RefreshCw, Brain, MapPin, Clock, ShoppingCart, Store, Zap, AlertCircle, CheckCircle,
-  Upload, FileSpreadsheet, Database, Calendar
+  RefreshCw, Brain, MapPin, Clock, ShoppingCart, Store, Zap,
+  Database, Calendar
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { useMySQLData, OrderAnalytics } from '@/hooks/useMySQLData';
 
 interface Insight {
   id: string;
@@ -62,49 +63,6 @@ interface CROAnalysis {
   rawAnalysis?: string;
 }
 
-interface OrderAnalytics {
-  summary: {
-    totalOrders: number;
-    totalOptIns: number;
-    totalOptOuts: number;
-    optInRate: string;
-    avgOptInOrderValue: string;
-    avgOptOutOrderValue: string;
-    valueDifference: string;
-  };
-  orderValueAnalysis: Array<{
-    range: string;
-    total: number;
-    optIns: number;
-    optInRate: string;
-  }>;
-  geographic: {
-    topCities: Array<{ name: string; total: number; optIn: number; optInRate: string; avgOrderValue: string }>;
-    bestCitiesByOptIn: Array<{ name: string; total: number; optIn: number; optInRate: string }>;
-    topCountries: Array<{ name: string; total: number; optIn: number; optInRate: string; avgOrderValue: string }>;
-    topProvinces: Array<{ name: string; total: number; optIn: number; optInRate: string }>;
-  };
-  stores: Array<{
-    storeId: string;
-    total: number;
-    optIn: number;
-    optInRate: string;
-    avgOrderValue: string;
-    totalRevenue: string;
-  }>;
-  temporal: {
-    byDayOfWeek: Array<{ day: string; dayNum: number; total: number; optIn: number; optInRate: string }>;
-    byMonth: Array<{ month: string; total: number; optIn: number; optInRate: string }>;
-  };
-  insights: Array<{
-    type: string;
-    title: string;
-    description: string;
-    value: string;
-    impact: 'high' | 'medium' | 'low';
-  }>;
-}
-
 const insightTypeIcons: Record<string, React.ReactNode> = {
   return_rate: <Recycle className="h-5 w-5" />,
   opt_in_rate: <Target className="h-5 w-5" />,
@@ -132,9 +90,9 @@ const impactColors = {
 };
 
 const STORAGE_KEYS = {
-  ORDER_ANALYTICS: 'kvatt_order_analytics',
-  CRO_ANALYSIS: 'kvatt_cro_analysis',
-  LAST_ANALYZED: 'kvatt_last_analyzed',
+  ORDER_ANALYTICS: 'kvatt_mysql_order_analytics',
+  CRO_ANALYSIS: 'kvatt_mysql_cro_analysis',
+  LAST_ANALYZED: 'kvatt_mysql_last_analyzed',
 };
 
 const loadFromStorage = <T,>(key: string): T | null => {
@@ -161,6 +119,9 @@ const Insights = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('cro');
   
+  // MySQL Data hook
+  const { getOrderAnalytics, getMerchants: fetchMySQLMerchants, isLoading: isMySQLLoading } = useMySQLData();
+  
   // CRO Analysis state - load from storage initially
   const [orderAnalytics, setOrderAnalytics] = useState<OrderAnalytics | null>(() => 
     loadFromStorage<OrderAnalytics>(STORAGE_KEYS.ORDER_ANALYTICS)
@@ -173,14 +134,17 @@ const Insights = () => {
   );
   const [isFetchingData, setIsFetchingData] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
-  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
-  const [orderCount, setOrderCount] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
+      // Fetch merchants from MySQL
+      const mysqlMerchants = await fetchMySQLMerchants();
+      if (mysqlMerchants) {
+        setMerchants(mysqlMerchants.map(m => ({ id: m.id, name: m.name })));
+      }
+
+      // Fetch traditional insights from Supabase (if any exist)
       let query = supabase
         .from('insights')
         .select(`
@@ -193,8 +157,7 @@ const Insights = () => {
         query = query.eq('merchant_id', selectedMerchant);
       }
 
-      const { data: insightsResult, error } = await query;
-      if (error) throw error;
+      const { data: insightsResult } = await query;
 
       const formattedInsights = (insightsResult || []).map((i: any) => ({
         ...i,
@@ -203,90 +166,33 @@ const Insights = () => {
       }));
 
       setInsights(formattedInsights);
-
-      const { data: merchantResult } = await supabase.from('merchants').select('id, name');
-      setMerchants(merchantResult || []);
     } catch (error) {
       console.error('Error fetching insights:', error);
-      toast.error('Failed to load insights');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const fetchOrderCount = async () => {
-    const { count } = await supabase
-      .from('imported_orders')
-      .select('*', { count: 'exact', head: true });
-    setOrderCount(count || 0);
-  };
-
   const fetchOrderAnalytics = async () => {
     setIsFetchingData(true);
     try {
-      const { data, error } = await supabase.functions.invoke('analyze-order-data');
+      const data = await getOrderAnalytics();
       
-      if (error) throw error;
-      
-      if (data?.data) {
-        setOrderAnalytics(data.data);
-        saveToStorage(STORAGE_KEYS.ORDER_ANALYTICS, data.data);
+      if (data) {
+        setOrderAnalytics(data);
+        saveToStorage(STORAGE_KEYS.ORDER_ANALYTICS, data);
         const now = new Date().toISOString();
         setLastAnalyzed(now);
         localStorage.setItem(STORAGE_KEYS.LAST_ANALYZED, now);
-        toast.success(`Analyzed ${data.data.summary.totalOrders.toLocaleString()} orders`);
-      } else if (data?.error) {
-        throw new Error(data.error);
+        toast.success(`Analyzed ${data.summary.totalOrders.toLocaleString()} orders from MySQL`);
+      } else {
+        toast.error('Failed to fetch analytics from MySQL');
       }
     } catch (error: any) {
       console.error('Error fetching order analytics:', error);
       toast.error(error.message || 'Failed to analyze order data');
     } finally {
       setIsFetchingData(false);
-    }
-  };
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    setIsImporting(true);
-    setImportProgress({ current: 0, total: files.length });
-
-    let totalImported = 0;
-    let totalErrors = 0;
-
-    try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        setImportProgress({ current: i + 1, total: files.length });
-        
-        toast.info(`Processing file ${i + 1}/${files.length}: ${file.name}`);
-
-        const text = await file.text();
-        
-        const { data, error } = await supabase.functions.invoke('import-orders-csv', {
-          body: { csvData: text, batchNumber: i + 1 }
-        });
-
-        if (error) {
-          console.error(`Error importing ${file.name}:`, error);
-          totalErrors++;
-        } else if (data) {
-          totalImported += data.inserted || 0;
-        }
-      }
-
-      toast.success(`Imported ${totalImported.toLocaleString()} orders from ${files.length} files`);
-      fetchOrderCount();
-    } catch (error: any) {
-      console.error('Import error:', error);
-      toast.error(error.message || 'Failed to import CSV files');
-    } finally {
-      setIsImporting(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
   };
 
@@ -324,11 +230,18 @@ const Insights = () => {
 
   useEffect(() => {
     fetchData();
-    fetchOrderCount();
   }, [selectedMerchant]);
 
-  const formatStoreName = (storeId: string) => {
-    return `Store ${storeId}`;
+  const formatStoreName = (store: any) => {
+    if (store.name) return store.name;
+    if (store.shopifyDomain) {
+      const storePart = store.shopifyDomain.replace('.myshopify.com', '');
+      return storePart
+        .split('-')
+        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
+    return `Store ${store.storeId}`;
   };
 
   return (
@@ -338,7 +251,7 @@ const Insights = () => {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Insights</h1>
           <p className="text-sm text-muted-foreground">
-            Comprehensive CRO analytics and opt-in pattern analysis
+            CRO analytics from MySQL database - Direct data connection
           </p>
         </div>
       </div>
@@ -357,58 +270,35 @@ const Insights = () => {
 
         {/* CRO Analysis Tab */}
         <TabsContent value="cro" className="space-y-6">
-          {/* CSV Import Section */}
+          {/* MySQL Data Source Info */}
           <div className="metric-card">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-3">
                 <Database className="h-5 w-5 text-primary" />
                 <div>
-                  <h3 className="font-semibold">Order Data</h3>
+                  <h3 className="font-semibold">MySQL Database (Live)</h3>
                   <p className="text-sm text-muted-foreground">
-                    {orderCount > 0 
-                      ? `${orderCount.toLocaleString()} orders in database`
-                      : 'No orders imported yet'}
+                    {orderAnalytics 
+                      ? `${orderAnalytics.summary.totalOrders.toLocaleString()} orders available`
+                      : 'Click analyze to fetch data'}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv"
-                  multiple
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  id="csv-upload"
-                />
-                <Button 
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isImporting}
-                >
-                  <Upload className={`h-4 w-4 mr-2 ${isImporting ? 'animate-pulse' : ''}`} />
-                  {isImporting 
-                    ? `Importing ${importProgress.current}/${importProgress.total}...`
-                    : 'Import CSV Files'}
-                </Button>
+              <div className="px-3 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
+                Direct MySQL Connection
               </div>
             </div>
-            {isImporting && (
-              <div className="mt-4">
-                <Progress value={(importProgress.current / importProgress.total) * 100} className="h-2" />
-              </div>
-            )}
           </div>
 
           {/* Action Bar */}
           <div className="flex flex-wrap items-center gap-3">
             <Button 
               onClick={fetchOrderAnalytics} 
-              disabled={isFetchingData || orderCount === 0}
+              disabled={isFetchingData}
               variant="outline"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${isFetchingData ? 'animate-spin' : ''}`} />
-              {isFetchingData ? 'Analyzing...' : 'Analyze Order Data'}
+              {isFetchingData ? 'Analyzing MySQL...' : 'Analyze Order Data'}
             </Button>
             <Button 
               onClick={runCROAnalysis} 
@@ -548,7 +438,7 @@ const Insights = () => {
                   <tbody>
                     {orderAnalytics.stores.slice(0, 15).map((store, i) => (
                       <tr key={i}>
-                        <td className="font-medium">{formatStoreName(store.storeId)}</td>
+                        <td className="font-medium">{formatStoreName(store)}</td>
                         <td className="text-right text-muted-foreground">{store.total.toLocaleString()}</td>
                         <td className="text-right text-primary">{store.optIn.toLocaleString()}</td>
                         <td className="text-right">
@@ -569,14 +459,14 @@ const Insights = () => {
           {orderAnalytics && (
             <div className="grid gap-6 lg:grid-cols-2">
               {/* Top Cities */}
-              {orderAnalytics.geographic.bestCitiesByOptIn.length > 0 && (
+              {orderAnalytics.geographic.topCities.length > 0 && (
                 <div className="metric-card">
                   <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                     <MapPin className="h-5 w-5 text-primary" />
-                    Best Cities by Opt-In Rate
+                    Top Cities by Orders
                   </h2>
                   <div className="space-y-2">
-                    {orderAnalytics.geographic.bestCitiesByOptIn.slice(0, 10).map((city, i) => (
+                    {orderAnalytics.geographic.topCities.slice(0, 10).map((city, i) => (
                       <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/50">
                         <span className="text-sm font-medium">{city.name}</span>
                         <div className="flex items-center gap-4">
@@ -591,21 +481,21 @@ const Insights = () => {
                 </div>
               )}
 
-              {/* Top Provinces/Regions */}
-              {orderAnalytics.geographic.topProvinces.length > 0 && (
+              {/* Top Countries */}
+              {orderAnalytics.geographic.topCountries.length > 0 && (
                 <div className="metric-card">
                   <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                     <MapPin className="h-5 w-5 text-primary" />
-                    Opt-In by Region
+                    Opt-In by Country
                   </h2>
                   <div className="space-y-2">
-                    {orderAnalytics.geographic.topProvinces.slice(0, 10).map((province, i) => (
+                    {orderAnalytics.geographic.topCountries.slice(0, 10).map((country, i) => (
                       <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/50">
-                        <span className="text-sm font-medium">{province.name}</span>
+                        <span className="text-sm font-medium">{country.name}</span>
                         <div className="flex items-center gap-4">
-                          <span className="text-xs text-muted-foreground">{province.total.toLocaleString()} orders</span>
-                          <span className={`text-sm font-bold ${parseFloat(province.optInRate) > 10 ? 'text-primary' : ''}`}>
-                            {province.optInRate}%
+                          <span className="text-xs text-muted-foreground">{country.total.toLocaleString()} orders</span>
+                          <span className={`text-sm font-bold ${parseFloat(country.optInRate) > 10 ? 'text-primary' : ''}`}>
+                            {country.optInRate}%
                           </span>
                         </div>
                       </div>
@@ -702,14 +592,10 @@ const Insights = () => {
           {/* Empty State */}
           {!orderAnalytics && !isFetchingData && (
             <div className="text-center py-12">
-              <FileSpreadsheet className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">
-                {orderCount === 0 ? 'No Order Data Yet' : 'Ready to Analyze'}
-              </h3>
+              <Database className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">Ready to Analyze MySQL Data</h3>
               <p className="text-muted-foreground mb-4">
-                {orderCount === 0 
-                  ? 'Import your order CSV files to get started with analytics.'
-                  : `Click "Analyze Order Data" to process ${orderCount.toLocaleString()} orders.`}
+                Click "Analyze Order Data" to fetch and process data directly from your MySQL database.
               </p>
             </div>
           )}
@@ -743,7 +629,7 @@ const Insights = () => {
               <Lightbulb className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">No Insights Yet</h3>
               <p className="text-muted-foreground mb-4">
-                Use the CRO Analysis tab for AI-powered insights from your order data.
+                Use the CRO Analysis tab for AI-powered insights from your MySQL order data.
               </p>
             </div>
           ) : (
