@@ -28,7 +28,23 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useMySQLData, Merchant } from '@/hooks/useMySQLData';
+
+interface Merchant {
+  id: string;
+  name: string;
+  shopifyDomain: string;
+  totalOptIns: number;
+  totalCheckouts: number;
+  optInRate: number;
+  status: 'active' | 'pending' | 'inactive';
+}
+
+interface AnalyticsData {
+  store: string;
+  total_checkouts: number;
+  opt_ins: number;
+  opt_outs: number;
+}
 
 const statusColors = {
   active: 'bg-primary/10 text-primary',
@@ -37,7 +53,6 @@ const statusColors = {
 };
 
 const formatStoreName = (domain: string): string => {
-  if (!domain) return 'Unknown Store';
   const storePart = domain.replace('.myshopify.com', '');
   return storePart
     .split('-')
@@ -47,22 +62,76 @@ const formatStoreName = (domain: string): string => {
 
 const Merchants = () => {
   const [merchants, setMerchants] = useState<Merchant[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [newMerchant, setNewMerchant] = useState({ name: '', shopifyDomain: '' });
-  
-  const { getMerchants, isLoading } = useMySQLData();
 
   const fetchMerchants = async () => {
-    const data = await getMerchants(100);
-    if (data) {
-      const formattedMerchants = data.map((m) => ({
-        ...m,
-        name: m.name || formatStoreName(m.shopifyDomain),
-      }));
-      setMerchants(formattedMerchants);
-    } else {
-      toast.error('Failed to fetch merchants from database');
+    setIsLoading(true);
+    try {
+      const endDate = new Date().toISOString().split('T')[0];
+      const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+      const [storesRes, analyticsRes] = await Promise.all([
+        fetch('https://shopify.kvatt.com/api/get-stores', {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': 'Bearer %^75464tnfsdhndsfbgr54'
+          }
+        }),
+        fetch(`https://shopify.kvatt.com/api/get-alaytics?store=all&start_date=${startDate}&end_date=${endDate}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': 'Bearer %^75464tnfsdhndsfbgr54'
+          }
+        })
+      ]);
+
+      const storesData = await storesRes.json();
+      const analyticsData = await analyticsRes.json();
+
+      if (storesData.status === 200 && storesData.data) {
+        const analyticsMap = new Map<string, AnalyticsData>();
+        if (analyticsData.status === 200 && analyticsData.data) {
+          analyticsData.data.forEach((item: AnalyticsData) => {
+            analyticsMap.set(item.store, item);
+          });
+        }
+
+        const merchantsData: Merchant[] = storesData.data.map((domain: string, index: number) => {
+          const analytics = analyticsMap.get(domain);
+          const totalCheckouts = analytics?.total_checkouts || 0;
+          const optIns = analytics?.opt_ins || 0;
+          const optInRate = totalCheckouts > 0 ? Math.round((optIns / totalCheckouts) * 100) : 0;
+          
+          let status: 'active' | 'pending' | 'inactive' = 'inactive';
+          if (totalCheckouts > 0) {
+            status = 'active';
+          } else {
+            status = 'pending';
+          }
+
+          return {
+            id: String(index + 1),
+            name: formatStoreName(domain),
+            shopifyDomain: domain,
+            totalOptIns: optIns,
+            totalCheckouts: totalCheckouts,
+            optInRate: optInRate,
+            status: status,
+          };
+        });
+
+        setMerchants(merchantsData);
+      }
+    } catch (error) {
+      console.error('Error fetching merchants:', error);
+      toast.error('Failed to fetch merchants');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -73,7 +142,7 @@ const Merchants = () => {
   const filteredMerchants = merchants.filter(
     (merchant) =>
       merchant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (merchant.shopifyDomain?.toLowerCase() || '').includes(searchQuery.toLowerCase())
+      merchant.shopifyDomain.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleAddMerchant = () => {
@@ -82,14 +151,13 @@ const Merchants = () => {
       return;
     }
 
-    // Note: This would need a MySQL insert action if you want to persist
     const merchant: Merchant = {
       id: String(merchants.length + 1),
       name: newMerchant.name,
       shopifyDomain: newMerchant.shopifyDomain,
       totalOptIns: 0,
       totalCheckouts: 0,
-      optInRate: '0',
+      optInRate: 0,
       status: 'pending',
     };
 
@@ -105,12 +173,11 @@ const Merchants = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Merchants</h1>
           <p className="text-sm text-muted-foreground">
-            Manage merchants using Kvatt renewable packaging (MySQL Data)
+            Manage merchants using Kvatt renewable packaging
           </p>
         </div>
         <div className="flex gap-2">
@@ -160,7 +227,6 @@ const Merchants = () => {
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="metric-card">
           <div className="flex items-center gap-3">
@@ -203,7 +269,6 @@ const Merchants = () => {
         </div>
       </div>
 
-      {/* Search */}
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
@@ -214,7 +279,6 @@ const Merchants = () => {
         />
       </div>
 
-      {/* Table */}
       <div className="data-table">
         <Table>
           <TableHeader>
@@ -252,7 +316,7 @@ const Merchants = () => {
                 <TableRow key={merchant.id} className="border-border">
                   <TableCell className="font-medium">{merchant.name}</TableCell>
                   <TableCell className="font-mono text-sm text-muted-foreground">
-                    {merchant.shopifyDomain || '-'}
+                    {merchant.shopifyDomain}
                   </TableCell>
                   <TableCell className="text-right font-mono">
                     {merchant.totalOptIns.toLocaleString()}
@@ -262,8 +326,8 @@ const Merchants = () => {
                   </TableCell>
                   <TableCell className="text-right">
                     <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
-                      parseFloat(merchant.optInRate) >= 5 ? 'bg-primary/10 text-primary' :
-                      parseFloat(merchant.optInRate) >= 1 ? 'bg-chart-total/10 text-chart-total' :
+                      merchant.optInRate >= 5 ? 'bg-primary/10 text-primary' :
+                      merchant.optInRate >= 1 ? 'bg-chart-total/10 text-chart-total' :
                       'bg-muted text-muted-foreground'
                     }`}>
                       {merchant.optInRate}%
