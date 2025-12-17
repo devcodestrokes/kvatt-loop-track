@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Lightbulb, TrendingUp, TrendingDown, Minus, Package, Users, Recycle, Target, 
   RefreshCw, Brain, MapPin, Clock, ShoppingCart, Store, Zap,
@@ -16,6 +16,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { MultiStoreSelector } from '@/components/dashboard/MultiStoreSelector';
+import { useStoreFilter } from '@/hooks/useStoreFilter';
+import { Store as StoreType } from '@/types/analytics';
 
 interface Insight {
   id: string;
@@ -178,6 +181,31 @@ const Insights = () => {
   const [orderCount, setOrderCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Derive stores from orderAnalytics for filtering
+  const availableStores = useMemo((): StoreType[] => {
+    if (!orderAnalytics?.stores) return [];
+    return orderAnalytics.stores.map(s => ({
+      id: s.storeId,
+      name: s.storeId.replace('.myshopify.com', '')
+    }));
+  }, [orderAnalytics?.stores]);
+
+  const {
+    selectedStores,
+    toggleStore,
+    selectAll,
+    unselectAll,
+  } = useStoreFilter(availableStores);
+
+  // Filter store analytics by selected stores
+  const filteredStoreAnalytics = useMemo(() => {
+    if (!orderAnalytics?.stores) return [];
+    if (selectedStores.length === 0 || selectedStores.length === availableStores.length) {
+      return orderAnalytics.stores;
+    }
+    return orderAnalytics.stores.filter(s => selectedStores.includes(s.storeId));
+  }, [orderAnalytics?.stores, selectedStores, availableStores.length]);
+
   const fetchData = async () => {
     setIsLoading(true);
     try {
@@ -339,6 +367,15 @@ const Insights = () => {
             Comprehensive CRO analytics and opt-in pattern analysis
           </p>
         </div>
+        {availableStores.length > 0 && (
+          <MultiStoreSelector
+            stores={availableStores}
+            selectedStores={selectedStores}
+            onToggleStore={toggleStore}
+            onSelectAll={selectAll}
+            onUnselectAll={unselectAll}
+          />
+        )}
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -526,7 +563,7 @@ const Insights = () => {
           )}
 
           {/* Store Performance */}
-          {orderAnalytics && orderAnalytics.stores.length > 0 && (
+          {filteredStoreAnalytics.length > 0 && (
             <div className="metric-card">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <Store className="h-5 w-5 text-primary" />
@@ -544,7 +581,7 @@ const Insights = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {orderAnalytics.stores.slice(0, 15).map((store, i) => (
+                    {filteredStoreAnalytics.slice(0, 15).map((store, i) => (
                       <tr key={i}>
                         <td className="font-medium">{formatStoreName(store.storeId)}</td>
                         <td className="text-right text-muted-foreground">{store.total.toLocaleString()}</td>

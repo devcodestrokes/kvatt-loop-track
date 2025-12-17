@@ -1,10 +1,11 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { subDays } from 'date-fns';
 import { ShoppingCart, CheckCircle, XCircle, TrendingUp, Sparkles } from 'lucide-react';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useStoreFilter } from '@/hooks/useStoreFilter';
 import { DateRange } from '@/types/analytics';
 import { MetricCard } from '@/components/dashboard/MetricCard';
-import { StoreSelector } from '@/components/dashboard/StoreSelector';
+import { MultiStoreSelector } from '@/components/dashboard/MultiStoreSelector';
 import { DateRangePicker } from '@/components/dashboard/DateRangePicker';
 import { AnalyticsChart } from '@/components/dashboard/AnalyticsChart';
 import { DataTable } from '@/components/dashboard/DataTable';
@@ -21,21 +22,52 @@ const Analytics = () => {
     error,
     fetchStores,
     fetchAnalytics,
-    getTotals,
-    getOptInRate,
   } = useAnalytics();
 
-  const [selectedStore, setSelectedStore] = useState('all');
+  const {
+    selectedStores,
+    toggleStore,
+    selectAll,
+    unselectAll,
+    isInitialized,
+  } = useStoreFilter(stores);
+
   const [dateRange, setDateRange] = useState<DateRange>({
     from: subDays(new Date(), 29),
     to: new Date(),
   });
   const [lastUpdated, setLastUpdated] = useState<Date>();
 
+  // Filter data based on selected stores
+  const filteredData = useMemo(() => {
+    if (selectedStores.length === 0 || selectedStores.length === stores.length) {
+      return data;
+    }
+    return data.filter(item => selectedStores.includes(item.store));
+  }, [data, selectedStores, stores.length]);
+
+  // Calculate totals from filtered data
+  const totals = useMemo(() => {
+    return filteredData.reduce(
+      (acc, item) => ({
+        totalCheckouts: acc.totalCheckouts + (item.total_checkouts || 0),
+        totalOptIns: acc.totalOptIns + (item.opt_ins || 0),
+        totalOptOuts: acc.totalOptOuts + (item.opt_outs || 0),
+      }),
+      { totalCheckouts: 0, totalOptIns: 0, totalOptOuts: 0 }
+    );
+  }, [filteredData]);
+
+  // Calculate opt-in rate with 2 decimals
+  const optInRate = useMemo(() => {
+    if (totals.totalCheckouts === 0) return '0.00';
+    return ((totals.totalOptIns / totals.totalCheckouts) * 100).toFixed(2);
+  }, [totals]);
+
   useEffect(() => {
     const loadInitialData = async () => {
       await fetchStores();
-      await fetchAnalytics(dateRange, selectedStore);
+      await fetchAnalytics(dateRange, 'all');
       setLastUpdated(new Date());
     };
     loadInitialData();
@@ -51,27 +83,18 @@ const Analytics = () => {
   }, [error]);
 
   const handleRefresh = async () => {
-    await fetchAnalytics(dateRange, selectedStore);
+    await fetchAnalytics(dateRange, 'all');
     setLastUpdated(new Date());
     toast.success('Data refreshed');
-  };
-
-  const handleStoreChange = async (storeId: string) => {
-    setSelectedStore(storeId);
-    await fetchAnalytics(dateRange, storeId);
-    setLastUpdated(new Date());
   };
 
   const handleDateRangeChange = async (range: DateRange) => {
     setDateRange(range);
     if (range.from && range.to) {
-      await fetchAnalytics(range, selectedStore);
+      await fetchAnalytics(range, 'all');
       setLastUpdated(new Date());
     }
   };
-
-  const totals = getTotals();
-  const optInRate = getOptInRate();
 
   return (
     <div className="space-y-8">
@@ -109,10 +132,12 @@ const Analytics = () => {
 
       {/* Filters */}
       <div className="filter-bar flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <StoreSelector
+        <MultiStoreSelector
           stores={stores}
-          selectedStore={selectedStore}
-          onStoreChange={handleStoreChange}
+          selectedStores={selectedStores}
+          onToggleStore={toggleStore}
+          onSelectAll={selectAll}
+          onUnselectAll={unselectAll}
           disabled={isLoading}
         />
         <DateRangePicker
@@ -159,19 +184,19 @@ const Analytics = () => {
           </div>
 
           {/* Charts */}
-          {data.length > 0 && (
+          {filteredData.length > 0 && (
             <div className="grid gap-6 lg:grid-cols-3">
               <div className="lg:col-span-2">
-                <AnalyticsChart data={data} type="bar" />
+                <AnalyticsChart data={filteredData} type="bar" />
               </div>
               <div>
-                <AnalyticsChart data={data} type="pie" />
+                <AnalyticsChart data={filteredData} type="pie" />
               </div>
             </div>
           )}
 
           {/* Data Table */}
-          <DataTable data={data} />
+          <DataTable data={filteredData} />
         </>
       )}
     </div>
