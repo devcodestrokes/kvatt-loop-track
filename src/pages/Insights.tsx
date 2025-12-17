@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Lightbulb, TrendingUp, TrendingDown, Minus, Package, Users, Recycle, Target, 
   RefreshCw, Brain, MapPin, Clock, ShoppingCart, Store, Zap,
-  Upload, FileSpreadsheet, Database, Calendar
+  Upload, FileSpreadsheet, Database, Calendar, Smartphone, Monitor, ShoppingBag,
+  BarChart3, Layers
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -525,6 +526,112 @@ const Insights = () => {
               </div>
             </div>
           )}
+
+          {/* Behavioral Signals (Non-PII Data) */}
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Layers className="h-5 w-5 text-primary" />
+              Behavioral Signals
+              <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-normal">
+                Non-PII
+              </span>
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {/* Device Type */}
+              <div className="metric-card">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Smartphone className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Device Type</h3>
+                    <p className="text-xs text-muted-foreground">Mobile vs Desktop</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-2 rounded bg-muted/50">
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">Mobile</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">Not captured</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded bg-muted/50">
+                    <div className="flex items-center gap-2">
+                      <Monitor className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">Desktop</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground">Not captured</span>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-3 italic">
+                  Schema ready for future tracking
+                </p>
+              </div>
+
+              {/* Basket Composition */}
+              <div className="metric-card">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <ShoppingBag className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Basket Composition</h3>
+                    <p className="text-xs text-muted-foreground">High-level categories</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-2 rounded bg-muted/50">
+                    <span className="text-sm">Avg Items/Order</span>
+                    <span className="text-sm text-muted-foreground">Not captured</span>
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded bg-muted/50">
+                    <span className="text-sm">Multi-item Orders</span>
+                    <span className="text-sm text-muted-foreground">Not captured</span>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-3 italic">
+                  Requires line item data import
+                </p>
+              </div>
+
+              {/* Retailer Type */}
+              <div className="metric-card">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Store className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Retailer Comparison</h3>
+                    <p className="text-xs text-muted-foreground">Performance by store type</p>
+                  </div>
+                </div>
+                {filteredStoreAnalytics.length > 0 ? (
+                  <div className="space-y-2">
+                    {filteredStoreAnalytics.slice(0, 3).map((store, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/50">
+                        <span className="text-sm truncate max-w-[120px]">
+                          {store.storeId.replace('.myshopify.com', '')}
+                        </span>
+                        <span className={`text-sm font-semibold ${parseFloat(store.optInRate) > 10 ? 'text-primary' : ''}`}>
+                          {store.optInRate}%
+                        </span>
+                      </div>
+                    ))}
+                    {filteredStoreAnalytics.length > 3 && (
+                      <p className="text-xs text-muted-foreground text-center">
+                        +{filteredStoreAnalytics.length - 3} more stores
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground text-sm">
+                    Run analysis to see store comparison
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
           {/* Order Value Analysis */}
           {orderAnalytics && orderAnalytics.orderValueAnalysis.length > 0 && (
