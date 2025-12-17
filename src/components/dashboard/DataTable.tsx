@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { format, getISOWeek } from 'date-fns';
 import {
   Table,
   TableBody,
@@ -6,19 +8,28 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { AnalyticsData } from '@/types/analytics';
-import { ArrowUpDown, Download } from 'lucide-react';
+import { AnalyticsData, DateRange } from '@/types/analytics';
+import { ArrowUpDown, Download, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { getWidgetLabel, getWidgetConfig } from '@/config/widgetConfig';
 
 interface DataTableProps {
   data: AnalyticsData[];
+  dateRange?: DateRange;
+  showWidgetStatus?: boolean;
 }
 
 type SortField = 'store' | 'total_checkouts' | 'opt_ins' | 'opt_outs';
 type SortDirection = 'asc' | 'desc';
 
-export function DataTable({ data }: DataTableProps) {
+export function DataTable({ data, dateRange, showWidgetStatus = true }: DataTableProps) {
   const [sortField, setSortField] = useState<SortField>('opt_ins');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
@@ -47,23 +58,39 @@ export function DataTable({ data }: DataTableProps) {
   });
 
   const exportToCSV = () => {
-    const headers = ['Store', 'Total Checkouts', 'Opt-ins', 'Opt-outs', 'Opt-in Rate'];
-    const rows = data.map((item) => [
-      item.store,
-      item.total_checkouts,
-      item.opt_ins,
-      item.opt_outs,
-      item.total_checkouts > 0
-        ? `${((item.opt_ins / item.total_checkouts) * 100).toFixed(1)}%`
-        : '0%',
-    ]);
+    const today = new Date();
+    const weekNum = getISOWeek(today);
+    const dateStr = dateRange?.from && dateRange?.to
+      ? `${format(dateRange.from, 'yyyy-MM-dd')}_to_${format(dateRange.to, 'yyyy-MM-dd')}`
+      : format(today, 'yyyy-MM-dd');
+    
+    const headers = ['Store', 'Date Range', 'ISO Week', 'Total Checkouts', 'Opt-ins', 'Opt-outs', 'Opt-in Rate', 'Widget Status'];
+    const rows = data.map((item) => {
+      const optInRate = item.total_checkouts > 0
+        ? ((item.opt_ins / item.total_checkouts) * 100).toFixed(2)
+        : '0.00';
+      const widgetLabel = getWidgetLabel(item.store);
+      
+      return [
+        item.store.replace('.myshopify.com', ''),
+        dateRange?.from && dateRange?.to 
+          ? `${format(dateRange.from, 'yyyy-MM-dd')} to ${format(dateRange.to, 'yyyy-MM-dd')}`
+          : format(today, 'yyyy-MM-dd'),
+        `Week ${weekNum}`,
+        item.total_checkouts,
+        item.opt_ins,
+        item.opt_outs,
+        `${optInRate}%`,
+        widgetLabel,
+      ];
+    });
 
     const csv = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `kvatt-analytics-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `kvatt-analytics-${dateStr}.csv`;
     a.click();
   };
 
@@ -103,12 +130,29 @@ export function DataTable({ data }: DataTableProps) {
                 <SortButton field="opt_outs">Opt-outs</SortButton>
               </TableHead>
               <TableHead className="text-right text-muted-foreground">Opt-in Rate</TableHead>
+              {showWidgetStatus && (
+                <TableHead className="text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    Widget Status
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Info className="h-3 w-3" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">Read-only widget configuration</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </TableHead>
+              )}
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedData.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={showWidgetStatus ? 6 : 5} className="h-24 text-center text-muted-foreground">
                   No data available
                 </TableCell>
               </TableRow>
@@ -116,8 +160,10 @@ export function DataTable({ data }: DataTableProps) {
               sortedData.map((item, index) => {
                 const optInRate =
                   item.total_checkouts > 0
-                    ? ((item.opt_ins / item.total_checkouts) * 100).toFixed(1)
-                    : '0';
+                    ? ((item.opt_ins / item.total_checkouts) * 100).toFixed(2)
+                    : '0.00';
+                const widgetConfig = getWidgetConfig(item.store);
+                
                 return (
                   <TableRow key={index} className="border-border hover:bg-secondary/50">
                     <TableCell className="font-medium text-foreground">
@@ -145,6 +191,17 @@ export function DataTable({ data }: DataTableProps) {
                         {optInRate}%
                       </span>
                     </TableCell>
+                    {showWidgetStatus && (
+                      <TableCell>
+                        {widgetConfig ? (
+                          <Badge variant="outline" className="text-xs">
+                            {widgetConfig.label}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Not configured</span>
+                        )}
+                      </TableCell>
+                    )}
                   </TableRow>
                 );
               })
