@@ -6,9 +6,8 @@
 
 @layer base {
   :root {
-    /* Kvatt Brand Theme - Stone, Hot Terracotta, Earth */
-    /* Stone #e6e3db background */
-    --background: 44 22% 88%;
+    /* Kvatt Brand Theme - White background, Hot Terracotta, Earth */
+    --background: 0 0% 100%;
     --foreground: 0 0% 0%;
 
     --card: 0 0% 100%;
@@ -59,11 +58,11 @@
     /* Brand gradients */
     --gradient-primary: linear-gradient(135deg, hsl(2 100% 68%), hsl(7 44% 36%));
     --gradient-primary-soft: linear-gradient(135deg, hsl(2 100% 68% / 0.1), hsl(7 44% 36% / 0.1));
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(44 18% 96%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(0 0% 98%));
     --gradient-glow: radial-gradient(ellipse at top, hsl(2 100% 68% / 0.15), transparent 50%);
-    --gradient-mesh: radial-gradient(at 40% 20%, hsl(2 100% 68% / 0.06) 0px, transparent 50%),
-                     radial-gradient(at 80% 0%, hsl(7 44% 36% / 0.04) 0px, transparent 40%),
-                     radial-gradient(at 0% 50%, hsl(44 22% 88%) 0px, transparent 50%);
+    --gradient-mesh: radial-gradient(at 40% 20%, hsl(2 100% 68% / 0.04) 0px, transparent 50%),
+                     radial-gradient(at 80% 0%, hsl(7 44% 36% / 0.03) 0px, transparent 40%),
+                     radial-gradient(at 0% 50%, hsl(0 0% 100%) 0px, transparent 50%);
 
     /* Brand shadows */
     --shadow-xs: 0 1px 2px hsl(0 0% 0% / 0.04);
