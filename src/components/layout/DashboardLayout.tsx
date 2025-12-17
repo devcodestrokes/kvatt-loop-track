@@ -1,6 +1,6 @@
-import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
-import { AppSidebar } from './AppSidebar';
-import { Menu } from 'lucide-react';
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import { AppSidebar } from "./AppSidebar";
+import { Menu } from "lucide-react";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -20,9 +20,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="flex-1" />
           </header>
           <main className="flex-1 p-6 sm:p-8 lg:p-10">
-            <div className="animate-fade-in">
-              {children}
-            </div>
+            <div className="animate-fade-in">{children}</div>
           </main>
         </SidebarInset>
       </div>
