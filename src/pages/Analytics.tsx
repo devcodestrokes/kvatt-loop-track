@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import { format } from 'date-fns';
 import { ShoppingCart, CheckCircle, XCircle, TrendingUp, Sparkles, RefreshCw } from 'lucide-react';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useStoreFilter } from '@/hooks/useStoreFilter';
@@ -9,9 +10,13 @@ import { MultiStoreSelector } from '@/components/dashboard/MultiStoreSelector';
 import { DateRangePicker } from '@/components/dashboard/DateRangePicker';
 import { AnalyticsChart } from '@/components/dashboard/AnalyticsChart';
 import { DataTable } from '@/components/dashboard/DataTable';
+import { WeeklyBreakdown } from '@/components/dashboard/WeeklyBreakdown';
 import { LoadingSkeleton } from '@/components/dashboard/LoadingSkeleton';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+
+const ANALYTICS_API_URL = "https://shopify.kvatt.com/api/get-alaytics";
+const AUTH_TOKEN = "Bearer %^75464tnfsdhndsfbgr54";
 
 const Analytics = () => {
   const {
@@ -68,6 +73,41 @@ const Analytics = () => {
     if (totals.totalCheckouts === 0) return '0.00';
     return ((totals.totalOptIns / totals.totalCheckouts) * 100).toFixed(2);
   }, [totals]);
+
+  // Function to fetch daily data for WeeklyBreakdown
+  const fetchDailyData = useCallback(async (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    try {
+      const url = `${ANALYTICS_API_URL}?store=all&start_date=${dateStr}&end_date=${dateStr}`;
+      const response = await fetch(url, {
+        headers: {
+          "Authorization": AUTH_TOKEN,
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        }
+      });
+      const result = await response.json();
+      
+      if (result.status === 200 && result.data?.length) {
+        // Filter by selected stores if needed
+        const filtered = selectedStores.length > 0 && selectedStores.length !== stores.length
+          ? result.data.filter((item: any) => selectedStores.includes(item.store))
+          : result.data;
+        
+        return filtered.reduce(
+          (acc: any, item: any) => ({
+            checkouts: acc.checkouts + (item.total_checkouts || 0),
+            optIns: acc.optIns + (item.opt_ins || 0),
+            optOuts: acc.optOuts + (item.opt_outs || 0),
+          }),
+          { checkouts: 0, optIns: 0, optOuts: 0 }
+        );
+      }
+      return { checkouts: 0, optIns: 0, optOuts: 0 };
+    } catch {
+      return { checkouts: 0, optIns: 0, optOuts: 0 };
+    }
+  }, [selectedStores, stores.length]);
 
   useEffect(() => {
     if (!dateRange) return;
@@ -204,8 +244,15 @@ const Analytics = () => {
             </div>
           )}
 
+          {/* Weekly Breakdown */}
+          <WeeklyBreakdown 
+            fetchDailyData={fetchDailyData}
+            selectedStores={selectedStores}
+            isLoading={isLoading}
+          />
+
           {/* Data Table */}
-          <DataTable data={filteredData} />
+          <DataTable data={filteredData} dateRange={dateRange || undefined} />
         </>
       )}
     </div>
