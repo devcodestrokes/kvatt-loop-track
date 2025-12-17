@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { ArrowUpDown, X, Download } from 'lucide-react';
+import { ArrowUpDown, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Sheet,
@@ -16,6 +16,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +49,8 @@ interface OptInsDetailViewProps {
 type SortField = 'order_number' | 'total_price' | 'shopify_created_at' | 'store_id';
 type SortDirection = 'asc' | 'desc';
 
+const PAGE_SIZE_OPTIONS = [50, 100, 150, 200] as const;
+
 export function OptInsDetailView({ 
   open, 
   onOpenChange, 
@@ -53,6 +62,8 @@ export function OptInsDetailView({
   const [isLoading, setIsLoading] = useState(false);
   const [sortField, setSortField] = useState<SortField>('shopify_created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [pageSize, setPageSize] = useState<number>(50);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     if (open) {
@@ -60,17 +71,20 @@ export function OptInsDetailView({
     }
   }, [open, selectedStores, dateFrom, dateTo]);
 
+  // Reset to first page when page size changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [pageSize]);
+
   const fetchOptInOrders = async () => {
     setIsLoading(true);
     try {
-      // Query all opt-in orders - store filtering disabled due to ID mismatch
-      // The imported_orders table uses numeric store_id, not domain names
       const { data, error } = await supabase
         .from('imported_orders')
         .select('id, order_number, total_price, shopify_created_at, store_id, payment_status, city, country')
         .eq('opt_in', true)
         .order('shopify_created_at', { ascending: false })
-        .limit(500);
+        .limit(1000);
 
       if (error) {
         console.error('Error fetching opt-in orders:', error);
@@ -99,7 +113,6 @@ export function OptInsDetailView({
     let aValue = a[sortField];
     let bValue = b[sortField];
 
-    // Handle null values
     if (aValue === null) aValue = '' as any;
     if (bValue === null) bValue = '' as any;
 
@@ -113,6 +126,12 @@ export function OptInsDetailView({
       ? (aValue as number) - (bValue as number)
       : (bValue as number) - (aValue as number);
   });
+
+  // Pagination calculations
+  const totalPages = Math.ceil(sortedOrders.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedOrders = sortedOrders.slice(startIndex, endIndex);
 
   const exportToCSV = () => {
     const headers = ['Order ID', 'Order Value', 'Timestamp', 'Store', 'Payment Status', 'City', 'Country'];
@@ -159,7 +178,7 @@ export function OptInsDetailView({
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
-            {orders.length} opt-in orders found (showing most recent 500)
+            {orders.length} opt-in orders found
           </p>
         </SheetHeader>
 
@@ -195,14 +214,14 @@ export function OptInsDetailView({
                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                   </TableRow>
                 ))
-              ) : sortedOrders.length === 0 ? (
+              ) : paginatedOrders.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                     No opt-in orders found for the selected filters
                   </TableCell>
                 </TableRow>
               ) : (
-                sortedOrders.map((order) => (
+                paginatedOrders.map((order) => (
                   <TableRow key={order.id} className="border-border hover:bg-secondary/50">
                     <TableCell className="font-mono text-sm">
                       {order.order_number || '-'}
@@ -238,6 +257,56 @@ export function OptInsDetailView({
             </TableBody>
           </Table>
         </div>
+
+        {/* Pagination Controls */}
+        {!isLoading && orders.length > 0 && (
+          <div className="flex items-center justify-between mt-4 pt-4 border-t">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Rows per page:</span>
+              <Select
+                value={pageSize.toString()}
+                onValueChange={(value) => setPageSize(Number(value))}
+              >
+                <SelectTrigger className="w-[80px] h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAGE_SIZE_OPTIONS.map((size) => (
+                    <SelectItem key={size} value={size.toString()}>
+                      {size}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-muted-foreground">
+                {startIndex + 1}-{Math.min(endIndex, sortedOrders.length)} of {sortedOrders.length}
+              </span>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </SheetContent>
     </Sheet>
   );
