@@ -78,10 +78,10 @@ export function AppSidebar() {
             <NavLink 
               to={item.url} 
               end={item.url === '/'}
-              className="group flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-muted-foreground/80 transition-all duration-200 hover:bg-kvatt-terracotta/8 hover:text-foreground"
+              className={`group flex items-center rounded-md text-muted-foreground/80 transition-all duration-200 hover:bg-kvatt-terracotta/8 hover:text-foreground ${isCollapsed ? 'justify-center px-0 py-2' : 'gap-2.5 px-2.5 py-1.5'}`}
               activeClassName="bg-kvatt-terracotta/12 text-kvatt-terracotta font-semibold"
             >
-              <item.icon className="h-4 w-4 shrink-0 transition-colors group-hover:text-kvatt-terracotta group-[.bg-kvatt-terracotta\\/12]:text-kvatt-terracotta" />
+              <item.icon className={`shrink-0 transition-colors group-hover:text-kvatt-terracotta group-[.bg-kvatt-terracotta\\/12]:text-kvatt-terracotta ${isCollapsed ? 'h-5 w-5' : 'h-4 w-4'}`} />
               {!isCollapsed && (
                 <span className="text-sm font-medium">{item.title}</span>
               )}
@@ -94,8 +94,8 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/40 bg-background">
-      <SidebarHeader className="px-3 py-3">
-        <div className="flex items-center gap-2.5">
+      <SidebarHeader className={`py-3 ${isCollapsed ? 'px-0 flex justify-center' : 'px-3'}`}>
+        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-2.5'}`}>
           <img 
             src={kvattLogo} 
             alt="Kvatt" 
@@ -110,54 +110,64 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2 py-1">
+      <SidebarContent className={`py-1 ${isCollapsed ? 'px-1' : 'px-2'}`}>
         <SidebarGroup>
-          <SidebarGroupLabel className="mb-1 px-2.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-            Overview
-          </SidebarGroupLabel>
+          {!isCollapsed && (
+            <SidebarGroupLabel className="mb-1 px-2.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+              Overview
+            </SidebarGroupLabel>
+          )}
           <SidebarGroupContent>
             {renderMenuItems(overviewItems)}
           </SidebarGroupContent>
         </SidebarGroup>
 
         <SidebarGroup className="mt-3">
-          <SidebarGroupLabel className="mb-1 px-2.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-            Packaging
-          </SidebarGroupLabel>
+          {!isCollapsed && (
+            <SidebarGroupLabel className="mb-1 px-2.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+              Packaging
+            </SidebarGroupLabel>
+          )}
           <SidebarGroupContent>
             {renderMenuItems(packagingItems)}
           </SidebarGroupContent>
         </SidebarGroup>
 
         <SidebarGroup className="mt-3">
-          <SidebarGroupLabel className="mb-1 px-2.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-            Logistics
-          </SidebarGroupLabel>
+          {!isCollapsed && (
+            <SidebarGroupLabel className="mb-1 px-2.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+              Logistics
+            </SidebarGroupLabel>
+          )}
           <SidebarGroupContent>
             {renderMenuItems(logisticsItems)}
           </SidebarGroupContent>
         </SidebarGroup>
 
         <SidebarGroup className="mt-3">
-          <SidebarGroupLabel className="mb-1 px-2.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-            Merchants
-          </SidebarGroupLabel>
+          {!isCollapsed && (
+            <SidebarGroupLabel className="mb-1 px-2.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+              Merchants
+            </SidebarGroupLabel>
+          )}
           <SidebarGroupContent>
             {renderMenuItems(merchantItems)}
           </SidebarGroupContent>
         </SidebarGroup>
 
         <SidebarGroup className="mt-3">
-          <SidebarGroupLabel className="mb-1 px-2.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-            Sustainability
-          </SidebarGroupLabel>
+          {!isCollapsed && (
+            <SidebarGroupLabel className="mb-1 px-2.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+              Sustainability
+            </SidebarGroupLabel>
+          )}
           <SidebarGroupContent>
             {renderMenuItems(sustainabilityItems)}
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-border/40 p-2">
+      <SidebarFooter className={`border-t border-border/40 ${isCollapsed ? 'p-1' : 'p-2'}`}>
         <SidebarGroup>
           <SidebarGroupContent>
             {renderMenuItems(settingsItems)}
@@ -173,10 +183,10 @@ export function AppSidebar() {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="h-8 w-full justify-start gap-2 rounded-md px-2.5 text-muted-foreground/80 transition-colors hover:bg-destructive/10 hover:text-destructive"
+                className={`h-8 w-full rounded-md text-muted-foreground/80 transition-colors hover:bg-destructive/10 hover:text-destructive ${isCollapsed ? 'justify-center px-0' : 'justify-start gap-2 px-2.5'}`}
                 onClick={handleSignOut}
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className={isCollapsed ? 'h-5 w-5' : 'h-4 w-4'} />
                 {!isCollapsed && <span className="text-[12px]">Sign Out</span>}
               </Button>
             </div>
