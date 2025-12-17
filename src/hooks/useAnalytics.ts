@@ -25,23 +25,21 @@ export function useAnalytics() {
       const result = await response.json();
       
       if (result.status === 200 && result.data?.length) {
-        const storesList: Store[] = [
-          { id: "all", name: "All Stores" },
-          ...result.data.map((storeDomain: string) => ({
-            id: storeDomain,
-            name: storeDomain.replace('.myshopify.com', '')
-          }))
-        ];
+        // Don't include "all" option - multi-select handles this
+        const storesList: Store[] = result.data.map((storeDomain: string) => ({
+          id: storeDomain,
+          name: storeDomain.replace('.myshopify.com', '')
+        }));
         setStores(storesList);
         return storesList;
       }
       
-      setStores([{ id: "all", name: "All Stores" }]);
-      return [{ id: "all", name: "All Stores" }];
+      setStores([]);
+      return [];
     } catch (err) {
       console.error("Error fetching stores:", err);
-      setStores([{ id: "all", name: "All Stores" }]);
-      return [{ id: "all", name: "All Stores" }];
+      setStores([]);
+      return [];
     }
   }, []);
 
@@ -102,8 +100,8 @@ export function useAnalytics() {
 
   const getOptInRate = useCallback(() => {
     const totals = getTotals();
-    if (totals.totalCheckouts === 0) return 0;
-    return ((totals.totalOptIns / totals.totalCheckouts) * 100).toFixed(1);
+    if (totals.totalCheckouts === 0) return '0.00';
+    return ((totals.totalOptIns / totals.totalCheckouts) * 100).toFixed(2);
   }, [getTotals]);
 
   return {
