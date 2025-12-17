@@ -2,140 +2,142 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @layer base {
   :root {
-    /* Kvatt Premium Light Theme - Warm Cream & Vibrant Coral */
-    --background: 38 35% 96%;
-    --foreground: 20 15% 12%;
+    /* Kvatt Brand Theme - Stone, Hot Terracotta, Earth */
+    /* Stone #e6e3db background */
+    --background: 44 22% 88%;
+    --foreground: 0 0% 0%;
 
-    --card: 40 40% 99%;
-    --card-foreground: 20 15% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
 
-    --popover: 40 40% 99%;
-    --popover-foreground: 20 15% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
 
-    /* Coral primary - vibrant orange-coral #fe655b */
-    --primary: 4 99% 68%;
+    /* Hot Terracotta primary #ff655d */
+    --primary: 2 100% 68%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 38 25% 92%;
-    --secondary-foreground: 20 15% 20%;
+    --secondary: 44 18% 92%;
+    --secondary-foreground: 0 0% 15%;
 
-    --muted: 38 20% 90%;
-    --muted-foreground: 20 10% 45%;
+    --muted: 44 15% 85%;
+    --muted-foreground: 0 0% 40%;
 
-    --accent: 25 95% 60%;
+    /* Earth accent #853f33 */
+    --accent: 7 44% 36%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 38 20% 88%;
-    --input: 38 25% 90%;
-    --ring: 4 99% 68%;
+    --border: 44 15% 82%;
+    --input: 44 18% 90%;
+    --ring: 2 100% 68%;
 
     --radius: 1rem;
 
-    /* Custom Kvatt Premium tokens */
-    --kvatt-coral: 4 99% 68%;
-    --kvatt-coral-light: 4 99% 78%;
-    --kvatt-coral-dark: 4 99% 55%;
-    --kvatt-orange: 25 95% 55%;
-    --kvatt-black: 20 15% 10%;
-    --kvatt-cream: 38 35% 96%;
-    --kvatt-cream-light: 40 40% 98%;
-    --kvatt-cream-dark: 38 25% 90%;
-    --kvatt-brown: 20 30% 35%;
+    /* Custom Kvatt Brand tokens */
+    --kvatt-terracotta: 2 100% 68%;
+    --kvatt-terracotta-light: 2 100% 78%;
+    --kvatt-terracotta-dark: 2 100% 55%;
+    --kvatt-earth: 7 44% 36%;
+    --kvatt-black: 0 0% 0%;
+    --kvatt-stone: 44 22% 88%;
+    --kvatt-stone-light: 0 0% 100%;
+    --kvatt-stone-dark: 44 15% 82%;
+    --kvatt-white: 0 0% 100%;
 
     /* Chart colors - Kvatt palette */
-    --chart-opt-in: 4 99% 68%;
-    --chart-opt-out: 20 10% 55%;
-    --chart-total: 20 15% 20%;
+    --chart-opt-in: 2 100% 68%;
+    --chart-opt-out: 0 0% 45%;
+    --chart-total: 0 0% 20%;
 
-    /* Premium gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(4 99% 68%), hsl(25 95% 55%));
-    --gradient-primary-soft: linear-gradient(135deg, hsl(4 99% 68% / 0.1), hsl(25 95% 55% / 0.1));
-    --gradient-card: linear-gradient(180deg, hsl(40 40% 99%), hsl(38 30% 97%));
-    --gradient-glow: radial-gradient(ellipse at top, hsl(4 99% 68% / 0.15), transparent 50%);
-    --gradient-mesh: radial-gradient(at 40% 20%, hsl(4 99% 68% / 0.08) 0px, transparent 50%),
-                     radial-gradient(at 80% 0%, hsl(25 95% 55% / 0.06) 0px, transparent 40%),
-                     radial-gradient(at 0% 50%, hsl(38 35% 96%) 0px, transparent 50%);
+    /* Brand gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(2 100% 68%), hsl(7 44% 36%));
+    --gradient-primary-soft: linear-gradient(135deg, hsl(2 100% 68% / 0.1), hsl(7 44% 36% / 0.1));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(44 18% 96%));
+    --gradient-glow: radial-gradient(ellipse at top, hsl(2 100% 68% / 0.15), transparent 50%);
+    --gradient-mesh: radial-gradient(at 40% 20%, hsl(2 100% 68% / 0.06) 0px, transparent 50%),
+                     radial-gradient(at 80% 0%, hsl(7 44% 36% / 0.04) 0px, transparent 40%),
+                     radial-gradient(at 0% 50%, hsl(44 22% 88%) 0px, transparent 50%);
 
-    /* Premium shadows */
-    --shadow-xs: 0 1px 2px hsl(20 15% 12% / 0.04);
-    --shadow-sm: 0 2px 8px hsl(20 15% 12% / 0.05);
-    --shadow-md: 0 4px 16px hsl(20 15% 12% / 0.06);
-    --shadow-lg: 0 8px 32px hsl(20 15% 12% / 0.08);
-    --shadow-xl: 0 16px 48px hsl(20 15% 12% / 0.10);
-    --shadow-glow: 0 0 40px hsl(4 99% 68% / 0.15);
-    --shadow-card: 0 2px 8px hsl(20 15% 12% / 0.04), 0 1px 2px hsl(20 15% 12% / 0.02);
-    --shadow-card-hover: 0 8px 24px hsl(20 15% 12% / 0.08), 0 2px 8px hsl(20 15% 12% / 0.04);
+    /* Brand shadows */
+    --shadow-xs: 0 1px 2px hsl(0 0% 0% / 0.04);
+    --shadow-sm: 0 2px 8px hsl(0 0% 0% / 0.05);
+    --shadow-md: 0 4px 16px hsl(0 0% 0% / 0.06);
+    --shadow-lg: 0 8px 32px hsl(0 0% 0% / 0.08);
+    --shadow-xl: 0 16px 48px hsl(0 0% 0% / 0.10);
+    --shadow-glow: 0 0 40px hsl(2 100% 68% / 0.15);
+    --shadow-card: 0 2px 8px hsl(0 0% 0% / 0.04), 0 1px 2px hsl(0 0% 0% / 0.02);
+    --shadow-card-hover: 0 8px 24px hsl(0 0% 0% / 0.08), 0 2px 8px hsl(0 0% 0% / 0.04);
 
     /* Sidebar */
-    --sidebar-background: 40 40% 99%;
-    --sidebar-foreground: 20 15% 12%;
-    --sidebar-primary: 4 99% 68%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 0%;
+    --sidebar-primary: 2 100% 68%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 38 25% 94%;
-    --sidebar-accent-foreground: 20 15% 20%;
-    --sidebar-border: 38 20% 90%;
-    --sidebar-ring: 4 99% 68%;
+    --sidebar-accent: 44 18% 94%;
+    --sidebar-accent-foreground: 0 0% 15%;
+    --sidebar-border: 44 15% 88%;
+    --sidebar-ring: 2 100% 68%;
   }
 
   .dark {
-    --background: 20 20% 6%;
-    --foreground: 38 30% 95%;
+    --background: 0 0% 8%;
+    --foreground: 44 22% 95%;
 
-    --card: 20 18% 9%;
-    --card-foreground: 38 30% 95%;
+    --card: 0 0% 11%;
+    --card-foreground: 44 22% 95%;
 
-    --popover: 20 18% 10%;
-    --popover-foreground: 38 30% 95%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 44 22% 95%;
 
-    --primary: 4 99% 68%;
+    --primary: 2 100% 68%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 20 18% 14%;
-    --secondary-foreground: 38 30% 90%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 44 22% 90%;
 
-    --muted: 20 18% 16%;
-    --muted-foreground: 38 15% 55%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 44 10% 55%;
 
-    --accent: 25 95% 60%;
+    --accent: 7 44% 45%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
-    --destructive-foreground: 38 30% 95%;
+    --destructive-foreground: 44 22% 95%;
 
-    --border: 20 18% 15%;
-    --input: 20 18% 15%;
-    --ring: 4 99% 68%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 2 100% 68%;
 
-    --kvatt-coral: 4 99% 68%;
-    --kvatt-coral-light: 4 99% 75%;
-    --kvatt-coral-dark: 4 99% 58%;
-    --kvatt-orange: 25 95% 60%;
-    --kvatt-black: 38 30% 95%;
-    --kvatt-cream: 20 20% 6%;
-    --kvatt-cream-dark: 20 18% 10%;
-    --kvatt-brown: 38 20% 65%;
+    --kvatt-terracotta: 2 100% 68%;
+    --kvatt-terracotta-light: 2 100% 75%;
+    --kvatt-terracotta-dark: 2 100% 58%;
+    --kvatt-earth: 7 44% 45%;
+    --kvatt-black: 44 22% 95%;
+    --kvatt-stone: 0 0% 8%;
+    --kvatt-stone-dark: 0 0% 12%;
+    --kvatt-white: 0 0% 100%;
 
-    --chart-opt-in: 4 99% 68%;
-    --chart-opt-out: 20 10% 55%;
-    --chart-total: 38 25% 80%;
+    --chart-opt-in: 2 100% 68%;
+    --chart-opt-out: 0 0% 55%;
+    --chart-total: 44 20% 80%;
 
-    --gradient-card: linear-gradient(180deg, hsl(20 18% 10%), hsl(20 20% 8%));
-    --gradient-mesh: radial-gradient(at 40% 20%, hsl(4 99% 68% / 0.1) 0px, transparent 50%),
-                     radial-gradient(at 80% 0%, hsl(25 95% 55% / 0.08) 0px, transparent 40%);
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 12%), hsl(0 0% 10%));
+    --gradient-mesh: radial-gradient(at 40% 20%, hsl(2 100% 68% / 0.08) 0px, transparent 50%),
+                     radial-gradient(at 80% 0%, hsl(7 44% 36% / 0.06) 0px, transparent 40%);
     --shadow-card: 0 2px 8px hsl(0 0% 0% / 0.3);
     --shadow-card-hover: 0 8px 24px hsl(0 0% 0% / 0.4);
 
-    --sidebar-background: 20 18% 8%;
-    --sidebar-foreground: 38 30% 95%;
-    --sidebar-accent: 20 18% 14%;
-    --sidebar-border: 20 18% 15%;
+    --sidebar-background: 0 0% 10%;
+    --sidebar-foreground: 44 22% 95%;
+    --sidebar-accent: 0 0% 15%;
+    --sidebar-border: 0 0% 18%;
   }
 }
 
@@ -145,7 +147,7 @@
   }
 
   html {
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -230,16 +232,16 @@
     box-shadow: var(--shadow-sm);
   }
 
-  /* Premium button styles */
+  /* Brand button styles */
   .btn-gradient {
     @apply relative overflow-hidden rounded-xl px-6 py-3 font-semibold text-white transition-all duration-300;
     background: var(--gradient-primary);
-    box-shadow: var(--shadow-md), 0 2px 8px hsl(4 99% 68% / 0.3);
+    box-shadow: var(--shadow-md), 0 2px 8px hsl(2 100% 68% / 0.3);
   }
 
   .btn-gradient:hover {
     transform: translateY(-1px);
-    box-shadow: var(--shadow-lg), 0 4px 16px hsl(4 99% 68% / 0.4);
+    box-shadow: var(--shadow-lg), 0 4px 16px hsl(2 100% 68% / 0.4);
   }
 
   .btn-gradient:active {
@@ -252,12 +254,12 @@
     box-shadow: var(--shadow-md);
   }
 
-  /* Premium badge */
+  /* Brand badge */
   .badge-premium {
     @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold;
     background: var(--gradient-primary);
     color: white;
-    box-shadow: 0 2px 8px hsl(4 99% 68% / 0.3);
+    box-shadow: 0 2px 8px hsl(2 100% 68% / 0.3);
   }
 
   /* Stat number with gradient */
@@ -273,7 +275,7 @@
   .icon-glow {
     @apply relative flex h-12 w-12 items-center justify-center rounded-xl;
     background: var(--gradient-primary);
-    box-shadow: 0 4px 16px hsl(4 99% 68% / 0.35);
+    box-shadow: 0 4px 16px hsl(2 100% 68% / 0.35);
   }
 
   .icon-glow::before {

@@ -78,10 +78,10 @@ export function AppSidebar() {
             <NavLink 
               to={item.url} 
               end={item.url === '/'}
-              className="group flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-muted-foreground/80 transition-all duration-200 hover:bg-kvatt-coral/8 hover:text-foreground"
-              activeClassName="bg-kvatt-coral/12 text-kvatt-coral font-semibold"
+              className="group flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-muted-foreground/80 transition-all duration-200 hover:bg-kvatt-terracotta/8 hover:text-foreground"
+              activeClassName="bg-kvatt-terracotta/12 text-kvatt-terracotta font-semibold"
             >
-              <item.icon className="h-4 w-4 shrink-0 transition-colors group-hover:text-kvatt-coral group-[.bg-kvatt-coral\\/12]:text-kvatt-coral" />
+              <item.icon className="h-4 w-4 shrink-0 transition-colors group-hover:text-kvatt-terracotta group-[.bg-kvatt-terracotta\\/12]:text-kvatt-terracotta" />
               {!isCollapsed && (
                 <span className="text-sm font-medium">{item.title}</span>
               )}
