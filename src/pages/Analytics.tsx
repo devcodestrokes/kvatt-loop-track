@@ -11,6 +11,7 @@ import { DateRangePicker } from '@/components/dashboard/DateRangePicker';
 import { AnalyticsChart } from '@/components/dashboard/AnalyticsChart';
 import { DataTable } from '@/components/dashboard/DataTable';
 import { WeeklyBreakdown } from '@/components/dashboard/WeeklyBreakdown';
+import { WeeklyPerformanceChart } from '@/components/dashboard/WeeklyPerformanceChart';
 import { OptInsDetailView } from '@/components/dashboard/OptInsDetailView';
 import { LoadingSkeleton } from '@/components/dashboard/LoadingSkeleton';
 import { toast } from 'sonner';
@@ -252,6 +253,13 @@ const Analytics = () => {
 
           {/* Weekly Breakdown */}
           <WeeklyBreakdown 
+            fetchDailyData={fetchDailyData}
+            selectedStores={selectedStores}
+            isLoading={isLoading}
+          />
+
+          {/* Weekly Performance Chart */}
+          <WeeklyPerformanceChart 
             fetchDailyData={fetchDailyData}
             selectedStores={selectedStores}
             isLoading={isLoading}
