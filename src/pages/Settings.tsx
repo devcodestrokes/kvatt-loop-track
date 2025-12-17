@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, Shield, Palette, UserPlus, Loader2, Mail, Trash2, Check, Clock, Users } from 'lucide-react';
+import { Bell, Shield, Palette, UserPlus, Loader2, Mail, Trash2, Check, Clock, Users, Settings2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,14 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { useUserDefaults, DATE_RANGE_PRESET_LABELS, DateRangePreset } from '@/hooks/useUserDefaults';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -43,6 +51,7 @@ interface AdminUser {
 
 const Settings = () => {
   const { isSuperAdmin, user } = useAuthContext();
+  const { defaults, updateDefaults } = useUserDefaults();
   const [inviteEmail, setInviteEmail] = useState('');
   const [isInviting, setIsInviting] = useState(false);
   const [invites, setInvites] = useState<AdminInvite[]>([]);
@@ -415,6 +424,50 @@ const Settings = () => {
           </div>
         </>
       )}
+
+      {/* Dashboard Defaults */}
+      <div className="metric-card space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Settings2 className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="font-semibold">Dashboard Defaults</h3>
+            <p className="text-sm text-muted-foreground">Configure default views applied on login</p>
+          </div>
+        </div>
+        <Separator />
+        <div className="space-y-4">
+          <div className="grid gap-2">
+            <Label htmlFor="dateRange">Default Date Range</Label>
+            <Select
+              value={defaults.dateRangePreset}
+              onValueChange={(value: DateRangePreset) => updateDefaults({ dateRangePreset: value })}
+            >
+              <SelectTrigger id="dateRange">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(DATE_RANGE_PRESET_LABELS).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Week starts on Monday</Label>
+              <p className="text-sm text-muted-foreground">Used for "Since last Monday" calculations</p>
+            </div>
+            <Switch 
+              checked={defaults.weekStartsOnMonday}
+              onCheckedChange={(checked) => updateDefaults({ weekStartsOnMonday: checked })}
+            />
+          </div>
+        </div>
+      </div>
 
       {/* API Configuration */}
       <div className="metric-card space-y-4">

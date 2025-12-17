@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
-import { subDays } from 'date-fns';
-import { ShoppingCart, CheckCircle, XCircle, TrendingUp, Sparkles } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { ShoppingCart, CheckCircle, XCircle, TrendingUp, Sparkles, RefreshCw } from 'lucide-react';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useStoreFilter } from '@/hooks/useStoreFilter';
+import { useUserDefaults } from '@/hooks/useUserDefaults';
 import { DateRange } from '@/types/analytics';
 import { MetricCard } from '@/components/dashboard/MetricCard';
 import { MultiStoreSelector } from '@/components/dashboard/MultiStoreSelector';
@@ -12,7 +12,6 @@ import { DataTable } from '@/components/dashboard/DataTable';
 import { LoadingSkeleton } from '@/components/dashboard/LoadingSkeleton';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
 
 const Analytics = () => {
   const {
@@ -32,11 +31,17 @@ const Analytics = () => {
     isInitialized,
   } = useStoreFilter(stores);
 
-  const [dateRange, setDateRange] = useState<DateRange>({
-    from: subDays(new Date(), 29),
-    to: new Date(),
-  });
+  const { getDefaultDateRange, isInitialized: defaultsInitialized } = useUserDefaults();
+
+  const [dateRange, setDateRange] = useState<DateRange | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>();
+
+  // Initialize date range from user defaults
+  useEffect(() => {
+    if (defaultsInitialized && !dateRange) {
+      setDateRange(getDefaultDateRange());
+    }
+  }, [defaultsInitialized, getDefaultDateRange, dateRange]);
 
   // Filter data based on selected stores
   const filteredData = useMemo(() => {
@@ -65,6 +70,7 @@ const Analytics = () => {
   }, [totals]);
 
   useEffect(() => {
+    if (!dateRange) return;
     const loadInitialData = async () => {
       await fetchStores();
       await fetchAnalytics(dateRange, 'all');
@@ -72,7 +78,7 @@ const Analytics = () => {
     };
     loadInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [dateRange]);
 
   useEffect(() => {
     if (error) {
@@ -83,6 +89,7 @@ const Analytics = () => {
   }, [error]);
 
   const handleRefresh = async () => {
+    if (!dateRange) return;
     await fetchAnalytics(dateRange, 'all');
     setLastUpdated(new Date());
     toast.success('Data refreshed');
@@ -90,7 +97,7 @@ const Analytics = () => {
 
   const handleDateRangeChange = async (range: DateRange) => {
     setDateRange(range);
-    if (range.from && range.to) {
+    if (range.from && range.to && dateRange) {
       await fetchAnalytics(range, 'all');
       setLastUpdated(new Date());
     }
@@ -140,11 +147,13 @@ const Analytics = () => {
           onUnselectAll={unselectAll}
           disabled={isLoading}
         />
-        <DateRangePicker
-          dateRange={dateRange}
-          onDateRangeChange={handleDateRangeChange}
-          disabled={isLoading}
-        />
+        {dateRange && (
+          <DateRangePicker
+            dateRange={dateRange}
+            onDateRangeChange={handleDateRangeChange}
+            disabled={isLoading}
+          />
+        )}
       </div>
 
       {isLoading && data.length === 0 ? (
