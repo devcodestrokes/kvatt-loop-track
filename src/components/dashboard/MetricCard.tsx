@@ -21,7 +21,7 @@ const colorStyles = {
     gradient: false,
   },
   brown: {
-    icon: 'flex h-11 w-11 items-center justify-center rounded-xl bg-kvatt-brown/10 text-kvatt-brown',
+    icon: 'flex h-11 w-11 items-center justify-center rounded-xl bg-kvatt-earth/10 text-kvatt-earth',
     gradient: false,
   },
   muted: {
@@ -49,7 +49,7 @@ export function MetricCard({
     >
       {/* Decorative gradient orb */}
       {styles.gradient && (
-        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-primary/20 to-kvatt-orange/10 blur-2xl transition-all duration-500 group-hover:scale-110" />
+        <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-primary/20 to-kvatt-earth/10 blur-2xl transition-all duration-500 group-hover:scale-110" />
       )}
       
       <div className="relative flex items-start justify-between">

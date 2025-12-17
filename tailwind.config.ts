@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
       colors: {
@@ -62,15 +62,15 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
         kvatt: {
-          coral: "hsl(var(--kvatt-coral))",
-          "coral-light": "hsl(var(--kvatt-coral-light))",
-          "coral-dark": "hsl(var(--kvatt-coral-dark))",
-          orange: "hsl(var(--kvatt-orange))",
+          terracotta: "hsl(var(--kvatt-terracotta))",
+          "terracotta-light": "hsl(var(--kvatt-terracotta-light))",
+          "terracotta-dark": "hsl(var(--kvatt-terracotta-dark))",
+          earth: "hsl(var(--kvatt-earth))",
           black: "hsl(var(--kvatt-black))",
-          cream: "hsl(var(--kvatt-cream))",
-          "cream-light": "hsl(var(--kvatt-cream-light))",
-          "cream-dark": "hsl(var(--kvatt-cream-dark))",
-          brown: "hsl(var(--kvatt-brown))",
+          stone: "hsl(var(--kvatt-stone))",
+          "stone-light": "hsl(var(--kvatt-stone-light))",
+          "stone-dark": "hsl(var(--kvatt-stone-dark))",
+          white: "hsl(var(--kvatt-white))",
         },
         chart: {
           "opt-in": "hsl(var(--chart-opt-in))",
