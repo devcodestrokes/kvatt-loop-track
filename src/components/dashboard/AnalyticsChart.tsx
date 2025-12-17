@@ -16,6 +16,7 @@ import { AnalyticsData } from '@/types/analytics';
 interface AnalyticsChartProps {
   data: AnalyticsData[];
   type?: 'bar' | 'pie';
+  onPieClick?: () => void;
 }
 
 const COLORS = {
@@ -41,7 +42,7 @@ const generateStoreColors = (count: number) => {
   return baseColors.slice(0, count);
 };
 
-export function AnalyticsChart({ data, type = 'bar' }: AnalyticsChartProps) {
+export function AnalyticsChart({ data, type = 'bar', onPieClick }: AnalyticsChartProps) {
   const chartData = data.map((item) => ({
     name: item.store.replace('.myshopify.com', ''),
     'Opt-ins': item.opt_ins || 0,
@@ -61,8 +62,14 @@ export function AnalyticsChart({ data, type = 'bar' }: AnalyticsChartProps) {
 
   if (type === 'pie') {
     return (
-      <div className="chart-container h-full">
-        <h3 className="mb-4 text-lg font-semibold text-foreground">Opt-ins by Store</h3>
+      <div 
+        className={`chart-container h-full ${onPieClick ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
+        onClick={onPieClick}
+      >
+        <h3 className="mb-4 text-lg font-semibold text-foreground flex items-center gap-2">
+          Opt-ins by Store
+          {onPieClick && <span className="text-xs text-muted-foreground font-normal">(click to view details)</span>}
+        </h3>
         <div className="h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>

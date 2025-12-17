@@ -11,6 +11,7 @@ import { DateRangePicker } from '@/components/dashboard/DateRangePicker';
 import { AnalyticsChart } from '@/components/dashboard/AnalyticsChart';
 import { DataTable } from '@/components/dashboard/DataTable';
 import { WeeklyBreakdown } from '@/components/dashboard/WeeklyBreakdown';
+import { OptInsDetailView } from '@/components/dashboard/OptInsDetailView';
 import { LoadingSkeleton } from '@/components/dashboard/LoadingSkeleton';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,7 @@ const Analytics = () => {
 
   const [dateRange, setDateRange] = useState<DateRange | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>();
+  const [optInsDetailOpen, setOptInsDetailOpen] = useState(false);
 
   // Initialize date range from user defaults
   useEffect(() => {
@@ -239,7 +241,11 @@ const Analytics = () => {
                 <AnalyticsChart data={filteredData} type="bar" />
               </div>
               <div>
-                <AnalyticsChart data={filteredData} type="pie" />
+                <AnalyticsChart 
+                  data={filteredData} 
+                  type="pie" 
+                  onPieClick={() => setOptInsDetailOpen(true)}
+                />
               </div>
             </div>
           )}
@@ -255,6 +261,15 @@ const Analytics = () => {
           <DataTable data={filteredData} dateRange={dateRange || undefined} />
         </>
       )}
+
+      {/* Opt-ins Detail View */}
+      <OptInsDetailView
+        open={optInsDetailOpen}
+        onOpenChange={setOptInsDetailOpen}
+        selectedStores={selectedStores}
+        dateFrom={dateRange?.from}
+        dateTo={dateRange?.to}
+      />
     </div>
   );
 };
