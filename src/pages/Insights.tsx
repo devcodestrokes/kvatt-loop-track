@@ -178,7 +178,6 @@ const Insights = () => {
   );
   const [isFetchingData, setIsFetchingData] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [orderCount, setOrderCount] = useState(0);
 
   // Derive stores from orderAnalytics for filtering
   const availableStores = useMemo((): StoreType[] => {
@@ -241,12 +240,6 @@ const Insights = () => {
     }
   };
 
-  const fetchOrderCount = async () => {
-    const { count } = await supabase
-      .from('imported_orders')
-      .select('*', { count: 'exact', head: true });
-    setOrderCount(count || 0);
-  };
 
   const fetchOrderAnalytics = async () => {
     setIsFetchingData(true);
@@ -261,7 +254,7 @@ const Insights = () => {
         const now = new Date().toISOString();
         setLastAnalyzed(now);
         localStorage.setItem(STORAGE_KEYS.LAST_ANALYZED, now);
-        toast.success(`Analyzed ${data.data.summary.totalOrders.toLocaleString()} orders`);
+        toast.success(`Analyzed ${data.data.summary.totalOrders.toLocaleString()} checkouts from Shopify`);
       } else if (data?.error) {
         throw new Error(data.error);
       }
@@ -308,7 +301,6 @@ const Insights = () => {
 
   useEffect(() => {
     fetchData();
-    fetchOrderCount();
   }, [selectedMerchant]);
 
   const formatStoreName = (storeId: string) => {
@@ -354,11 +346,11 @@ const Insights = () => {
           <div className="flex flex-wrap items-center gap-3">
             <Button 
               onClick={fetchOrderAnalytics} 
-              disabled={isFetchingData || orderCount === 0}
+              disabled={isFetchingData}
               variant="outline"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${isFetchingData ? 'animate-spin' : ''}`} />
-              {isFetchingData ? 'Analyzing...' : 'Analyze Order Data'}
+              {isFetchingData ? 'Analyzing...' : 'Fetch Shopify Data'}
             </Button>
             <Button 
               onClick={runCROAnalysis} 
@@ -761,7 +753,7 @@ const Insights = () => {
               <Database className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">Ready to Analyze</h3>
               <p className="text-muted-foreground mb-4">
-                Click "Analyze Order Data" to process {orderCount.toLocaleString()} orders.
+                Click "Fetch Shopify Data" to analyze checkout data from all stores.
               </p>
             </div>
           )}
