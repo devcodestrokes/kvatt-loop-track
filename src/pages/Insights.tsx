@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
   Lightbulb, TrendingUp, TrendingDown, Minus, Package, Users, Recycle, Target, 
   RefreshCw, Brain, MapPin, Clock, ShoppingCart, Store, Zap,
-  Upload, FileSpreadsheet, Database, Calendar, Smartphone, Monitor, ShoppingBag,
+  Database, Calendar, Smartphone, Monitor, ShoppingBag,
   BarChart3, Layers
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -178,10 +178,7 @@ const Insights = () => {
   );
   const [isFetchingData, setIsFetchingData] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
-  const [importProgress, setImportProgress] = useState({ current: 0, total: 0 });
   const [orderCount, setOrderCount] = useState(0);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Derive stores from orderAnalytics for filtering
   const availableStores = useMemo((): StoreType[] => {
@@ -276,47 +273,6 @@ const Insights = () => {
     }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    setIsImporting(true);
-    setImportProgress({ current: 0, total: files.length });
-
-    let totalImported = 0;
-
-    try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        setImportProgress({ current: i + 1, total: files.length });
-        
-        toast.info(`Processing file ${i + 1}/${files.length}: ${file.name}`);
-
-        const text = await file.text();
-        
-        const { data, error } = await supabase.functions.invoke('import-orders-csv', {
-          body: { csvData: text, batchNumber: i + 1 }
-        });
-
-        if (error) {
-          console.error(`Error importing ${file.name}:`, error);
-        } else if (data) {
-          totalImported += data.inserted || 0;
-        }
-      }
-
-      toast.success(`Imported ${totalImported.toLocaleString()} orders from ${files.length} files`);
-      fetchOrderCount();
-    } catch (error: any) {
-      console.error('Import error:', error);
-      toast.error(error.message || 'Failed to import CSV files');
-    } finally {
-      setIsImporting(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
 
   const runCROAnalysis = async () => {
     if (!orderAnalytics) {
@@ -394,49 +350,6 @@ const Insights = () => {
 
         {/* CRO Analysis Tab */}
         <TabsContent value="cro" className="space-y-6">
-          {/* CSV Import Section */}
-          <div className="metric-card">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-3">
-                <Database className="h-5 w-5 text-primary" />
-                <div>
-                  <h3 className="font-semibold">Order Data</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {orderCount > 0 
-                      ? `${orderCount.toLocaleString()} orders in database`
-                      : 'No orders imported yet'}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv"
-                  multiple
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  id="csv-upload"
-                />
-                <Button 
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isImporting}
-                >
-                  <Upload className={`h-4 w-4 mr-2 ${isImporting ? 'animate-pulse' : ''}`} />
-                  {isImporting 
-                    ? `Importing ${importProgress.current}/${importProgress.total}...`
-                    : 'Import CSV Files'}
-                </Button>
-              </div>
-            </div>
-            {isImporting && (
-              <div className="mt-4">
-                <Progress value={(importProgress.current / importProgress.total) * 100} className="h-2" />
-              </div>
-            )}
-          </div>
-
           {/* Action Bar */}
           <div className="flex flex-wrap items-center gap-3">
             <Button 
@@ -845,14 +758,10 @@ const Insights = () => {
           {/* Empty State */}
           {!orderAnalytics && !isFetchingData && (
             <div className="text-center py-12">
-              <FileSpreadsheet className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">
-                {orderCount === 0 ? 'No Order Data Yet' : 'Ready to Analyze'}
-              </h3>
+              <Database className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">Ready to Analyze</h3>
               <p className="text-muted-foreground mb-4">
-                {orderCount === 0 
-                  ? 'Import your order CSV files to get started with analytics.'
-                  : `Click "Analyze Order Data" to process ${orderCount.toLocaleString()} orders.`}
+                Click "Analyze Order Data" to process {orderCount.toLocaleString()} orders.
               </p>
             </div>
           )}
