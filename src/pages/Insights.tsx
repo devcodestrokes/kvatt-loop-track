@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { MultiStoreSelector } from '@/components/dashboard/MultiStoreSelector';
+import { InsightsChatbot } from '@/components/dashboard/InsightsChatbot';
 import { useStoreFilter } from '@/hooks/useStoreFilter';
 import { Store as StoreType } from '@/types/analytics';
 
@@ -930,6 +931,9 @@ const Insights = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Read-only Metrics Chatbot */}
+      <InsightsChatbot />
     </div>
   );
 };
