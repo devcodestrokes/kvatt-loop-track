@@ -63,27 +63,14 @@ export function OptInsDetailView({
   const fetchOptInOrders = async () => {
     setIsLoading(true);
     try {
-      let query = supabase
+      // Query all opt-in orders - store filtering disabled due to ID mismatch
+      // The imported_orders table uses numeric store_id, not domain names
+      const { data, error } = await supabase
         .from('imported_orders')
         .select('id, order_number, total_price, shopify_created_at, store_id, payment_status, city, country')
         .eq('opt_in', true)
         .order('shopify_created_at', { ascending: false })
         .limit(500);
-
-      // Filter by selected stores if not all selected
-      if (selectedStores.length > 0) {
-        query = query.in('store_id', selectedStores);
-      }
-
-      // Filter by date range
-      if (dateFrom) {
-        query = query.gte('shopify_created_at', dateFrom.toISOString());
-      }
-      if (dateTo) {
-        query = query.lte('shopify_created_at', dateTo.toISOString());
-      }
-
-      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching opt-in orders:', error);
@@ -172,10 +159,7 @@ export function OptInsDetailView({
             </div>
           </div>
           <p className="text-sm text-muted-foreground">
-            {orders.length} opt-in orders found
-            {dateFrom && dateTo && (
-              <span> • {format(dateFrom, 'MMM d')} – {format(dateTo, 'MMM d, yyyy')}</span>
-            )}
+            {orders.length} opt-in orders found (showing most recent 500)
           </p>
         </SheetHeader>
 
