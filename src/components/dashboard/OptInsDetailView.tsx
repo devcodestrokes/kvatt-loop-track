@@ -51,18 +51,18 @@ type SortDirection = 'asc' | 'desc';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 150, 200] as const;
 
-export function OptInsDetailView({ 
-  open, 
-  onOpenChange, 
+export function OptInsDetailView({
+  open,
+  onOpenChange,
   selectedStores,
   dateFrom,
-  dateTo 
+  dateTo
 }: OptInsDetailViewProps) {
   const [orders, setOrders] = useState<OptInOrder[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [sortField, setSortField] = useState<SortField>('shopify_created_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [pageSize, setPageSize] = useState<number>(50);
+  const [pageSize, setPageSize] = useState<number>(10);
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
@@ -230,7 +230,7 @@ export function OptInsDetailView({
                       ${order.total_price?.toFixed(2) || '0.00'}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {order.shopify_created_at 
+                      {order.shopify_created_at
                         ? format(new Date(order.shopify_created_at), 'MMM d, yyyy HH:mm')
                         : '-'
                       }
@@ -240,7 +240,7 @@ export function OptInsDetailView({
                     </TableCell>
                     <TableCell>
                       {order.payment_status && (
-                        <Badge 
+                        <Badge
                           variant={order.payment_status === 'paid' ? 'default' : 'secondary'}
                           className="text-xs"
                         >
