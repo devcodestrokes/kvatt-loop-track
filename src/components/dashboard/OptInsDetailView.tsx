@@ -49,7 +49,7 @@ interface OptInsDetailViewProps {
 type SortField = 'order_number' | 'total_price' | 'shopify_created_at' | 'store_id';
 type SortDirection = 'asc' | 'desc';
 
-const PAGE_SIZE_OPTIONS = [50, 100, 150, 200] as const;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 150, 200] as const;
 
 export function OptInsDetailView({ 
   open, 
