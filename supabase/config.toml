@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.insights-chat]
 verify_jwt = false
+
+[functions.notify-analytics-failure]
+verify_jwt = false
