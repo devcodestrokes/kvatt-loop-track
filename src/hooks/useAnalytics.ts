@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { AnalyticsData, Store, DateRange } from '@/types/analytics';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 
 const STORES_API_URL = "https://shopify.kvatt.com/api/get-stores";
 const ANALYTICS_API_URL = "https://shopify.kvatt.com/api/get-alaytics";
@@ -11,6 +12,29 @@ export function useAnalytics() {
   const [stores, setStores] = useState<Store[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const sendFailureNotification = useCallback(async (
+    dateRange?: DateRange,
+    storeId?: string,
+    errorMessage?: string
+  ) => {
+    try {
+      console.log("Sending analytics failure notification...");
+      await supabase.functions.invoke('notify-analytics-failure', {
+        body: {
+          dateRange: dateRange ? {
+            from: format(dateRange.from!, 'yyyy-MM-dd'),
+            to: format(dateRange.to!, 'yyyy-MM-dd'),
+          } : undefined,
+          storeId,
+          errorMessage,
+        },
+      });
+      console.log("Failure notification sent successfully");
+    } catch (err) {
+      console.error("Failed to send notification:", err);
+    }
+  }, []);
 
   const fetchStores = useCallback(async () => {
     try {
@@ -71,21 +95,40 @@ export function useAnalytics() {
       const result = await response.json();
 
       if (result.status === 200 && result.data?.length) {
+        // Check if all data has zero values
+        const hasActualData = result.data.some(
+          (item: AnalyticsData) => 
+            item.total_checkouts > 0 || item.opt_ins > 0 || item.opt_outs > 0
+        );
+
+        if (!hasActualData) {
+          console.log("No actual analytics data found, sending notification...");
+          await sendFailureNotification(dateRange, storeId, "All stores returned zero data");
+        }
+
         setData(result.data);
         return result.data;
       } else {
+        // No data returned - send notification
+        console.log("Analytics API returned no data, sending notification...");
+        await sendFailureNotification(dateRange, storeId, "API returned empty data array");
         setData([]);
         return [];
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch analytics';
       setError(errorMessage);
+      
+      // Send notification on error
+      console.log("Analytics fetch error, sending notification...");
+      await sendFailureNotification(dateRange, storeId, errorMessage);
+      
       setData([]);
       return [];
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [sendFailureNotification]);
 
   const getTotals = useCallback(() => {
     return data.reduce(
