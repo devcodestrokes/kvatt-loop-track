@@ -3,7 +3,7 @@ import {
   Lightbulb, TrendingUp, TrendingDown, Minus, Package, Users, Recycle, Target, 
   RefreshCw, Brain, MapPin, Clock, ShoppingCart, Store, Zap,
   Database, Calendar, Smartphone, Monitor, ShoppingBag,
-  BarChart3, Layers
+  BarChart3, Layers, Upload
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { MultiStoreSelector } from '@/components/dashboard/MultiStoreSelector';
 import { InsightsChatbot } from '@/components/dashboard/InsightsChatbot';
+import { CSVUploadAnalysis } from '@/components/dashboard/CSVUploadAnalysis';
 import { useStoreFilter } from '@/hooks/useStoreFilter';
 import { Store as StoreType } from '@/types/analytics';
 
@@ -329,10 +330,14 @@ const Insights = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-lg grid-cols-3">
           <TabsTrigger value="cro" className="gap-2">
             <Brain className="h-4 w-4" />
             CRO Analysis
+          </TabsTrigger>
+          <TabsTrigger value="upload" className="gap-2">
+            <Upload className="h-4 w-4" />
+            CSV Upload
           </TabsTrigger>
           <TabsTrigger value="traditional" className="gap-2">
             <Lightbulb className="h-4 w-4" />
@@ -755,6 +760,84 @@ const Insights = () => {
               <p className="text-muted-foreground mb-4">
                 Click "Fetch Shopify Data" to analyze checkout data from all stores.
               </p>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* CSV Upload Tab */}
+        <TabsContent value="upload" className="space-y-6">
+          <CSVUploadAnalysis 
+            onAnalysisComplete={(analysis) => {
+              setCroAnalysis(analysis);
+              saveToStorage(STORAGE_KEYS.CRO_ANALYSIS, analysis);
+              const now = new Date().toISOString();
+              setLastAnalyzed(now);
+              localStorage.setItem(STORAGE_KEYS.LAST_ANALYZED, now);
+            }}
+            onDataImported={() => {
+              toast.success('Data imported! You can now run AI analysis.');
+            }}
+          />
+          
+          {/* Show CRO Analysis results if available */}
+          {croAnalysis && (
+            <div className="space-y-6">
+              {croAnalysis.keyFindings && croAnalysis.keyFindings.length > 0 && (
+                <div className="space-y-4">
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    <Brain className="h-5 w-5 text-primary" />
+                    AI Key Findings from Uploaded Data
+                  </h2>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {croAnalysis.keyFindings.map((finding, i) => (
+                      <div key={i} className="metric-card">
+                        <div className="flex items-start justify-between mb-3">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${impactColors[finding.impact]}`}>
+                            {finding.impact.toUpperCase()} IMPACT
+                          </span>
+                        </div>
+                        <h3 className="font-semibold mb-2">{finding.title}</h3>
+                        <p className="text-sm text-muted-foreground mb-3">{finding.description}</p>
+                        <p className="text-xs text-primary font-medium">{finding.dataPoint}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {croAnalysis.actionableRecommendations && croAnalysis.actionableRecommendations.length > 0 && (
+                <div className="space-y-4">
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    <Target className="h-5 w-5 text-primary" />
+                    AI Recommendations
+                  </h2>
+                  <div className="space-y-3">
+                    {croAnalysis.actionableRecommendations
+                      .sort((a, b) => a.priority - b.priority)
+                      .map((rec, i) => (
+                        <div key={i} className="metric-card border-l-4 border-l-primary">
+                          <div className="flex items-start gap-4">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-sm shrink-0">
+                              {rec.priority}
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-semibold mb-1">{rec.action}</h3>
+                              <p className="text-sm text-muted-foreground mb-2">{rec.implementation}</p>
+                              <p className="text-sm text-primary font-medium">Expected Impact: {rec.expectedImpact}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {croAnalysis.rawAnalysis && !croAnalysis.keyFindings && (
+                <div className="metric-card">
+                  <h2 className="text-lg font-semibold mb-4">AI Analysis</h2>
+                  <p className="text-muted-foreground whitespace-pre-wrap">{croAnalysis.rawAnalysis}</p>
+                </div>
+              )}
             </div>
           )}
         </TabsContent>
