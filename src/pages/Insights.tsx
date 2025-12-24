@@ -165,7 +165,7 @@ const Insights = () => {
   const [merchants, setMerchants] = useState<{ id: string; name: string }[]>([]);
   const [selectedMerchant, setSelectedMerchant] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('cro');
+  const [activeTab, setActiveTab] = useState('shopify');
   
   // CRO Analysis state - load from storage initially
   const [orderAnalytics, setOrderAnalytics] = useState<OrderAnalytics | null>(() => 
@@ -173,6 +173,9 @@ const Insights = () => {
   );
   const [croAnalysis, setCroAnalysis] = useState<CROAnalysis | null>(() => 
     loadFromStorage<CROAnalysis>(STORAGE_KEYS.CRO_ANALYSIS)
+  );
+  const [csvCroAnalysis, setCsvCroAnalysis] = useState<CROAnalysis | null>(() => 
+    loadFromStorage<CROAnalysis>('kvatt_csv_cro_analysis')
   );
   const [lastAnalyzed, setLastAnalyzed] = useState<string | null>(() => 
     localStorage.getItem(STORAGE_KEYS.LAST_ANALYZED)
@@ -331,13 +334,13 @@ const Insights = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full max-w-lg grid-cols-3">
-          <TabsTrigger value="cro" className="gap-2">
-            <Brain className="h-4 w-4" />
-            CRO Analysis
+          <TabsTrigger value="shopify" className="gap-2">
+            <ShoppingCart className="h-4 w-4" />
+            Shopify Opt-In
           </TabsTrigger>
-          <TabsTrigger value="upload" className="gap-2">
+          <TabsTrigger value="csv-cro" className="gap-2">
             <Upload className="h-4 w-4" />
-            CSV Upload
+            Customer CRO
           </TabsTrigger>
           <TabsTrigger value="traditional" className="gap-2">
             <Lightbulb className="h-4 w-4" />
@@ -345,8 +348,8 @@ const Insights = () => {
           </TabsTrigger>
         </TabsList>
 
-        {/* CRO Analysis Tab */}
-        <TabsContent value="cro" className="space-y-6">
+        {/* Shopify Opt-In Analysis Tab */}
+        <TabsContent value="shopify" className="space-y-6">
           {/* Action Bar */}
           <div className="flex flex-wrap items-center gap-3">
             <Button 
@@ -764,32 +767,29 @@ const Insights = () => {
           )}
         </TabsContent>
 
-        {/* CSV Upload Tab */}
-        <TabsContent value="upload" className="space-y-6">
+        {/* Customer CRO Analysis Tab */}
+        <TabsContent value="csv-cro" className="space-y-6">
           <CSVUploadAnalysis 
             onAnalysisComplete={(analysis) => {
-              setCroAnalysis(analysis);
-              saveToStorage(STORAGE_KEYS.CRO_ANALYSIS, analysis);
-              const now = new Date().toISOString();
-              setLastAnalyzed(now);
-              localStorage.setItem(STORAGE_KEYS.LAST_ANALYZED, now);
+              setCsvCroAnalysis(analysis);
+              saveToStorage('kvatt_csv_cro_analysis', analysis);
             }}
             onDataImported={() => {
               toast.success('Data imported! You can now run AI analysis.');
             }}
           />
           
-          {/* Show CRO Analysis results if available */}
-          {croAnalysis && (
+          {/* Show CSV CRO Analysis results if available */}
+          {csvCroAnalysis && (
             <div className="space-y-6">
-              {croAnalysis.keyFindings && croAnalysis.keyFindings.length > 0 && (
+              {csvCroAnalysis.keyFindings && csvCroAnalysis.keyFindings.length > 0 && (
                 <div className="space-y-4">
                   <h2 className="text-xl font-semibold flex items-center gap-2">
                     <Brain className="h-5 w-5 text-primary" />
                     AI Key Findings from Uploaded Data
                   </h2>
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {croAnalysis.keyFindings.map((finding, i) => (
+                    {csvCroAnalysis.keyFindings.map((finding, i) => (
                       <div key={i} className="metric-card">
                         <div className="flex items-start justify-between mb-3">
                           <span className={`px-2 py-1 rounded text-xs font-medium ${impactColors[finding.impact]}`}>
@@ -805,14 +805,14 @@ const Insights = () => {
                 </div>
               )}
 
-              {croAnalysis.actionableRecommendations && croAnalysis.actionableRecommendations.length > 0 && (
+              {csvCroAnalysis.actionableRecommendations && csvCroAnalysis.actionableRecommendations.length > 0 && (
                 <div className="space-y-4">
                   <h2 className="text-xl font-semibold flex items-center gap-2">
                     <Target className="h-5 w-5 text-primary" />
                     AI Recommendations
                   </h2>
                   <div className="space-y-3">
-                    {croAnalysis.actionableRecommendations
+                    {csvCroAnalysis.actionableRecommendations
                       .sort((a, b) => a.priority - b.priority)
                       .map((rec, i) => (
                         <div key={i} className="metric-card border-l-4 border-l-primary">
@@ -832,10 +832,10 @@ const Insights = () => {
                 </div>
               )}
 
-              {croAnalysis.rawAnalysis && !croAnalysis.keyFindings && (
+              {csvCroAnalysis.rawAnalysis && !csvCroAnalysis.keyFindings && (
                 <div className="metric-card">
                   <h2 className="text-lg font-semibold mb-4">AI Analysis</h2>
-                  <p className="text-muted-foreground whitespace-pre-wrap">{croAnalysis.rawAnalysis}</p>
+                  <p className="text-muted-foreground whitespace-pre-wrap">{csvCroAnalysis.rawAnalysis}</p>
                 </div>
               )}
             </div>
