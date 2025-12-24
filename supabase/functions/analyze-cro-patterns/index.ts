@@ -38,32 +38,39 @@ Focus on:
 
 Be specific, data-driven, and provide concrete recommendations. Format your response as structured JSON for easy parsing.`;
 
+    // Handle both old and new data structures
+    const summary = analyticsData.summary || {};
+    const geographic = analyticsData.geographic || {};
+    const stores = analyticsData.stores || [];
+    const temporal = analyticsData.temporal || {};
+    const orderValueAnalysis = analyticsData.orderValueAnalysis || [];
+
     const userPrompt = `Analyze this customer analytics data and provide CRO insights:
 
 SUMMARY:
-- Total Customers: ${analyticsData.summary.totalCustomers}
-- Opt-In Rate: ${analyticsData.summary.optInRate}%
-- Total Opt-Ins: ${analyticsData.summary.totalOptIns}
-- Total Opt-Outs: ${analyticsData.summary.totalOptOuts}
-- Avg Opt-In Order Value: $${analyticsData.summary.avgOptInOrderValue}
-- Avg Opt-Out Order Value: $${analyticsData.summary.avgOptOutOrderValue}
+- Total Orders: ${summary.totalOrders || summary.totalCustomers || 0}
+- Opt-In Rate: ${summary.optInRate || '0'}%
+- Total Opt-Ins: ${summary.totalOptIns || 0}
+- Total Opt-Outs: ${summary.totalOptOuts || 0}
+- Avg Opt-In Order Value: £${summary.avgOptInOrderValue || '0'}
+- Avg Opt-Out Order Value: £${summary.avgOptOutOrderValue || '0'}
+- Value Difference: £${summary.valueDifference || '0'}
 
 GEOGRAPHIC DATA:
-Top Opt-In Countries: ${JSON.stringify(analyticsData.geographic.optInByCountry)}
-Top Opt-In Cities: ${JSON.stringify(analyticsData.geographic.optInByCity)}
+Top Cities: ${JSON.stringify(geographic.topCities?.slice(0, 10) || geographic.optInByCity || [])}
+Top Countries: ${JSON.stringify(geographic.topCountries?.slice(0, 10) || geographic.optInByCountry || [])}
+Top Provinces: ${JSON.stringify(geographic.topProvinces?.slice(0, 10) || [])}
+Best Cities by Opt-In Rate: ${JSON.stringify(geographic.bestCitiesByOptIn?.slice(0, 10) || [])}
 
 STORE PERFORMANCE:
-${JSON.stringify(analyticsData.stores.optInByStore.slice(0, 10))}
+${JSON.stringify(Array.isArray(stores) ? stores.slice(0, 15) : (stores.optInByStore?.slice(0, 15) || []))}
 
-TOP PRODUCTS BOUGHT BY OPT-IN CUSTOMERS:
-${JSON.stringify(analyticsData.products.topOptInProducts.slice(0, 10))}
-
-TOP PRODUCTS BOUGHT BY OPT-OUT CUSTOMERS:
-${JSON.stringify(analyticsData.products.topOptOutProducts.slice(0, 10))}
+ORDER VALUE ANALYSIS:
+${JSON.stringify(orderValueAnalysis.slice(0, 10))}
 
 TEMPORAL PATTERNS:
-Opt-ins by Hour: ${JSON.stringify(analyticsData.temporal.optInsByHour)}
-Opt-ins by Day: ${JSON.stringify(analyticsData.temporal.optInsByDayOfWeek)}
+Opt-ins by Day of Week: ${JSON.stringify(temporal.byDayOfWeek || temporal.optInsByDayOfWeek || [])}
+Opt-ins by Month: ${JSON.stringify(temporal.byMonth || [])}
 
 Provide your analysis in this JSON structure:
 {
