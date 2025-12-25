@@ -353,6 +353,49 @@ const Insights = () => {
           {/* Action Bar */}
           <div className="flex flex-wrap items-center gap-3">
             <Button 
+              variant="outline"
+              onClick={() => document.getElementById('shopify-csv-upload')?.click()}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Add CSV
+            </Button>
+            <input
+              id="shopify-csv-upload"
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                try {
+                  toast.loading('Importing CSV data...', { id: 'csv-import' });
+                  const { data, error } = await supabase.functions.invoke('import-orders-csv', {
+                    body: formData,
+                  });
+                  
+                  if (error) throw error;
+                  
+                  if (data?.success) {
+                    toast.success(`Imported ${data.imported || 0} orders from CSV`, { id: 'csv-import' });
+                    // Refresh data after import
+                    fetchOrderAnalytics();
+                  } else {
+                    throw new Error(data?.error || 'Failed to import CSV');
+                  }
+                } catch (err: any) {
+                  console.error('CSV import error:', err);
+                  toast.error(err.message || 'Failed to import CSV', { id: 'csv-import' });
+                }
+                
+                // Reset file input
+                e.target.value = '';
+              }}
+            />
+            <Button 
               onClick={fetchOrderAnalytics} 
               disabled={isFetchingData}
               variant="outline"
