@@ -85,16 +85,41 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { csvData, batchNumber } = await req.json();
+    let csvData: string;
     
-    if (!csvData) {
-      return new Response(
-        JSON.stringify({ error: 'No CSV data provided' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Check if it's FormData (file upload) or JSON
+    const contentType = req.headers.get('content-type') || '';
+    
+    if (contentType.includes('multipart/form-data')) {
+      // Handle file upload
+      const formData = await req.formData();
+      const file = formData.get('file') as File;
+      
+      if (!file) {
+        return new Response(
+          JSON.stringify({ error: 'No file provided' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      csvData = await file.text();
+      console.log(`Processing uploaded file: ${file.name}, size: ${file.size}`);
+    } else {
+      // Handle JSON body with csvData
+      const body = await req.json();
+      csvData = body.csvData;
+      
+      if (!csvData) {
+        return new Response(
+          JSON.stringify({ error: 'No CSV data provided' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      console.log(`Processing JSON csvData, length: ${csvData.length}`);
     }
 
-    console.log(`Processing batch ${batchNumber}, CSV length: ${csvData.length}`);
+    console.log(`CSV data length: ${csvData.length}`);
 
     const lines = csvData.split('\n').filter((line: string) => line.trim());
     const headers = parseCSVLine(lines[0]);
