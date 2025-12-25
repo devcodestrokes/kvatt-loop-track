@@ -368,30 +368,47 @@ const Insights = () => {
                 const file = e.target.files?.[0];
                 if (!file) return;
                 
-                const formData = new FormData();
-                formData.append('file', file);
-                
                 try {
-                  toast.loading('Importing CSV data...', { id: 'csv-import' });
-                  const { data, error } = await supabase.functions.invoke('import-orders-csv', {
-                    body: formData,
-                  });
+                  toast.loading('Reading CSV file...', { id: 'csv-import' });
                   
-                  if (error) throw error;
+                  // Read file as text on client side
+                  const csvText = await file.text();
+                  const lines = csvText.split('\n');
+                  const header = lines[0];
+                  const dataLines = lines.slice(1).filter(l => l.trim());
                   
-                  if (data?.success) {
-                    toast.success(`Imported ${data.imported || 0} orders from CSV`, { id: 'csv-import' });
-                    // Refresh data after import
-                    fetchOrderAnalytics();
-                  } else {
-                    throw new Error(data?.error || 'Failed to import CSV');
+                  // Process in chunks of 2000 rows
+                  const chunkSize = 2000;
+                  const totalChunks = Math.ceil(dataLines.length / chunkSize);
+                  let totalImported = 0;
+                  let totalErrors = 0;
+                  
+                  for (let i = 0; i < totalChunks; i++) {
+                    const chunk = dataLines.slice(i * chunkSize, (i + 1) * chunkSize);
+                    const csvData = [header, ...chunk].join('\n');
+                    
+                    toast.loading(`Importing batch ${i + 1}/${totalChunks}...`, { id: 'csv-import' });
+                    
+                    const { data, error } = await supabase.functions.invoke('import-orders-csv', {
+                      body: { csvData }
+                    });
+                    
+                    if (error) {
+                      console.error(`Batch ${i + 1} error:`, error);
+                      totalErrors += chunk.length;
+                    } else if (data?.success) {
+                      totalImported += data.inserted || 0;
+                      totalErrors += data.errors || 0;
+                    }
                   }
+                  
+                  toast.success(`Imported ${totalImported.toLocaleString()} orders (${totalErrors} errors)`, { id: 'csv-import' });
+                  fetchOrderAnalytics();
                 } catch (err: any) {
                   console.error('CSV import error:', err);
                   toast.error(err.message || 'Failed to import CSV', { id: 'csv-import' });
                 }
                 
-                // Reset file input
                 e.target.value = '';
               }}
             />
