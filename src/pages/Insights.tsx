@@ -403,7 +403,22 @@ const Insights = () => {
                   }
                   
                   toast.success(`Imported ${totalImported.toLocaleString()} orders (${totalErrors} errors)`, { id: 'csv-import' });
-                  fetchOrderAnalytics();
+                  
+                  // Analyze the imported orders data
+                  toast.loading('Analyzing imported data...', { id: 'csv-analysis' });
+                  const { data: analyticsData, error: analyticsError } = await supabase.functions.invoke('analyze-imported-orders');
+                  
+                  if (analyticsError) {
+                    console.error('Analytics error:', analyticsError);
+                    toast.error('Failed to analyze imported data', { id: 'csv-analysis' });
+                  } else if (analyticsData?.data) {
+                    setOrderAnalytics(analyticsData.data);
+                    saveToStorage(STORAGE_KEYS.ORDER_ANALYTICS, analyticsData.data);
+                    const now = new Date().toISOString();
+                    setLastAnalyzed(now);
+                    localStorage.setItem(STORAGE_KEYS.LAST_ANALYZED, now);
+                    toast.success(`Analyzed ${analyticsData.data.summary.totalOrders.toLocaleString()} orders`, { id: 'csv-analysis' });
+                  }
                 } catch (err: any) {
                   console.error('CSV import error:', err);
                   toast.error(err.message || 'Failed to import CSV', { id: 'csv-import' });
