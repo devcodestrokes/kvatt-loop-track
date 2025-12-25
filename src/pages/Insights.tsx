@@ -3,7 +3,7 @@ import {
   Lightbulb, TrendingUp, TrendingDown, Minus, Package, Users, Recycle, Target, 
   RefreshCw, Brain, MapPin, Clock, ShoppingCart, Store, Zap,
   Database, Calendar, Smartphone, Monitor, ShoppingBag,
-  BarChart3, Layers, Upload
+  Layers, Upload
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,11 +15,11 @@ import {
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { Progress } from '@/components/ui/progress';
 import { MultiStoreSelector } from '@/components/dashboard/MultiStoreSelector';
 import { InsightsChatbot } from '@/components/dashboard/InsightsChatbot';
-import { CSVUploadAnalysis } from '@/components/dashboard/CSVUploadAnalysis';
+
 import { useStoreFilter } from '@/hooks/useStoreFilter';
 import { Store as StoreType } from '@/types/analytics';
 
@@ -165,7 +165,7 @@ const Insights = () => {
   const [merchants, setMerchants] = useState<{ id: string; name: string }[]>([]);
   const [selectedMerchant, setSelectedMerchant] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('shopify');
+  
   
   // CRO Analysis state - load from storage initially
   const [orderAnalytics, setOrderAnalytics] = useState<OrderAnalytics | null>(() => 
@@ -173,9 +173,6 @@ const Insights = () => {
   );
   const [croAnalysis, setCroAnalysis] = useState<CROAnalysis | null>(() => 
     loadFromStorage<CROAnalysis>(STORAGE_KEYS.CRO_ANALYSIS)
-  );
-  const [csvCroAnalysis, setCsvCroAnalysis] = useState<CROAnalysis | null>(() => 
-    loadFromStorage<CROAnalysis>('kvatt_csv_cro_analysis')
   );
   const [lastAnalyzed, setLastAnalyzed] = useState<string | null>(() => 
     localStorage.getItem(STORAGE_KEYS.LAST_ANALYZED)
@@ -332,24 +329,7 @@ const Insights = () => {
         )}
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full max-w-lg grid-cols-3">
-          <TabsTrigger value="shopify" className="gap-2">
-            <ShoppingCart className="h-4 w-4" />
-            Shopify Opt-In
-          </TabsTrigger>
-          <TabsTrigger value="csv-cro" className="gap-2">
-            <Upload className="h-4 w-4" />
-            Customer CRO
-          </TabsTrigger>
-          <TabsTrigger value="traditional" className="gap-2">
-            <Lightbulb className="h-4 w-4" />
-            Traditional
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Shopify Opt-In Analysis Tab */}
-        <TabsContent value="shopify" className="space-y-6">
+      <div className="space-y-6">
           {/* Action Bar */}
           <div className="flex flex-wrap items-center gap-3">
             <Button 
@@ -794,33 +774,6 @@ const Insights = () => {
                 </div>
               )}
 
-              {croAnalysis.actionableRecommendations && croAnalysis.actionableRecommendations.length > 0 && (
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold flex items-center gap-2">
-                    <Target className="h-5 w-5 text-primary" />
-                    AI Recommendations
-                  </h2>
-                  <div className="space-y-3">
-                    {croAnalysis.actionableRecommendations
-                      .sort((a, b) => a.priority - b.priority)
-                      .map((rec, i) => (
-                        <div key={i} className="metric-card border-l-4 border-l-primary">
-                          <div className="flex items-start gap-4">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-sm shrink-0">
-                              {rec.priority}
-                            </div>
-                            <div className="flex-1">
-                              <h3 className="font-semibold mb-1">{rec.action}</h3>
-                              <p className="text-sm text-muted-foreground mb-2">{rec.implementation}</p>
-                              <p className="text-sm text-primary font-medium">Expected Impact: {rec.expectedImpact}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-
               {croAnalysis.rawAnalysis && !croAnalysis.keyFindings && (
                 <div className="metric-card">
                   <h2 className="text-lg font-semibold mb-4">AI Analysis</h2>
@@ -840,156 +793,8 @@ const Insights = () => {
               </p>
             </div>
           )}
-        </TabsContent>
+        </div>
 
-        {/* Customer CRO Analysis Tab */}
-        <TabsContent value="csv-cro" className="space-y-6">
-          <CSVUploadAnalysis 
-            onAnalysisComplete={(analysis) => {
-              setCsvCroAnalysis(analysis);
-              saveToStorage('kvatt_csv_cro_analysis', analysis);
-            }}
-            onDataImported={() => {
-              toast.success('Data imported! You can now run AI analysis.');
-            }}
-          />
-          
-          {/* Show CSV CRO Analysis results if available */}
-          {csvCroAnalysis && (
-            <div className="space-y-6">
-              {csvCroAnalysis.keyFindings && csvCroAnalysis.keyFindings.length > 0 && (
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold flex items-center gap-2">
-                    <Brain className="h-5 w-5 text-primary" />
-                    AI Key Findings from Uploaded Data
-                  </h2>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {csvCroAnalysis.keyFindings.map((finding, i) => (
-                      <div key={i} className="metric-card">
-                        <div className="flex items-start justify-between mb-3">
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${impactColors[finding.impact]}`}>
-                            {finding.impact.toUpperCase()} IMPACT
-                          </span>
-                        </div>
-                        <h3 className="font-semibold mb-2">{finding.title}</h3>
-                        <p className="text-sm text-muted-foreground mb-3">{finding.description}</p>
-                        <p className="text-xs text-primary font-medium">{finding.dataPoint}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {csvCroAnalysis.actionableRecommendations && csvCroAnalysis.actionableRecommendations.length > 0 && (
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold flex items-center gap-2">
-                    <Target className="h-5 w-5 text-primary" />
-                    AI Recommendations
-                  </h2>
-                  <div className="space-y-3">
-                    {csvCroAnalysis.actionableRecommendations
-                      .sort((a, b) => a.priority - b.priority)
-                      .map((rec, i) => (
-                        <div key={i} className="metric-card border-l-4 border-l-primary">
-                          <div className="flex items-start gap-4">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-sm shrink-0">
-                              {rec.priority}
-                            </div>
-                            <div className="flex-1">
-                              <h3 className="font-semibold mb-1">{rec.action}</h3>
-                              <p className="text-sm text-muted-foreground mb-2">{rec.implementation}</p>
-                              <p className="text-sm text-primary font-medium">Expected Impact: {rec.expectedImpact}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-
-              {csvCroAnalysis.rawAnalysis && !csvCroAnalysis.keyFindings && (
-                <div className="metric-card">
-                  <h2 className="text-lg font-semibold mb-4">AI Analysis</h2>
-                  <p className="text-muted-foreground whitespace-pre-wrap">{csvCroAnalysis.rawAnalysis}</p>
-                </div>
-              )}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Traditional Insights Tab */}
-        <TabsContent value="traditional" className="space-y-6">
-          <div className="flex flex-wrap gap-3">
-            <Button variant="outline" onClick={fetchData} disabled={isLoading}>
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-          </div>
-
-          <Select value={selectedMerchant} onValueChange={setSelectedMerchant}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Filter by merchant" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Merchants</SelectItem>
-              {merchants.map((m) => (
-                <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {isLoading ? (
-            <div className="text-center py-12 text-muted-foreground">Loading insights...</div>
-          ) : insights.length === 0 ? (
-            <div className="text-center py-12">
-              <Lightbulb className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No Insights Yet</h3>
-              <p className="text-muted-foreground mb-4">
-                Use the CRO Analysis tab for AI-powered insights from your order data.
-              </p>
-            </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {insights.map((insight) => (
-                <div key={insight.id} className="metric-card group">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                        {insightTypeIcons[insight.insight_type] || insightTypeIcons.default}
-                      </div>
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium ${trendColors[insight.trend]}`}>
-                        {trendIcons[insight.trend]}
-                        {insight.trend === 'up' ? 'Improving' : insight.trend === 'down' ? 'Declining' : 'Stable'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <h3 className="font-semibold text-lg mb-2">{insight.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-4">{insight.description}</p>
-                  
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-primary">
-                      {typeof insight.value === 'number' && insight.value % 1 !== 0 
-                        ? insight.value.toFixed(1) 
-                        : insight.value?.toLocaleString()}
-                    </span>
-                    {insight.insight_type === 'return_rate' && <span className="text-muted-foreground">%</span>}
-                    {insight.insight_type === 'opt_in_rate' && <span className="text-muted-foreground">%</span>}
-                    {insight.insight_type === 'package_usage' && <span className="text-muted-foreground">avg uses</span>}
-                    {insight.insight_type === 'customer_engagement' && <span className="text-muted-foreground">scans</span>}
-                  </div>
-
-                  {insight.merchant_name && (
-                    <div className="mt-4 pt-4 border-t border-border">
-                      <span className="text-xs text-muted-foreground">{insight.merchant_name}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
 
       {/* Read-only Metrics Chatbot */}
       <InsightsChatbot />
