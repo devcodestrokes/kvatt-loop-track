@@ -377,14 +377,6 @@ const Insights = () => {
               Fetch Orders
             </Button>
             <Button 
-              onClick={fetchOrderAnalytics} 
-              disabled={isFetchingData}
-              variant="outline"
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isFetchingData ? 'animate-spin' : ''}`} />
-              {isFetchingData ? 'Analyzing...' : 'Fetch Shopify Data'}
-            </Button>
-            <Button 
               onClick={runCROAnalysis} 
               disabled={!orderAnalytics || isAnalyzing}
             >
