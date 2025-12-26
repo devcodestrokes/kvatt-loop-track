@@ -183,10 +183,19 @@ const Insights = () => {
   // Derive stores from orderAnalytics for filtering
   const availableStores = useMemo((): StoreType[] => {
     if (!orderAnalytics?.stores) return [];
-    return orderAnalytics.stores.map(s => ({
-      id: s.storeId,
-      name: s.storeId.replace('.myshopify.com', '')
-    }));
+    return orderAnalytics.stores.map(s => {
+      // Extract clean store name by removing .myshopify.com suffix
+      const cleanName = s.storeId.replace('.myshopify.com', '');
+      // Capitalize and format the store name nicely
+      const formattedName = cleanName
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      return {
+        id: s.storeId,
+        name: formattedName
+      };
+    });
   }, [orderAnalytics?.stores]);
 
   const {
