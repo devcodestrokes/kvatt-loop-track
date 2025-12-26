@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.notify-analytics-failure]
 verify_jwt = false
+
+[functions.fetch-orders-api]
+verify_jwt = false

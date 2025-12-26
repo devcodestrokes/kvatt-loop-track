@@ -3,7 +3,7 @@ import {
   Lightbulb, TrendingUp, TrendingDown, Minus, Package, Users, Recycle, Target, 
   RefreshCw, Brain, MapPin, Clock, ShoppingCart, Store, Zap,
   Database, Calendar, Smartphone, Monitor, ShoppingBag,
-  Layers, Upload
+  Layers
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -334,79 +334,48 @@ const Insights = () => {
           <div className="flex flex-wrap items-center gap-3">
             <Button 
               variant="outline"
-              onClick={() => document.getElementById('shopify-csv-upload')?.click()}
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Add CSV
-            </Button>
-            <input
-              id="shopify-csv-upload"
-              type="file"
-              accept=".csv"
-              className="hidden"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                
+              onClick={async () => {
                 try {
-                  toast.loading('Reading CSV file...', { id: 'csv-import' });
+                  toast.loading('Fetching order data from API...', { id: 'api-import' });
                   
-                  // Read file as text on client side
-                  const csvText = await file.text();
-                  const lines = csvText.split('\n');
-                  const header = lines[0];
-                  const dataLines = lines.slice(1).filter(l => l.trim());
+                  const { data, error } = await supabase.functions.invoke('fetch-orders-api');
                   
-                  // Process in chunks of 2000 rows
-                  const chunkSize = 2000;
-                  const totalChunks = Math.ceil(dataLines.length / chunkSize);
-                  let totalImported = 0;
-                  let totalErrors = 0;
-                  
-                  for (let i = 0; i < totalChunks; i++) {
-                    const chunk = dataLines.slice(i * chunkSize, (i + 1) * chunkSize);
-                    const csvData = [header, ...chunk].join('\n');
-                    
-                    toast.loading(`Importing batch ${i + 1}/${totalChunks}...`, { id: 'csv-import' });
-                    
-                    const { data, error } = await supabase.functions.invoke('import-orders-csv', {
-                      body: { csvData }
-                    });
-                    
-                    if (error) {
-                      console.error(`Batch ${i + 1} error:`, error);
-                      totalErrors += chunk.length;
-                    } else if (data?.success) {
-                      totalImported += data.inserted || 0;
-                      totalErrors += data.errors || 0;
-                    }
+                  if (error) {
+                    console.error('API fetch error:', error);
+                    toast.error('Failed to fetch order data', { id: 'api-import' });
+                    return;
                   }
                   
-                  toast.success(`Imported ${totalImported.toLocaleString()} orders (${totalErrors} errors)`, { id: 'csv-import' });
-                  
-                  // Analyze the imported orders data
-                  toast.loading('Analyzing imported data...', { id: 'csv-analysis' });
-                  const { data: analyticsData, error: analyticsError } = await supabase.functions.invoke('analyze-imported-orders');
-                  
-                  if (analyticsError) {
-                    console.error('Analytics error:', analyticsError);
-                    toast.error('Failed to analyze imported data', { id: 'csv-analysis' });
-                  } else if (analyticsData?.data) {
-                    setOrderAnalytics(analyticsData.data);
-                    saveToStorage(STORAGE_KEYS.ORDER_ANALYTICS, analyticsData.data);
-                    const now = new Date().toISOString();
-                    setLastAnalyzed(now);
-                    localStorage.setItem(STORAGE_KEYS.LAST_ANALYZED, now);
-                    toast.success(`Analyzed ${analyticsData.data.summary.totalOrders.toLocaleString()} orders`, { id: 'csv-analysis' });
+                  if (data?.success) {
+                    toast.success(`Imported ${data.inserted?.toLocaleString() || 0} orders (${data.errors || 0} errors)`, { id: 'api-import' });
+                    
+                    // Analyze the imported orders data
+                    toast.loading('Analyzing imported data...', { id: 'api-analysis' });
+                    const { data: analyticsData, error: analyticsError } = await supabase.functions.invoke('analyze-imported-orders');
+                    
+                    if (analyticsError) {
+                      console.error('Analytics error:', analyticsError);
+                      toast.error('Failed to analyze imported data', { id: 'api-analysis' });
+                    } else if (analyticsData?.data) {
+                      setOrderAnalytics(analyticsData.data);
+                      saveToStorage(STORAGE_KEYS.ORDER_ANALYTICS, analyticsData.data);
+                      const now = new Date().toISOString();
+                      setLastAnalyzed(now);
+                      localStorage.setItem(STORAGE_KEYS.LAST_ANALYZED, now);
+                      toast.success(`Analyzed ${analyticsData.data.summary.totalOrders.toLocaleString()} orders`, { id: 'api-analysis' });
+                    }
+                  } else {
+                    toast.error(data?.error || 'Failed to import orders', { id: 'api-import' });
                   }
                 } catch (err: any) {
-                  console.error('CSV import error:', err);
-                  toast.error(err.message || 'Failed to import CSV', { id: 'csv-import' });
+                  console.error('API import error:', err);
+                  toast.error(err.message || 'Failed to fetch order data', { id: 'api-import' });
                 }
-                
-                e.target.value = '';
               }}
-            />
+            >
+              <Database className="h-4 w-4 mr-2" />
+              Fetch Orders
+            </Button>
             <Button 
               onClick={fetchOrderAnalytics} 
               disabled={isFetchingData}
