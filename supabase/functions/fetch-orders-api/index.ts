@@ -65,25 +65,22 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Parse request body to get options
-    let useStream = false;
-    let triggerRefresh = true; // Always trigger refresh to get latest data
+    let triggerRefresh = false;
     
     try {
       const body = await req.json();
-      useStream = body.stream === true;
-      if (body.refresh === false) {
-        triggerRefresh = false;
-      }
+      triggerRefresh = body.refresh === true;
     } catch {
-      // No body or invalid JSON, use defaults
+      // No body or invalid JSON, use defaults (cached data)
     }
 
-    console.log(`Fetching order data from API (stream=${useStream}, refresh=${triggerRefresh})...`);
+    // Use simple endpoint - get cached data, optionally trigger background refresh
+    // Don't use streaming as it can timeout with large datasets
+    const apiUrl = triggerRefresh 
+      ? `https://shopify-phpmyadmin-extractor-api.onrender.com/fetch-data?refresh=true`
+      : `https://shopify-phpmyadmin-extractor-api.onrender.com/fetch-data`;
 
-    // Use streaming endpoint for real-time updates
-    const apiUrl = useStream 
-      ? `https://shopify-phpmyadmin-extractor-api.onrender.com/fetch-data?stream=true&refresh=true`
-      : `https://shopify-phpmyadmin-extractor-api.onrender.com/fetch-data?refresh=${triggerRefresh}`;
+    console.log(`Fetching order data from API (refresh=${triggerRefresh})...`);
 
     const response = await fetch(apiUrl, {
       method: 'GET',
@@ -95,6 +92,22 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('API error:', response.status, errorText);
+      
+      // If API is temporarily unavailable, return cached data message
+      if (response.status === 502 || response.status === 503 || response.status === 504) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'External API temporarily unavailable. Data will sync automatically when available.',
+            retryable: true
+          }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 503 
+          }
+        );
+      }
+      
       throw new Error(`API request failed: ${response.status} - ${errorText}`);
     }
 

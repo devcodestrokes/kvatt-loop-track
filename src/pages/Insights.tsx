@@ -318,13 +318,19 @@ const Insights = () => {
     
     setIsAutoRefreshing(true);
     try {
-      // Trigger refresh on the API
+      // Get cached data (don't trigger refresh on auto-sync to avoid API overload)
       const { data, error } = await supabase.functions.invoke('fetch-orders-api', {
-        body: { refresh: true }
+        body: { refresh: false }
       });
       
       if (error) {
         console.error('Auto-refresh fetch error:', error);
+        return;
+      }
+      
+      // Handle retryable errors gracefully
+      if (data?.retryable) {
+        console.log('API temporarily unavailable, will retry later');
         return;
       }
       
@@ -411,12 +417,18 @@ const Insights = () => {
                   toast.loading('Fetching order data from API...', { id: 'api-import' });
                   
                   const { data, error } = await supabase.functions.invoke('fetch-orders-api', {
-                    body: { stream: true, refresh: true }
+                    body: { refresh: true }
                   });
                   
                   if (error) {
                     console.error('API fetch error:', error);
                     toast.error('Failed to fetch order data', { id: 'api-import' });
+                    return;
+                  }
+                  
+                  // Handle retryable errors
+                  if (data?.retryable) {
+                    toast.error('External API temporarily unavailable. Please try again in a moment.', { id: 'api-import' });
                     return;
                   }
                   
