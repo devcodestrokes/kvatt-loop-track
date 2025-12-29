@@ -6,6 +6,47 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const processAndUpsertOrders = async (supabase: any, orders: any[]) => {
+  let inserted = 0;
+  let errors = 0;
+  const batchSize = 500;
+
+  for (let i = 0; i < orders.length; i += batchSize) {
+    const batch = orders.slice(i, i + batchSize);
+    
+    const formattedBatch = batch.map((order: any) => ({
+      external_id: order.id?.toString() || order.external_id?.toString() || `api-${Date.now()}-${Math.random()}`,
+      order_number: order.order_number?.toString() || order.name || null,
+      shopify_order_id: order.shopify_order_id?.toString() || order.id?.toString() || null,
+      customer_external_id: order.customer_id?.toString() || order.customer_external_id?.toString() || null,
+      opt_in: order.opt_in === true || order.opt_in === 'true' || order.opt_in === 1 || order.opt_in === '1',
+      total_price: parseFloat(order.total_price) || 0,
+      city: order.city || order.shipping_city || null,
+      province: order.province || order.shipping_province || null,
+      country: order.country || order.shipping_country || null,
+      store_id: order.store_id || order.store || null,
+      payment_status: order.payment_status || order.financial_status || null,
+      shopify_created_at: order.created_at || order.shopify_created_at || null,
+    }));
+
+    const { error } = await supabase
+      .from('imported_orders')
+      .upsert(formattedBatch, { 
+        onConflict: 'external_id',
+        ignoreDuplicates: false 
+      });
+
+    if (error) {
+      console.error('Batch insert error:', error);
+      errors += batch.length;
+    } else {
+      inserted += batch.length;
+    }
+  }
+
+  return { inserted, errors };
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -18,10 +59,33 @@ serve(async (req) => {
       throw new Error('SHOPIFY_EXTRACTOR_API_KEY is not configured');
     }
 
-    console.log('Fetching order data from external API...');
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch data from the external API
-    const response = await fetch('https://shopify-phpmyadmin-extractor-api.onrender.com/fetch-data', {
+    // Parse request body to get options
+    let useStream = false;
+    let triggerRefresh = true; // Always trigger refresh to get latest data
+    
+    try {
+      const body = await req.json();
+      useStream = body.stream === true;
+      if (body.refresh === false) {
+        triggerRefresh = false;
+      }
+    } catch {
+      // No body or invalid JSON, use defaults
+    }
+
+    console.log(`Fetching order data from API (stream=${useStream}, refresh=${triggerRefresh})...`);
+
+    // Use streaming endpoint for real-time updates
+    const apiUrl = useStream 
+      ? `https://shopify-phpmyadmin-extractor-api.onrender.com/fetch-data?stream=true&refresh=true`
+      : `https://shopify-phpmyadmin-extractor-api.onrender.com/fetch-data?refresh=${triggerRefresh}`;
+
+    const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
         'X-API-Key': API_KEY,
@@ -37,52 +101,11 @@ serve(async (req) => {
     const data = await response.json();
     console.log('Received data from API, records count:', Array.isArray(data) ? data.length : 'not an array');
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
     // Process the data and insert into imported_orders
-    let inserted = 0;
-    let errors = 0;
-    const batchSize = 500;
-
-    // Assuming data is an array of order objects
     const orders = Array.isArray(data) ? data : (data.orders || data.data || []);
     console.log('Processing orders:', orders.length);
 
-    for (let i = 0; i < orders.length; i += batchSize) {
-      const batch = orders.slice(i, i + batchSize);
-      
-      const formattedBatch = batch.map((order: any) => ({
-        external_id: order.id?.toString() || order.external_id?.toString() || `api-${Date.now()}-${Math.random()}`,
-        order_number: order.order_number?.toString() || order.name || null,
-        shopify_order_id: order.shopify_order_id?.toString() || order.id?.toString() || null,
-        customer_external_id: order.customer_id?.toString() || order.customer_external_id?.toString() || null,
-        opt_in: order.opt_in === true || order.opt_in === 'true' || order.opt_in === 1 || order.opt_in === '1',
-        total_price: parseFloat(order.total_price) || 0,
-        city: order.city || order.shipping_city || null,
-        province: order.province || order.shipping_province || null,
-        country: order.country || order.shipping_country || null,
-        store_id: order.store_id || order.store || null,
-        payment_status: order.payment_status || order.financial_status || null,
-        shopify_created_at: order.created_at || order.shopify_created_at || null,
-      }));
-
-      const { error } = await supabase
-        .from('imported_orders')
-        .upsert(formattedBatch, { 
-          onConflict: 'external_id',
-          ignoreDuplicates: false 
-        });
-
-      if (error) {
-        console.error('Batch insert error:', error);
-        errors += batch.length;
-      } else {
-        inserted += batch.length;
-      }
-    }
+    const { inserted, errors } = await processAndUpsertOrders(supabase, orders);
 
     console.log(`Import complete: ${inserted} inserted, ${errors} errors`);
 
@@ -91,7 +114,9 @@ serve(async (req) => {
         success: true, 
         inserted, 
         errors,
-        total: orders.length
+        total: orders.length,
+        refreshTriggered: triggerRefresh,
+        timestamp: new Date().toISOString()
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
