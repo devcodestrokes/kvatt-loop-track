@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   Lightbulb, TrendingUp, TrendingDown, Minus, Package, Users, Recycle, Target, 
   RefreshCw, Brain, MapPin, Clock, ShoppingCart, Store, Zap,
@@ -19,8 +19,10 @@ import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 import { MultiStoreSelector } from '@/components/dashboard/MultiStoreSelector';
 import { InsightsChatbot } from '@/components/dashboard/InsightsChatbot';
+import { ApiSyncStatus } from '@/components/dashboard/ApiSyncStatus';
 
 import { useStoreFilter } from '@/hooks/useStoreFilter';
+import { useApiSync } from '@/hooks/useApiSync';
 import { Store as StoreType } from '@/types/analytics';
 
 interface Insight {
@@ -182,6 +184,36 @@ const Insights = () => {
   const [isFetchingData, setIsFetchingData] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
+
+  // Handle new orders detected - refresh analytics
+  const handleNewOrdersDetected = useCallback((newCount: number) => {
+    toast.info(`${newCount} new orders detected - refreshing analytics...`);
+    // Trigger analytics refresh
+    analyzeExistingData(true);
+  }, []);
+
+  // Handle sync complete - update analytics
+  const handleSyncComplete = useCallback(async (data: any) => {
+    // Analyze the imported orders data
+    const { data: analyticsData, error: analyticsError } = await supabase.functions.invoke('analyze-imported-orders');
+    
+    if (!analyticsError && analyticsData?.data) {
+      setOrderAnalytics(analyticsData.data);
+      saveToStorage(STORAGE_KEYS.ORDER_ANALYTICS, analyticsData.data);
+      const now = new Date().toISOString();
+      setLastAnalyzed(now);
+      localStorage.setItem(STORAGE_KEYS.LAST_ANALYZED, now);
+    }
+  }, []);
+
+  // Use API sync hook with retry logic
+  const { syncStatus, syncOrders, refreshDbCount, isLoading: isSyncing } = useApiSync({
+    maxRetries: 5,
+    baseDelayMs: 2000,
+    maxDelayMs: 60000,
+    onNewOrdersDetected: handleNewOrdersDetected,
+    onSyncComplete: handleSyncComplete,
+  });
 
   // Derive stores from orderAnalytics for filtering
   const availableStores = useMemo((): StoreType[] => {
@@ -355,9 +387,13 @@ const Insights = () => {
     // Analyze existing data on mount (doesn't call external API)
     analyzeExistingData(false);
     
+    // Update DB count on mount
+    refreshDbCount();
+    
     // Set up auto-refresh interval to re-analyze database data
     const intervalId = setInterval(() => {
       analyzeExistingData(true);
+      refreshDbCount();
     }, AUTO_REFRESH_INTERVAL);
     
     return () => clearInterval(intervalId);
@@ -393,82 +429,15 @@ const Insights = () => {
       </div>
 
       <div className="space-y-6">
-          {/* Action Bar */}
-          <div className="flex flex-wrap items-center gap-3">
-            <Button 
-              variant="outline"
-              disabled={isFetchingData || isAutoRefreshing}
-              onClick={async () => {
-                setIsFetchingData(true);
-                try {
-                  toast.loading('Fetching order data from API...', { id: 'api-import' });
-                  
-                  const { data, error } = await supabase.functions.invoke('fetch-orders-api', {
-                    body: { refresh: true }
-                  });
-                  
-                  if (error) {
-                    console.error('API fetch error:', error);
-                    toast.error('Failed to fetch order data', { id: 'api-import' });
-                    return;
-                  }
-                  
-                  // Handle retryable errors
-                  if (data?.retryable) {
-                    toast.error('External API temporarily unavailable. Please try again in a moment.', { id: 'api-import' });
-                    return;
-                  }
-                  
-                  if (data?.success) {
-                    toast.success(`Imported ${data.inserted?.toLocaleString() || 0} orders`, { id: 'api-import' });
-                    
-                    // Analyze the imported orders data
-                    toast.loading('Analyzing imported data...', { id: 'api-analysis' });
-                    const { data: analyticsData, error: analyticsError } = await supabase.functions.invoke('analyze-imported-orders');
-                    
-                    if (analyticsError) {
-                      console.error('Analytics error:', analyticsError);
-                      toast.error('Failed to analyze imported data', { id: 'api-analysis' });
-                    } else if (analyticsData?.data) {
-                      setOrderAnalytics(analyticsData.data);
-                      saveToStorage(STORAGE_KEYS.ORDER_ANALYTICS, analyticsData.data);
-                      const now = new Date().toISOString();
-                      setLastAnalyzed(now);
-                      localStorage.setItem(STORAGE_KEYS.LAST_ANALYZED, now);
-                      toast.success(`Analyzed ${analyticsData.data.summary.totalOrders.toLocaleString()} orders`, { id: 'api-analysis' });
-                    }
-                  } else {
-                    toast.error(data?.error || 'Failed to import orders', { id: 'api-import' });
-                  }
-                } catch (err: any) {
-                  console.error('API import error:', err);
-                  toast.error(err.message || 'Failed to fetch order data', { id: 'api-import' });
-                } finally {
-                  setIsFetchingData(false);
-                }
-              }}
-            >
-              <Database className={`h-4 w-4 mr-2 ${isFetchingData ? 'animate-spin' : ''}`} />
-              {isFetchingData ? 'Syncing...' : 'Sync Orders'}
-            </Button>
-            <Button 
-              onClick={runCROAnalysis} 
-              disabled={!orderAnalytics || isAnalyzing}
-            >
-              <Brain className={`h-4 w-4 mr-2 ${isAnalyzing ? 'animate-pulse' : ''}`} />
-              {isAnalyzing ? 'Analyzing...' : 'Run AI CRO Analysis'}
-            </Button>
+          {/* API Sync Status Indicator */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <ApiSyncStatus syncStatus={syncStatus} />
+            
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               {isAutoRefreshing && (
                 <span className="flex items-center gap-1 text-primary">
                   <RefreshCw className="h-3.5 w-3.5 animate-spin" />
                   Auto-syncing...
-                </span>
-              )}
-              {lastAnalyzed && !isAutoRefreshing && (
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" />
-                  Updated: {new Date(lastAnalyzed).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               )}
               <span className="text-xs text-muted-foreground/60">
@@ -477,6 +446,30 @@ const Insights = () => {
             </div>
           </div>
 
+          {/* Action Bar */}
+          <div className="flex flex-wrap items-center gap-3">
+            <Button 
+              variant="outline"
+              disabled={isSyncing || isFetchingData || isAutoRefreshing}
+              onClick={() => syncOrders(true)}
+            >
+              <Database className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+              {isSyncing ? 'Syncing...' : 'Sync Orders'}
+            </Button>
+            <Button 
+              onClick={runCROAnalysis} 
+              disabled={!orderAnalytics || isAnalyzing}
+            >
+              <Brain className={`h-4 w-4 mr-2 ${isAnalyzing ? 'animate-pulse' : ''}`} />
+              {isAnalyzing ? 'Analyzing...' : 'Run AI CRO Analysis'}
+            </Button>
+            {lastAnalyzed && !isAutoRefreshing && (
+              <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Clock className="h-3.5 w-3.5" />
+                Analytics updated: {new Date(lastAnalyzed).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+          </div>
           {/* Summary Cards */}
           {orderAnalytics && (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
