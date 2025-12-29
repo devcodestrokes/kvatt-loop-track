@@ -312,50 +312,37 @@ const Insights = () => {
     }
   };
 
-  // Auto-refresh function for real-time data
-  const fetchAndAnalyzeOrders = async (showToast = true) => {
+  // Analyze existing data from database (doesn't require external API)
+  const analyzeExistingData = async (showToast = false) => {
     if (isFetchingData || isAutoRefreshing) return;
     
     setIsAutoRefreshing(true);
     try {
-      // Get cached data (don't trigger refresh on auto-sync to avoid API overload)
-      const { data, error } = await supabase.functions.invoke('fetch-orders-api', {
-        body: { refresh: false }
-      });
+      // Analyze data already in the database - no external API call needed
+      const { data: analyticsData, error: analyticsError } = await supabase.functions.invoke('analyze-imported-orders');
       
-      if (error) {
-        console.error('Auto-refresh fetch error:', error);
+      if (analyticsError) {
+        console.error('Analysis error:', analyticsError);
         return;
       }
       
-      // Handle retryable errors gracefully
-      if (data?.retryable) {
-        console.log('API temporarily unavailable, will retry later');
-        return;
-      }
-      
-      if (data?.success) {
-        // Analyze the imported orders data
-        const { data: analyticsData, error: analyticsError } = await supabase.functions.invoke('analyze-imported-orders');
+      if (analyticsData?.success && analyticsData?.data) {
+        const prevTotal = orderAnalytics?.summary?.totalOrders || 0;
+        const newTotal = analyticsData.data.summary.totalOrders || 0;
         
-        if (!analyticsError && analyticsData?.data) {
-          const prevTotal = orderAnalytics?.summary?.totalOrders || 0;
-          const newTotal = analyticsData.data.summary.totalOrders || 0;
-          
-          setOrderAnalytics(analyticsData.data);
-          saveToStorage(STORAGE_KEYS.ORDER_ANALYTICS, analyticsData.data);
-          const now = new Date().toISOString();
-          setLastAnalyzed(now);
-          localStorage.setItem(STORAGE_KEYS.LAST_ANALYZED, now);
-          
-          // Only show toast if there's new data
-          if (showToast && newTotal > prevTotal) {
-            toast.success(`${newTotal - prevTotal} new orders synced`);
-          }
+        setOrderAnalytics(analyticsData.data);
+        saveToStorage(STORAGE_KEYS.ORDER_ANALYTICS, analyticsData.data);
+        const now = new Date().toISOString();
+        setLastAnalyzed(now);
+        localStorage.setItem(STORAGE_KEYS.LAST_ANALYZED, now);
+        
+        // Only show toast if there's new data and showToast is true
+        if (showToast && newTotal > prevTotal) {
+          toast.success(`${newTotal - prevTotal} new orders detected`);
         }
       }
     } catch (error: any) {
-      console.error('Auto-refresh error:', error);
+      console.error('Analysis error:', error);
     } finally {
       setIsAutoRefreshing(false);
     }
@@ -365,12 +352,12 @@ const Insights = () => {
   useEffect(() => {
     fetchData();
     
-    // Fetch order data on mount
-    fetchAndAnalyzeOrders(false);
+    // Analyze existing data on mount (doesn't call external API)
+    analyzeExistingData(false);
     
-    // Set up auto-refresh interval
+    // Set up auto-refresh interval to re-analyze database data
     const intervalId = setInterval(() => {
-      fetchAndAnalyzeOrders(true);
+      analyzeExistingData(true);
     }, AUTO_REFRESH_INTERVAL);
     
     return () => clearInterval(intervalId);
