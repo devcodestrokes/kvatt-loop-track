@@ -160,6 +160,8 @@ const saveToStorage = (key: string, data: any) => {
   }
 };
 
+const AUTO_REFRESH_INTERVAL = 60000; // 1 minute auto-refresh
+
 const Insights = () => {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [merchants, setMerchants] = useState<{ id: string; name: string }[]>([]);
@@ -179,6 +181,7 @@ const Insights = () => {
   );
   const [isFetchingData, setIsFetchingData] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
 
   // Derive stores from orderAnalytics for filtering
   const availableStores = useMemo((): StoreType[] => {
@@ -309,6 +312,64 @@ const Insights = () => {
     }
   };
 
+  // Auto-refresh function for real-time data
+  const fetchAndAnalyzeOrders = async (showToast = true) => {
+    if (isFetchingData || isAutoRefreshing) return;
+    
+    setIsAutoRefreshing(true);
+    try {
+      // Trigger refresh on the API
+      const { data, error } = await supabase.functions.invoke('fetch-orders-api', {
+        body: { refresh: true }
+      });
+      
+      if (error) {
+        console.error('Auto-refresh fetch error:', error);
+        return;
+      }
+      
+      if (data?.success) {
+        // Analyze the imported orders data
+        const { data: analyticsData, error: analyticsError } = await supabase.functions.invoke('analyze-imported-orders');
+        
+        if (!analyticsError && analyticsData?.data) {
+          const prevTotal = orderAnalytics?.summary?.totalOrders || 0;
+          const newTotal = analyticsData.data.summary.totalOrders || 0;
+          
+          setOrderAnalytics(analyticsData.data);
+          saveToStorage(STORAGE_KEYS.ORDER_ANALYTICS, analyticsData.data);
+          const now = new Date().toISOString();
+          setLastAnalyzed(now);
+          localStorage.setItem(STORAGE_KEYS.LAST_ANALYZED, now);
+          
+          // Only show toast if there's new data
+          if (showToast && newTotal > prevTotal) {
+            toast.success(`${newTotal - prevTotal} new orders synced`);
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error('Auto-refresh error:', error);
+    } finally {
+      setIsAutoRefreshing(false);
+    }
+  };
+
+  // Initial data fetch and auto-refresh setup
+  useEffect(() => {
+    fetchData();
+    
+    // Fetch order data on mount
+    fetchAndAnalyzeOrders(false);
+    
+    // Set up auto-refresh interval
+    const intervalId = setInterval(() => {
+      fetchAndAnalyzeOrders(true);
+    }, AUTO_REFRESH_INTERVAL);
+    
+    return () => clearInterval(intervalId);
+  }, []);
+
   useEffect(() => {
     fetchData();
   }, [selectedMerchant]);
@@ -343,11 +404,15 @@ const Insights = () => {
           <div className="flex flex-wrap items-center gap-3">
             <Button 
               variant="outline"
+              disabled={isFetchingData || isAutoRefreshing}
               onClick={async () => {
+                setIsFetchingData(true);
                 try {
                   toast.loading('Fetching order data from API...', { id: 'api-import' });
                   
-                  const { data, error } = await supabase.functions.invoke('fetch-orders-api');
+                  const { data, error } = await supabase.functions.invoke('fetch-orders-api', {
+                    body: { stream: true, refresh: true }
+                  });
                   
                   if (error) {
                     console.error('API fetch error:', error);
@@ -356,7 +421,7 @@ const Insights = () => {
                   }
                   
                   if (data?.success) {
-                    toast.success(`Imported ${data.inserted?.toLocaleString() || 0} orders (${data.errors || 0} errors)`, { id: 'api-import' });
+                    toast.success(`Imported ${data.inserted?.toLocaleString() || 0} orders`, { id: 'api-import' });
                     
                     // Analyze the imported orders data
                     toast.loading('Analyzing imported data...', { id: 'api-analysis' });
@@ -379,11 +444,13 @@ const Insights = () => {
                 } catch (err: any) {
                   console.error('API import error:', err);
                   toast.error(err.message || 'Failed to fetch order data', { id: 'api-import' });
+                } finally {
+                  setIsFetchingData(false);
                 }
               }}
             >
-              <Database className="h-4 w-4 mr-2" />
-              Fetch Orders
+              <Database className={`h-4 w-4 mr-2 ${isFetchingData ? 'animate-spin' : ''}`} />
+              {isFetchingData ? 'Syncing...' : 'Sync Orders'}
             </Button>
             <Button 
               onClick={runCROAnalysis} 
@@ -392,12 +459,23 @@ const Insights = () => {
               <Brain className={`h-4 w-4 mr-2 ${isAnalyzing ? 'animate-pulse' : ''}`} />
               {isAnalyzing ? 'Analyzing...' : 'Run AI CRO Analysis'}
             </Button>
-            {lastAnalyzed && (
-              <span className="text-sm text-muted-foreground flex items-center gap-1">
-                <Clock className="h-3.5 w-3.5" />
-                Last analyzed: {new Date(lastAnalyzed).toLocaleDateString()} {new Date(lastAnalyzed).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {isAutoRefreshing && (
+                <span className="flex items-center gap-1 text-primary">
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  Auto-syncing...
+                </span>
+              )}
+              {lastAnalyzed && !isAutoRefreshing && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
+                  Updated: {new Date(lastAnalyzed).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
+              <span className="text-xs text-muted-foreground/60">
+                • Auto-refresh: 1 min
               </span>
-            )}
+            </div>
           </div>
 
           {/* Summary Cards */}
