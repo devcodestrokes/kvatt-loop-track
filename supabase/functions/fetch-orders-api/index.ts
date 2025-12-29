@@ -93,17 +93,20 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error('API error:', response.status, errorText);
       
-      // If API is temporarily unavailable, return cached data message
+      // If API is temporarily unavailable, return 200 with retryable flag
+      // (returning non-2xx causes Supabase client to throw)
       if (response.status === 502 || response.status === 503 || response.status === 504) {
+        console.log('External API temporarily unavailable, returning graceful response');
         return new Response(
           JSON.stringify({ 
             success: false, 
             error: 'External API temporarily unavailable. Data will sync automatically when available.',
-            retryable: true
+            retryable: true,
+            apiStatus: response.status
           }),
           { 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 503 
+            status: 200 // Return 200 so client doesn't throw
           }
         );
       }
