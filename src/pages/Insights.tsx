@@ -536,108 +536,186 @@ const Insights = () => {
             </div>
           )}
 
-          {/* Behavioral Signals (Non-PII Data) */}
+          {/* CRO Analysis Parameters */}
           <div className="space-y-4">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Layers className="h-5 w-5 text-primary" />
-              Behavioral Signals
-              <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-normal">
-                Non-PII
+              CRO Analysis Parameters
+              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-normal">
+                Available Data
               </span>
             </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {/* Device Type */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {/* Temporal Patterns */}
               <div className="metric-card">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Smartphone className="h-5 w-5" />
+                    <Calendar className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">Device Type</h3>
-                    <p className="text-xs text-muted-foreground">Mobile vs Desktop</p>
+                    <h3 className="font-semibold">Temporal Patterns</h3>
+                    <p className="text-xs text-muted-foreground">Day & month trends</p>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-2 rounded bg-muted/50">
-                    <div className="flex items-center gap-2">
-                      <Smartphone className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Mobile</span>
-                    </div>
-                    <span className="text-sm text-muted-foreground">Not captured</span>
-                  </div>
-                  <div className="flex items-center justify-between p-2 rounded bg-muted/50">
-                    <div className="flex items-center gap-2">
-                      <Monitor className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Desktop</span>
-                    </div>
-                    <span className="text-sm text-muted-foreground">Not captured</span>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-3 italic">
-                  Schema ready for future tracking
-                </p>
-              </div>
-
-              {/* Basket Composition */}
-              <div className="metric-card">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <ShoppingBag className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Basket Composition</h3>
-                    <p className="text-xs text-muted-foreground">High-level categories</p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between p-2 rounded bg-muted/50">
-                    <span className="text-sm">Avg Items/Order</span>
-                    <span className="text-sm text-muted-foreground">Not captured</span>
-                  </div>
-                  <div className="flex items-center justify-between p-2 rounded bg-muted/50">
-                    <span className="text-sm">Multi-item Orders</span>
-                    <span className="text-sm text-muted-foreground">Not captured</span>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-3 italic">
-                  Requires line item data import
-                </p>
-              </div>
-
-              {/* Retailer Type */}
-              <div className="metric-card">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Store className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold">Retailer Comparison</h3>
-                    <p className="text-xs text-muted-foreground">Performance by store type</p>
-                  </div>
-                </div>
-                {filteredStoreAnalytics.length > 0 ? (
+                {orderAnalytics?.temporal?.byDayOfWeek && orderAnalytics.temporal.byDayOfWeek.length > 0 ? (
                   <div className="space-y-2">
-                    {filteredStoreAnalytics.slice(0, 3).map((store, i) => (
-                      <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/50">
-                        <span className="text-sm truncate max-w-[120px]">
-                          {store.storeId.replace('.myshopify.com', '')}
-                        </span>
-                        <span className={`text-sm font-semibold ${parseFloat(store.optInRate) > 10 ? 'text-primary' : ''}`}>
-                          {store.optInRate}%
-                        </span>
-                      </div>
-                    ))}
-                    {filteredStoreAnalytics.length > 3 && (
-                      <p className="text-xs text-muted-foreground text-center">
-                        +{filteredStoreAnalytics.length - 3} more stores
-                      </p>
-                    )}
+                    {(() => {
+                      const bestDay = [...orderAnalytics.temporal.byDayOfWeek].sort((a, b) => parseFloat(b.optInRate) - parseFloat(a.optInRate))[0];
+                      const worstDay = [...orderAnalytics.temporal.byDayOfWeek].sort((a, b) => parseFloat(a.optInRate) - parseFloat(b.optInRate))[0];
+                      return (
+                        <>
+                          <div className="flex items-center justify-between p-2 rounded bg-primary/5 border border-primary/20">
+                            <span className="text-sm">Best: {bestDay.day}</span>
+                            <span className="text-sm font-bold text-primary">{bestDay.optInRate}%</span>
+                          </div>
+                          <div className="flex items-center justify-between p-2 rounded bg-muted/50">
+                            <span className="text-sm">Lowest: {worstDay.day}</span>
+                            <span className="text-sm text-muted-foreground">{worstDay.optInRate}%</span>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 ) : (
                   <div className="text-center py-4 text-muted-foreground text-sm">
-                    Run analysis to see store comparison
+                    Run analysis to see patterns
                   </div>
                 )}
+              </div>
+
+              {/* Order Value Segments */}
+              <div className="metric-card">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <ShoppingCart className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Value Segments</h3>
+                    <p className="text-xs text-muted-foreground">Order price analysis</p>
+                  </div>
+                </div>
+                {orderAnalytics?.orderValueAnalysis && orderAnalytics.orderValueAnalysis.length > 0 ? (
+                  <div className="space-y-2">
+                    {(() => {
+                      const bestRange = [...orderAnalytics.orderValueAnalysis]
+                        .filter(r => r.total >= 100)
+                        .sort((a, b) => parseFloat(b.optInRate) - parseFloat(a.optInRate))[0];
+                      return bestRange ? (
+                        <>
+                          <div className="flex items-center justify-between p-2 rounded bg-primary/5 border border-primary/20">
+                            <span className="text-sm">Best: {bestRange.range}</span>
+                            <span className="text-sm font-bold text-primary">{bestRange.optInRate}%</span>
+                          </div>
+                          <div className="flex items-center justify-between p-2 rounded bg-muted/50">
+                            <span className="text-sm">Opt-ins in range</span>
+                            <span className="text-sm text-muted-foreground">{bestRange.optIns.toLocaleString()}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Analyzing...</p>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground text-sm">
+                    Run analysis to see segments
+                  </div>
+                )}
+              </div>
+
+              {/* Monthly Trends */}
+              <div className="metric-card">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <TrendingUp className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Monthly Trends</h3>
+                    <p className="text-xs text-muted-foreground">Month-over-month</p>
+                  </div>
+                </div>
+                {orderAnalytics?.temporal?.byMonth && orderAnalytics.temporal.byMonth.length > 0 ? (
+                  <div className="space-y-2">
+                    {(() => {
+                      const recentMonths = orderAnalytics.temporal.byMonth.slice(-2);
+                      const currentMonth = recentMonths[recentMonths.length - 1];
+                      const prevMonth = recentMonths.length > 1 ? recentMonths[0] : null;
+                      const trend = prevMonth 
+                        ? parseFloat(currentMonth.optInRate) - parseFloat(prevMonth.optInRate) 
+                        : 0;
+                      return (
+                        <>
+                          <div className="flex items-center justify-between p-2 rounded bg-primary/5 border border-primary/20">
+                            <span className="text-sm">{currentMonth.month}</span>
+                            <span className="text-sm font-bold text-primary">{currentMonth.optInRate}%</span>
+                          </div>
+                          {prevMonth && (
+                            <div className="flex items-center justify-between p-2 rounded bg-muted/50">
+                              <span className="text-sm">vs prev month</span>
+                              <span className={`text-sm font-medium ${trend > 0 ? 'text-primary' : trend < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                {trend > 0 ? '+' : ''}{trend.toFixed(2)}%
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground text-sm">
+                    Run analysis to see trends
+                  </div>
+                )}
+              </div>
+
+              {/* Payment Status */}
+              <div className="metric-card">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Target className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Conversion Quality</h3>
+                    <p className="text-xs text-muted-foreground">Opt-in vs opt-out</p>
+                  </div>
+                </div>
+                {orderAnalytics?.summary ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between p-2 rounded bg-primary/5 border border-primary/20">
+                      <span className="text-sm">Opt-in orders</span>
+                      <span className="text-sm font-bold text-primary">{orderAnalytics.summary.totalOptIns.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-2 rounded bg-muted/50">
+                      <span className="text-sm">Value uplift</span>
+                      <span className={`text-sm font-medium ${parseFloat(orderAnalytics.summary.valueDifference) > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
+                        +£{orderAnalytics.summary.valueDifference}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground text-sm">
+                    Run analysis to see data
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Data Availability Notice */}
+          <div className="bg-muted/30 border border-border rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Database className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div className="flex-1">
+                <h3 className="font-medium text-sm mb-1">Data Parameters Available for CRO Analysis</h3>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">✓ Order Value</span>
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">✓ Opt-in Status</span>
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">✓ Temporal (Day/Month)</span>
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">✓ Payment Status</span>
+                  <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">○ Geographic (API pending)</span>
+                  <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">○ Device Type (not tracked)</span>
+                  <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">○ Basket Items (requires line items)</span>
+                </div>
               </div>
             </div>
           </div>
@@ -720,12 +798,17 @@ const Insights = () => {
           {orderAnalytics && (
             <div className="grid gap-6 lg:grid-cols-2">
               {/* Top Cities */}
-              {orderAnalytics.geographic.bestCitiesByOptIn && orderAnalytics.geographic.bestCitiesByOptIn.length > 0 && (
-                <div className="metric-card">
-                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-primary" />
-                    Best Cities by Opt-In Rate
-                  </h2>
+              <div className="metric-card">
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  Geographic: Cities
+                  {(!orderAnalytics.geographic.bestCitiesByOptIn || orderAnalytics.geographic.bestCitiesByOptIn.length === 0) && (
+                    <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-normal ml-2">
+                      Pending
+                    </span>
+                  )}
+                </h2>
+                {orderAnalytics.geographic.bestCitiesByOptIn && orderAnalytics.geographic.bestCitiesByOptIn.length > 0 ? (
                   <div className="space-y-2">
                     {orderAnalytics.geographic.bestCitiesByOptIn.slice(0, 10).map((city, i) => (
                       <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/50">
@@ -739,16 +822,27 @@ const Insights = () => {
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <MapPin className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Geographic data not available in API</p>
+                    <p className="text-xs mt-1">City/region fields pending from data source</p>
+                  </div>
+                )}
+              </div>
 
               {/* Top Provinces/Regions */}
-              {orderAnalytics.geographic.topProvinces && orderAnalytics.geographic.topProvinces.length > 0 && (
-                <div className="metric-card">
-                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <MapPin className="h-5 w-5 text-primary" />
-                    Opt-In by Region
-                  </h2>
+              <div className="metric-card">
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  Geographic: Regions
+                  {(!orderAnalytics.geographic.topProvinces || orderAnalytics.geographic.topProvinces.length === 0) && (
+                    <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-normal ml-2">
+                      Pending
+                    </span>
+                  )}
+                </h2>
+                {orderAnalytics.geographic.topProvinces && orderAnalytics.geographic.topProvinces.length > 0 ? (
                   <div className="space-y-2">
                     {orderAnalytics.geographic.topProvinces.slice(0, 10).map((province, i) => (
                       <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/50">
@@ -762,8 +856,39 @@ const Insights = () => {
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <MapPin className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Province/region data not available</p>
+                    <p className="text-xs mt-1">Region fields pending from data source</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Monthly Opt-In Trend */}
+          {orderAnalytics && orderAnalytics.temporal.byMonth && orderAnalytics.temporal.byMonth.length > 0 && (
+            <div className="metric-card">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                Monthly Opt-In Trend
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+                {orderAnalytics.temporal.byMonth.slice(-8).map((month, i) => {
+                  const monthName = new Date(month.month + '-01').toLocaleDateString('en-US', { month: 'short' });
+                  const isHighest = month.optInRate === Math.max(...orderAnalytics.temporal.byMonth.slice(-8).map(m => parseFloat(m.optInRate))).toFixed(2);
+                  return (
+                    <div key={i} className={`text-center p-3 rounded ${isHighest ? 'bg-primary/10 border border-primary/30' : 'bg-muted/50'}`}>
+                      <p className="text-xs text-muted-foreground mb-1">{monthName}</p>
+                      <p className={`text-lg font-bold ${isHighest ? 'text-primary' : ''}`}>
+                        {month.optInRate}%
+                      </p>
+                      <p className="text-xs text-muted-foreground">{month.total.toLocaleString()}</p>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
