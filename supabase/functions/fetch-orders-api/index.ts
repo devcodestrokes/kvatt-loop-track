@@ -6,28 +6,61 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Parse destination field which is a JSON string containing address data
+const parseDestination = (destination: string | null | undefined): { city: string | null; province: string | null; country: string | null } => {
+  if (!destination) {
+    return { city: null, province: null, country: null };
+  }
+  
+  try {
+    // Destination is a JSON string like: {"city":"Manchester","province":"England","country":"United Kingdom",...}
+    const parsed = typeof destination === 'string' ? JSON.parse(destination) : destination;
+    return {
+      city: parsed.city || null,
+      province: parsed.province || null,
+      country: parsed.country || null,
+    };
+  } catch (e) {
+    console.warn('Failed to parse destination:', e);
+    return { city: null, province: null, country: null };
+  }
+};
+
 const processAndUpsertOrders = async (supabase: any, orders: any[]) => {
   let inserted = 0;
   let errors = 0;
   const batchSize = 500;
 
+  // Log first order structure for debugging
+  if (orders.length > 0) {
+    console.log('Sample order fields:', Object.keys(orders[0]));
+    console.log('Sample order destination:', orders[0].destination);
+    console.log('Sample order user_id:', orders[0].user_id);
+  }
+
   for (let i = 0; i < orders.length; i += batchSize) {
     const batch = orders.slice(i, i + batchSize);
     
-    const formattedBatch = batch.map((order: any) => ({
-      external_id: order.id?.toString() || order.external_id?.toString() || `api-${Date.now()}-${Math.random()}`,
-      order_number: order.order_number?.toString() || order.name || null,
-      shopify_order_id: order.shopify_order_id?.toString() || order.id?.toString() || null,
-      customer_external_id: order.customer_id?.toString() || order.customer_external_id?.toString() || null,
-      opt_in: order.opt_in === true || order.opt_in === 'true' || order.opt_in === 1 || order.opt_in === '1',
-      total_price: parseFloat(order.total_price) || 0,
-      city: order.city || order.shipping_city || null,
-      province: order.province || order.shipping_province || null,
-      country: order.country || order.shipping_country || null,
-      store_id: order.store_id || order.store || null,
-      payment_status: order.payment_status || order.financial_status || null,
-      shopify_created_at: order.created_at || order.shopify_created_at || null,
-    }));
+    const formattedBatch = batch.map((order: any) => {
+      // Parse destination field for geographic data
+      const parsedDestination = parseDestination(order.destination);
+      
+      return {
+        external_id: order.id?.toString() || order.external_id?.toString() || `api-${Date.now()}-${Math.random()}`,
+        order_number: order.order_number?.toString() || order.name || null,
+        shopify_order_id: order.shopify_order_id?.toString() || order.id?.toString() || null,
+        customer_external_id: order.customer_id?.toString() || order.customer_external_id?.toString() || null,
+        opt_in: order.opt_in === true || order.opt_in === 'true' || order.opt_in === 1 || order.opt_in === '1',
+        total_price: parseFloat(order.total_price) || 0,
+        // Try direct fields first, then parsed destination
+        city: order.city || order.shipping_city || parsedDestination.city || null,
+        province: order.province || order.shipping_province || parsedDestination.province || null,
+        country: order.country || order.shipping_country || parsedDestination.country || null,
+        store_id: order.store_id || order.store || order.user_id?.toString() || null,
+        payment_status: order.payment_status || order.financial_status || null,
+        shopify_created_at: order.created_at || order.shopify_created_at || null,
+      };
+    });
 
     const { error } = await supabase
       .from('imported_orders')
