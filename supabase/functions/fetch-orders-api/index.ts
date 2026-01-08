@@ -94,6 +94,39 @@ const processAndUpsertOrders = async (supabase: any, orders: any[]) => {
       // Parse destination field for geographic data
       const parsedDestination = parseDestination(order.destination);
       
+      // Log parsing results for first few orders
+      if (batch.indexOf(order) < 3) {
+        console.log('Order geo parsing:', {
+          rawCity: order.city?.substring?.(0, 30),
+          parsedCity: parsedDestination.city,
+          parsedProvince: parsedDestination.province,
+          parsedCountry: parsedDestination.country
+        });
+      }
+      
+      // Helper to check if a value is clean (not JSON garbage)
+      const isCleanValue = (val: string | null | undefined): boolean => {
+        if (!val) return false;
+        // Skip if it looks like JSON or has escaped characters
+        return !val.includes('{') && !val.includes('\\') && !val.startsWith('"');
+      };
+      
+      // Prioritize parsed destination, only fall back to direct fields if they're clean
+      const city = parsedDestination.city || 
+                   (isCleanValue(order.city) ? order.city : null) || 
+                   (isCleanValue(order.shipping_city) ? order.shipping_city : null) || 
+                   null;
+      
+      const province = parsedDestination.province || 
+                       (isCleanValue(order.province) ? order.province : null) || 
+                       (isCleanValue(order.shipping_province) ? order.shipping_province : null) || 
+                       null;
+      
+      const country = parsedDestination.country || 
+                      (isCleanValue(order.country) ? order.country : null) || 
+                      (isCleanValue(order.shipping_country) ? order.shipping_country : null) || 
+                      null;
+      
       return {
         external_id: order.id?.toString() || order.external_id?.toString() || `api-${Date.now()}-${Math.random()}`,
         order_number: order.order_number?.toString() || order.name || null,
@@ -101,10 +134,9 @@ const processAndUpsertOrders = async (supabase: any, orders: any[]) => {
         customer_external_id: order.customer_id?.toString() || order.customer_external_id?.toString() || null,
         opt_in: order.opt_in === true || order.opt_in === 'true' || order.opt_in === 1 || order.opt_in === '1',
         total_price: parseFloat(order.total_price) || 0,
-        // Try direct fields first, then parsed destination
-        city: order.city || order.shipping_city || parsedDestination.city || null,
-        province: order.province || order.shipping_province || parsedDestination.province || null,
-        country: order.country || order.shipping_country || parsedDestination.country || null,
+        city,
+        province,
+        country,
         store_id: order.store_id || order.store || order.user_id?.toString() || null,
         payment_status: order.payment_status || order.financial_status || null,
         shopify_created_at: order.created_at || order.shopify_created_at || null,

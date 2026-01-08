@@ -7,37 +7,71 @@ const corsHeaders = {
 };
 
 // Parse geographic data from city field which may contain full JSON destination
-// This handles legacy data where the entire JSON was stored in the city field
+// This handles legacy data where the entire escaped JSON was stored in the city field
+// Example malformed data: "{\"first_name\":\"Bhakti\",\"city\":\"Manchester\",...}"
 const parseGeographicFromField = (value: string | null): { city: string | null; province: string | null; country: string | null } => {
   if (!value) return { city: null, province: null, country: null };
   
-  // Check if the value looks like JSON (starts with { or ")
-  if (value.startsWith('{') || value.startsWith('"')) {
-    try {
-      let parsed: any = value;
-      
-      // Parse JSON string
-      if (typeof value === 'string') {
-        parsed = JSON.parse(value);
-        // Handle double-escaped JSON
-        if (typeof parsed === 'string') {
-          parsed = JSON.parse(parsed);
-        }
-      }
-      
-      return {
-        city: parsed?.city || null,
-        province: parsed?.province || null,
-        country: parsed?.country || null,
-      };
-    } catch (e) {
-      // Not valid JSON, return as-is (might be a plain city name)
-      return { city: value, province: null, country: null };
-    }
+  // Skip if it's already a clean value (no JSON markers)
+  if (!value.includes('{') && !value.includes('"') && !value.includes('\\')) {
+    return { city: value, province: null, country: null };
   }
   
-  // Plain string value (already a city name)
-  return { city: value, province: null, country: null };
+  try {
+    let jsonStr = value;
+    
+    // Handle case where value starts with escaped quote like "{\" or \"
+    // This is common when JSON was incorrectly stored
+    if (value.startsWith('"{') || value.startsWith('"\\')) {
+      // Remove outer quotes if present
+      jsonStr = value.slice(1, -1);
+    }
+    
+    // Replace escaped quotes with regular quotes
+    jsonStr = jsonStr.replace(/\\"/g, '"');
+    
+    // Try to parse as JSON
+    const parsed = JSON.parse(jsonStr);
+    
+    console.log('Successfully parsed geographic data:', {
+      city: parsed?.city,
+      province: parsed?.province,
+      country: parsed?.country
+    });
+    
+    return {
+      city: parsed?.city || null,
+      province: parsed?.province || null,
+      country: parsed?.country || null,
+    };
+  } catch (e) {
+    // Try regex extraction as fallback
+    try {
+      const cityMatch = value.match(/"city"\s*:\s*"([^"]+)"/);
+      const provinceMatch = value.match(/"province"\s*:\s*"([^"]+)"/);
+      const countryMatch = value.match(/"country"\s*:\s*"([^"]+)"/);
+      
+      if (cityMatch || provinceMatch || countryMatch) {
+        console.log('Extracted via regex:', {
+          city: cityMatch?.[1],
+          province: provinceMatch?.[1],
+          country: countryMatch?.[1]
+        });
+        
+        return {
+          city: cityMatch?.[1] || null,
+          province: provinceMatch?.[1] || null,
+          country: countryMatch?.[1] || null,
+        };
+      }
+    } catch (regexError) {
+      console.warn('Regex extraction failed:', regexError);
+    }
+    
+    // Not valid JSON and regex failed, skip this value
+    console.warn('Failed to parse geographic field:', value?.substring?.(0, 50));
+    return { city: null, province: null, country: null };
+  }
 };
 
 serve(async (req) => {
