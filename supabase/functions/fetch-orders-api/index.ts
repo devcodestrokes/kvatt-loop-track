@@ -6,23 +6,72 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Parse destination field which is a JSON string containing address data
-const parseDestination = (destination: string | null | undefined): { city: string | null; province: string | null; country: string | null } => {
+// Parse destination field which can be an escaped JSON string or regular JSON
+// Example: "{\"first_name\":\"Bhakti\",\"city\":\"Manchester\",...}" needs double parsing
+const parseDestination = (destination: string | null | undefined): { 
+  city: string | null; 
+  province: string | null; 
+  country: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  address1: string | null;
+  address2: string | null;
+  zip: string | null;
+  phone: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  country_code: string | null;
+  province_code: string | null;
+} => {
+  const emptyResult = { 
+    city: null, province: null, country: null, first_name: null, last_name: null,
+    address1: null, address2: null, zip: null, phone: null, latitude: null, 
+    longitude: null, country_code: null, province_code: null 
+  };
+  
   if (!destination) {
-    return { city: null, province: null, country: null };
+    return emptyResult;
   }
   
   try {
-    // Destination is a JSON string like: {"city":"Manchester","province":"England","country":"United Kingdom",...}
-    const parsed = typeof destination === 'string' ? JSON.parse(destination) : destination;
+    let parsed: any = destination;
+    
+    // If it's a string, parse it
+    if (typeof destination === 'string') {
+      // First parse - handles escaped JSON like "{\"city\":\"Manchester\"}"
+      parsed = JSON.parse(destination);
+      
+      // If the result is still a string, parse again (double escaped)
+      if (typeof parsed === 'string') {
+        parsed = JSON.parse(parsed);
+      }
+    }
+    
+    // Log successful parse for debugging
+    console.log('Parsed destination successfully:', {
+      city: parsed?.city,
+      province: parsed?.province,
+      country: parsed?.country
+    });
+    
     return {
-      city: parsed.city || null,
-      province: parsed.province || null,
-      country: parsed.country || null,
+      city: parsed?.city || null,
+      province: parsed?.province || null,
+      country: parsed?.country || null,
+      first_name: parsed?.first_name || null,
+      last_name: parsed?.last_name || null,
+      address1: parsed?.address1 || null,
+      address2: parsed?.address2 || null,
+      zip: parsed?.zip || null,
+      phone: parsed?.phone || null,
+      latitude: parsed?.latitude || null,
+      longitude: parsed?.longitude || null,
+      country_code: parsed?.country_code || null,
+      province_code: parsed?.province_code || null,
     };
   } catch (e) {
-    console.warn('Failed to parse destination:', e);
-    return { city: null, province: null, country: null };
+    console.warn('Failed to parse destination:', destination?.substring?.(0, 100), e);
+    return emptyResult;
   }
 };
 

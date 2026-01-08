@@ -712,7 +712,7 @@ const Insights = () => {
                   <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">✓ Opt-in Status</span>
                   <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">✓ Temporal (Day/Month)</span>
                   <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">✓ Payment Status</span>
-                  <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">○ Geographic (API pending)</span>
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full">✓ Geographic (City/Region/Country)</span>
                   <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">○ Device Type (not tracked)</span>
                   <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">○ Basket Items (requires line items)</span>
                 </div>
@@ -796,25 +796,20 @@ const Insights = () => {
 
           {/* Geographic Analysis */}
           {orderAnalytics && (
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-6 lg:grid-cols-3">
               {/* Top Cities */}
               <div className="metric-card">
                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-primary" />
-                  Geographic: Cities
-                  {(!orderAnalytics.geographic.bestCitiesByOptIn || orderAnalytics.geographic.bestCitiesByOptIn.length === 0) && (
-                    <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-normal ml-2">
-                      Pending
-                    </span>
-                  )}
+                  Top Cities
                 </h2>
                 {orderAnalytics.geographic.bestCitiesByOptIn && orderAnalytics.geographic.bestCitiesByOptIn.length > 0 ? (
                   <div className="space-y-2">
-                    {orderAnalytics.geographic.bestCitiesByOptIn.slice(0, 10).map((city, i) => (
+                    {orderAnalytics.geographic.bestCitiesByOptIn.slice(0, 8).map((city, i) => (
                       <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/50">
-                        <span className="text-sm font-medium">{city.name}</span>
-                        <div className="flex items-center gap-4">
-                          <span className="text-xs text-muted-foreground">{city.total} orders</span>
+                        <span className="text-sm font-medium truncate max-w-[140px]" title={city.name}>{city.name}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-muted-foreground">{city.total.toLocaleString()}</span>
                           <span className={`text-sm font-bold ${parseFloat(city.optInRate) > 15 ? 'text-primary' : ''}`}>
                             {city.optInRate}%
                           </span>
@@ -825,8 +820,8 @@ const Insights = () => {
                 ) : (
                   <div className="text-center py-6 text-muted-foreground">
                     <MapPin className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">Geographic data not available in API</p>
-                    <p className="text-xs mt-1">City/region fields pending from data source</p>
+                    <p className="text-sm">No city data yet</p>
+                    <p className="text-xs mt-1">Sync orders to load geographic data</p>
                   </div>
                 )}
               </div>
@@ -835,20 +830,15 @@ const Insights = () => {
               <div className="metric-card">
                 <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-primary" />
-                  Geographic: Regions
-                  {(!orderAnalytics.geographic.topProvinces || orderAnalytics.geographic.topProvinces.length === 0) && (
-                    <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-normal ml-2">
-                      Pending
-                    </span>
-                  )}
+                  Top Regions
                 </h2>
                 {orderAnalytics.geographic.topProvinces && orderAnalytics.geographic.topProvinces.length > 0 ? (
                   <div className="space-y-2">
-                    {orderAnalytics.geographic.topProvinces.slice(0, 10).map((province, i) => (
+                    {orderAnalytics.geographic.topProvinces.slice(0, 8).map((province, i) => (
                       <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/50">
-                        <span className="text-sm font-medium">{province.name}</span>
-                        <div className="flex items-center gap-4">
-                          <span className="text-xs text-muted-foreground">{province.total.toLocaleString()} orders</span>
+                        <span className="text-sm font-medium truncate max-w-[140px]" title={province.name}>{province.name}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-muted-foreground">{province.total.toLocaleString()}</span>
                           <span className={`text-sm font-bold ${parseFloat(province.optInRate) > 10 ? 'text-primary' : ''}`}>
                             {province.optInRate}%
                           </span>
@@ -859,8 +849,37 @@ const Insights = () => {
                 ) : (
                   <div className="text-center py-6 text-muted-foreground">
                     <MapPin className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">Province/region data not available</p>
-                    <p className="text-xs mt-1">Region fields pending from data source</p>
+                    <p className="text-sm">No region data yet</p>
+                    <p className="text-xs mt-1">Sync orders to load geographic data</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Top Countries */}
+              <div className="metric-card">
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  Top Countries
+                </h2>
+                {orderAnalytics.geographic.topCountries && orderAnalytics.geographic.topCountries.length > 0 ? (
+                  <div className="space-y-2">
+                    {orderAnalytics.geographic.topCountries.slice(0, 8).map((country, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/50">
+                        <span className="text-sm font-medium truncate max-w-[140px]" title={country.name}>{country.name}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-muted-foreground">{country.total.toLocaleString()}</span>
+                          <span className={`text-sm font-bold ${parseFloat(country.optInRate) > 10 ? 'text-primary' : ''}`}>
+                            {country.optInRate}%
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <MapPin className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">No country data yet</p>
+                    <p className="text-xs mt-1">Sync orders to load geographic data</p>
                   </div>
                 )}
               </div>
