@@ -6,6 +6,40 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Parse geographic data from city field which may contain full JSON destination
+// This handles legacy data where the entire JSON was stored in the city field
+const parseGeographicFromField = (value: string | null): { city: string | null; province: string | null; country: string | null } => {
+  if (!value) return { city: null, province: null, country: null };
+  
+  // Check if the value looks like JSON (starts with { or ")
+  if (value.startsWith('{') || value.startsWith('"')) {
+    try {
+      let parsed: any = value;
+      
+      // Parse JSON string
+      if (typeof value === 'string') {
+        parsed = JSON.parse(value);
+        // Handle double-escaped JSON
+        if (typeof parsed === 'string') {
+          parsed = JSON.parse(parsed);
+        }
+      }
+      
+      return {
+        city: parsed?.city || null,
+        province: parsed?.province || null,
+        country: parsed?.country || null,
+      };
+    } catch (e) {
+      // Not valid JSON, return as-is (might be a plain city name)
+      return { city: value, province: null, country: null };
+    }
+  }
+  
+  // Plain string value (already a city name)
+  return { city: value, province: null, country: null };
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -105,28 +139,41 @@ serve(async (req) => {
       storeData.revenue += price;
       storeMap.set(storeId, storeData);
 
-      // City aggregation
-      const city = order.city || 'Unknown';
-      const cityData = cityMap.get(city) || { total: 0, optIn: 0, revenue: 0 };
-      cityData.total++;
-      if (isOptIn) cityData.optIn++;
-      cityData.revenue += price;
-      cityMap.set(city, cityData);
+      // Parse geographic data - handles both proper fields and legacy JSON-in-city data
+      const geoFromCity = parseGeographicFromField(order.city);
+      const geoFromProvince = parseGeographicFromField(order.province);
+      const geoFromCountry = parseGeographicFromField(order.country);
+      
+      // Use parsed city data, falling back to province/country parse results
+      const city = geoFromCity.city || geoFromProvince.city || geoFromCountry.city || 'Unknown';
+      const province = geoFromCity.province || geoFromProvince.province || order.province || 'Unknown';
+      const country = geoFromCity.country || geoFromCountry.country || order.country || 'Unknown';
 
-      // Country aggregation
-      const country = order.country || 'Unknown';
-      const countryData = countryMap.get(country) || { total: 0, optIn: 0, revenue: 0 };
-      countryData.total++;
-      if (isOptIn) countryData.optIn++;
-      countryData.revenue += price;
-      countryMap.set(country, countryData);
+      // City aggregation (skip if it still looks like JSON)
+      if (!city.startsWith('{') && !city.startsWith('"')) {
+        const cityData = cityMap.get(city) || { total: 0, optIn: 0, revenue: 0 };
+        cityData.total++;
+        if (isOptIn) cityData.optIn++;
+        cityData.revenue += price;
+        cityMap.set(city, cityData);
+      }
 
-      // Province aggregation
-      const province = order.province || 'Unknown';
-      const provinceData = provinceMap.get(province) || { total: 0, optIn: 0, revenue: 0 };
-      provinceData.total++;
-      if (isOptIn) provinceData.optIn++;
-      provinceMap.set(province, provinceData);
+      // Country aggregation (skip if it still looks like JSON)
+      if (!country.startsWith('{') && !country.startsWith('"')) {
+        const countryData = countryMap.get(country) || { total: 0, optIn: 0, revenue: 0 };
+        countryData.total++;
+        if (isOptIn) countryData.optIn++;
+        countryData.revenue += price;
+        countryMap.set(country, countryData);
+      }
+
+      // Province aggregation (skip if it still looks like JSON)
+      if (!province.startsWith('{') && !province.startsWith('"')) {
+        const provinceData = provinceMap.get(province) || { total: 0, optIn: 0, revenue: 0 };
+        provinceData.total++;
+        if (isOptIn) provinceData.optIn++;
+        provinceMap.set(province, provinceData);
+      }
 
       // Temporal analysis
       if (order.shopify_created_at) {
