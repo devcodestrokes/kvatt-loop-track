@@ -6,72 +6,120 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Parse geographic data from city field which may contain full JSON destination
-// This handles legacy data where the entire escaped JSON was stored in the city field
-// Example malformed data: "{\"first_name\":\"Bhakti\",\"city\":\"Manchester\",...}"
-const parseGeographicFromField = (value: string | null): { city: string | null; province: string | null; country: string | null } => {
-  if (!value) return { city: null, province: null, country: null };
+// Check if a value looks like JSON or contains JSON artifacts
+const looksLikeJson = (value: string): boolean => {
+  if (!value) return false;
+  return value.includes('{') || 
+         value.includes('"') || 
+         value.includes('\\') || 
+         value.includes('address') ||
+         value.includes('phone') ||
+         value.includes('first_name') ||
+         value.includes('last_name');
+};
+
+// Extract clean geographic values from potentially malformed data
+// This handles cases where JSON or partial JSON was stored in city/province/country fields
+const extractCleanValue = (value: string | null, fieldName: 'city' | 'province' | 'country'): string | null => {
+  if (!value) return null;
   
-  // Skip if it's already a clean value (no JSON markers)
-  if (!value.includes('{') && !value.includes('"') && !value.includes('\\')) {
-    return { city: value, province: null, country: null };
+  // If it's already clean (no JSON markers), return as-is
+  if (!looksLikeJson(value)) {
+    return value.trim();
   }
   
+  // Try multiple extraction strategies
+  
+  // Strategy 1: Full JSON parse after unescaping
   try {
     let jsonStr = value;
     
-    // Handle case where value starts with escaped quote like "{\" or \"
-    // This is common when JSON was incorrectly stored
-    if (value.startsWith('"{') || value.startsWith('"\\')) {
-      // Remove outer quotes if present
-      jsonStr = value.slice(1, -1);
+    // Remove outer quotes if wrapped
+    if (jsonStr.startsWith('"') && jsonStr.endsWith('"')) {
+      jsonStr = jsonStr.slice(1, -1);
     }
     
-    // Replace escaped quotes with regular quotes
-    jsonStr = jsonStr.replace(/\\"/g, '"');
+    // Unescape quotes multiple times (handles double-escaped JSON)
+    let prevStr = '';
+    while (prevStr !== jsonStr && jsonStr.includes('\\')) {
+      prevStr = jsonStr;
+      jsonStr = jsonStr.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+    }
     
-    // Try to parse as JSON
     const parsed = JSON.parse(jsonStr);
-    
-    console.log('Successfully parsed geographic data:', {
-      city: parsed?.city,
-      province: parsed?.province,
-      country: parsed?.country
-    });
-    
-    return {
-      city: parsed?.city || null,
-      province: parsed?.province || null,
-      country: parsed?.country || null,
-    };
-  } catch (e) {
-    // Try regex extraction as fallback
-    try {
-      const cityMatch = value.match(/"city"\s*:\s*"([^"]+)"/);
-      const provinceMatch = value.match(/"province"\s*:\s*"([^"]+)"/);
-      const countryMatch = value.match(/"country"\s*:\s*"([^"]+)"/);
-      
-      if (cityMatch || provinceMatch || countryMatch) {
-        console.log('Extracted via regex:', {
-          city: cityMatch?.[1],
-          province: provinceMatch?.[1],
-          country: countryMatch?.[1]
-        });
-        
-        return {
-          city: cityMatch?.[1] || null,
-          province: provinceMatch?.[1] || null,
-          country: countryMatch?.[1] || null,
-        };
-      }
-    } catch (regexError) {
-      console.warn('Regex extraction failed:', regexError);
+    if (parsed && typeof parsed === 'object' && parsed[fieldName]) {
+      return parsed[fieldName];
     }
-    
-    // Not valid JSON and regex failed, skip this value
-    console.warn('Failed to parse geographic field:', value?.substring?.(0, 50));
-    return { city: null, province: null, country: null };
+  } catch (e) {
+    // Continue to next strategy
   }
+  
+  // Strategy 2: Regex extraction with escaped quotes
+  // Match patterns like: \"city\":\"Manchester\" or "city":"Manchester"
+  const escapedPattern = new RegExp(`\\\\"${fieldName}\\\\"\\s*:\\s*\\\\"([^\\\\]+)\\\\"`, 'i');
+  const escapedMatch = value.match(escapedPattern);
+  if (escapedMatch && escapedMatch[1]) {
+    return escapedMatch[1];
+  }
+  
+  // Strategy 3: Standard JSON regex
+  const standardPattern = new RegExp(`"${fieldName}"\\s*:\\s*"([^"]+)"`, 'i');
+  const standardMatch = value.match(standardPattern);
+  if (standardMatch && standardMatch[1]) {
+    return standardMatch[1];
+  }
+  
+  // Strategy 4: Unescaped then regex
+  try {
+    const unescaped = value.replace(/\\"/g, '"');
+    const unescapedMatch = unescaped.match(new RegExp(`"${fieldName}"\\s*:\\s*"([^"]+)"`, 'i'));
+    if (unescapedMatch && unescapedMatch[1]) {
+      return unescapedMatch[1];
+    }
+  } catch (e) {
+    // Continue
+  }
+  
+  // If all strategies fail and value still contains JSON artifacts, return null
+  if (looksLikeJson(value)) {
+    return null;
+  }
+  
+  return value.trim() || null;
+};
+
+// Parse all geographic fields from order data
+const parseGeographicData = (order: any): { city: string | null; province: string | null; country: string | null } => {
+  // Try to extract from each field
+  let city = extractCleanValue(order.city, 'city');
+  let province = extractCleanValue(order.province, 'province');
+  let country = extractCleanValue(order.country, 'country');
+  
+  // If city field contained full JSON, it might have province/country too
+  if (!province && order.city) {
+    province = extractCleanValue(order.city, 'province');
+  }
+  if (!country && order.city) {
+    country = extractCleanValue(order.city, 'country');
+  }
+  
+  // Same for province field
+  if (!city && order.province) {
+    city = extractCleanValue(order.province, 'city');
+  }
+  if (!country && order.province) {
+    country = extractCleanValue(order.province, 'country');
+  }
+  
+  // And country field
+  if (!city && order.country) {
+    city = extractCleanValue(order.country, 'city');
+  }
+  if (!province && order.country) {
+    province = extractCleanValue(order.country, 'province');
+  }
+  
+  return { city, province, country };
 };
 
 serve(async (req) => {
@@ -174,16 +222,13 @@ serve(async (req) => {
       storeMap.set(storeId, storeData);
 
       // Parse geographic data - handles both proper fields and legacy JSON-in-city data
-      const geoFromCity = parseGeographicFromField(order.city);
-      const geoFromProvince = parseGeographicFromField(order.province);
-      const geoFromCountry = parseGeographicFromField(order.country);
+      const geo = parseGeographicData(order);
       
-      // Use parsed city data, falling back to province/country parse results
-      const city = geoFromCity.city || geoFromProvince.city || geoFromCountry.city || 'Unknown';
-      const province = geoFromCity.province || geoFromProvince.province || order.province || 'Unknown';
-      const country = geoFromCity.country || geoFromCountry.country || order.country || 'Unknown';
+      const city = geo.city || 'Unknown';
+      const province = geo.province || 'Unknown';
+      const country = geo.country || 'Unknown';
 
-      // City aggregation (skip if it still looks like JSON)
+      // City aggregation (skip if it still looks like JSON or empty)
       if (!city.startsWith('{') && !city.startsWith('"')) {
         const cityData = cityMap.get(city) || { total: 0, optIn: 0, revenue: 0 };
         cityData.total++;
