@@ -243,21 +243,24 @@ serve(async (req) => {
       console.log(`Last external_id in DB: ${lastExternalId}`);
     }
 
-    // Build API URL - use pagination for incremental updates
+    // Build API URL - ALWAYS use force_fresh=true for LIVE data from database
     let apiUrl: string;
+    const baseUrl = 'https://shopify-phpmyadmin-extractor-api.onrender.com/fetch-data';
+    
+    // Always use force_fresh=true to get live data from the database (not cached)
+    const forceFreshParam = 'force_fresh=true';
     
     if (forceFull || !lastExternalId) {
-      // Full sync - fetch all with pagination
-      apiUrl = `https://shopify-phpmyadmin-extractor-api.onrender.com/fetch-data?stream_all=true${triggerRefresh ? '&refresh=true' : ''}`;
-      console.log('Performing FULL sync...');
+      // Full sync - fetch all with pagination, force fresh data
+      apiUrl = `${baseUrl}?${forceFreshParam}&stream_all=true`;
+      console.log('Performing FULL sync with LIVE data (force_fresh=true)...');
     } else {
-      // Incremental sync - only fetch orders after lastExternalId
-      // First try with after_id parameter if API supports it
-      apiUrl = `https://shopify-phpmyadmin-extractor-api.onrender.com/fetch-data?after_id=${lastExternalId}${triggerRefresh ? '&refresh=true' : ''}`;
-      console.log(`Performing INCREMENTAL sync after ID: ${lastExternalId}`);
+      // Incremental sync - only fetch orders after lastExternalId, force fresh data
+      apiUrl = `${baseUrl}?${forceFreshParam}&after_id=${lastExternalId}`;
+      console.log(`Performing INCREMENTAL sync with LIVE data after ID: ${lastExternalId}`);
     }
 
-    console.log(`Fetching from: ${apiUrl}`);
+    console.log(`Fetching LIVE data from: ${apiUrl}`);
 
     const response = await fetch(apiUrl, {
       method: 'GET',
