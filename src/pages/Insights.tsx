@@ -91,6 +91,24 @@ interface OrderAnalytics {
     bestCitiesByOptIn: Array<{ name: string; total: number; optIn: number; optInRate: string }>;
     topCountries: Array<{ name: string; total: number; optIn: number; optInRate: string; avgOrderValue: string }>;
     topProvinces: Array<{ name: string; total: number; optIn: number; optInRate: string }>;
+    hierarchy?: Array<{
+      name: string;
+      total: number;
+      optIn: number;
+      optInRate: string;
+      cities: Array<{
+        name: string;
+        total: number;
+        optIn: number;
+        optInRate: string;
+        regions: Array<{
+          name: string;
+          total: number;
+          optIn: number;
+          optInRate: string;
+        }>;
+      }>;
+    }>;
   };
   stores: Array<{
     storeId: string;
@@ -794,96 +812,166 @@ const Insights = () => {
             </div>
           )}
 
-          {/* Geographic Analysis */}
+          {/* Geographic Analysis - Top 5 per category */}
           {orderAnalytics && (
-            <div className="grid gap-6 lg:grid-cols-3">
-              {/* Top Cities */}
-              <div className="metric-card">
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-primary" />
-                  Top Cities
-                </h2>
-                {orderAnalytics.geographic.bestCitiesByOptIn && orderAnalytics.geographic.bestCitiesByOptIn.length > 0 ? (
-                  <div className="space-y-2">
-                    {orderAnalytics.geographic.bestCitiesByOptIn.slice(0, 8).map((city, i) => (
-                      <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/50">
-                        <span className="text-sm font-medium truncate max-w-[140px]" title={city.name}>{city.name}</span>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs text-muted-foreground">{city.total.toLocaleString()}</span>
-                          <span className={`text-sm font-bold ${parseFloat(city.optInRate) > 15 ? 'text-primary' : ''}`}>
-                            {city.optInRate}%
-                          </span>
+            <>
+              <div className="grid gap-6 lg:grid-cols-3">
+                {/* Top 5 Cities */}
+                <div className="metric-card">
+                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-primary" />
+                    Top 5 Cities
+                  </h2>
+                  {orderAnalytics.geographic.bestCitiesByOptIn && orderAnalytics.geographic.bestCitiesByOptIn.length > 0 ? (
+                    <div className="space-y-2">
+                      {orderAnalytics.geographic.bestCitiesByOptIn.slice(0, 5).map((city, i) => (
+                        <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/50">
+                          <span className="text-sm font-medium truncate max-w-[140px]" title={city.name}>{city.name}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-muted-foreground">{city.total.toLocaleString()}</span>
+                            <span className={`text-sm font-bold ${parseFloat(city.optInRate) > 15 ? 'text-primary' : ''}`}>
+                              {city.optInRate}%
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <MapPin className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">No city data yet</p>
-                    <p className="text-xs mt-1">Sync orders to load geographic data</p>
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <MapPin className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">No city data yet</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Top 5 Regions */}
+                <div className="metric-card">
+                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-primary" />
+                    Top 5 Regions
+                  </h2>
+                  {orderAnalytics.geographic.topProvinces && orderAnalytics.geographic.topProvinces.length > 0 ? (
+                    <div className="space-y-2">
+                      {orderAnalytics.geographic.topProvinces.slice(0, 5).map((province, i) => (
+                        <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/50">
+                          <span className="text-sm font-medium truncate max-w-[140px]" title={province.name}>{province.name}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-muted-foreground">{province.total.toLocaleString()}</span>
+                            <span className={`text-sm font-bold ${parseFloat(province.optInRate) > 10 ? 'text-primary' : ''}`}>
+                              {province.optInRate}%
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <MapPin className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">No region data yet</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Top 5 Countries */}
+                <div className="metric-card">
+                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-primary" />
+                    Top 5 Countries
+                  </h2>
+                  {orderAnalytics.geographic.topCountries && orderAnalytics.geographic.topCountries.length > 0 ? (
+                    <div className="space-y-2">
+                      {orderAnalytics.geographic.topCountries.slice(0, 5).map((country, i) => (
+                        <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/50">
+                          <span className="text-sm font-medium truncate max-w-[140px]" title={country.name}>{country.name}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-muted-foreground">{country.total.toLocaleString()}</span>
+                            <span className={`text-sm font-bold ${parseFloat(country.optInRate) > 10 ? 'text-primary' : ''}`}>
+                              {country.optInRate}%
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <MapPin className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                      <p className="text-sm">No country data yet</p>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Top Provinces/Regions */}
-              <div className="metric-card">
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-primary" />
-                  Top Regions
-                </h2>
-                {orderAnalytics.geographic.topProvinces && orderAnalytics.geographic.topProvinces.length > 0 ? (
-                  <div className="space-y-2">
-                    {orderAnalytics.geographic.topProvinces.slice(0, 8).map((province, i) => (
-                      <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/50">
-                        <span className="text-sm font-medium truncate max-w-[140px]" title={province.name}>{province.name}</span>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs text-muted-foreground">{province.total.toLocaleString()}</span>
-                          <span className={`text-sm font-bold ${parseFloat(province.optInRate) > 10 ? 'text-primary' : ''}`}>
-                            {province.optInRate}%
-                          </span>
+              {/* Geographic Hierarchy: Countries > Cities > Regions */}
+              {orderAnalytics.geographic.hierarchy && orderAnalytics.geographic.hierarchy.length > 0 && (
+                <div className="metric-card">
+                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Layers className="h-5 w-5 text-primary" />
+                    Geographic Hierarchy
+                  </h2>
+                  <div className="space-y-4">
+                    {orderAnalytics.geographic.hierarchy.slice(0, 5).map((country, i) => (
+                      <div key={i} className="border border-border rounded-lg overflow-hidden">
+                        {/* Country Level */}
+                        <div className="flex items-center justify-between p-3 bg-primary/5 border-b border-border">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">🌍</span>
+                            <span className="font-semibold">{country.name}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm text-muted-foreground">{country.total.toLocaleString()} orders</span>
+                            <span className={`text-sm font-bold ${parseFloat(country.optInRate) > 10 ? 'text-primary' : ''}`}>
+                              {country.optInRate}%
+                            </span>
+                          </div>
                         </div>
+                        
+                        {/* Cities Level */}
+                        {country.cities.length > 0 && (
+                          <div className="p-3 space-y-2">
+                            {country.cities.slice(0, 5).map((city, j) => (
+                              <div key={j} className="pl-4 border-l-2 border-muted">
+                                <div className="flex items-center justify-between p-2 rounded bg-muted/30">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm">🏙️</span>
+                                    <span className="text-sm font-medium">{city.name}</span>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-xs text-muted-foreground">{city.total.toLocaleString()}</span>
+                                    <span className={`text-sm font-medium ${parseFloat(city.optInRate) > 10 ? 'text-primary' : ''}`}>
+                                      {city.optInRate}%
+                                    </span>
+                                  </div>
+                                </div>
+                                
+                                {/* Regions Level */}
+                                {city.regions.length > 0 && (
+                                  <div className="mt-1 ml-6 space-y-1">
+                                    {city.regions.slice(0, 3).map((region, k) => (
+                                      <div key={k} className="flex items-center justify-between p-1.5 text-xs">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="text-muted-foreground">📍</span>
+                                          <span className="text-muted-foreground">{region.name}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-muted-foreground">{region.total}</span>
+                                          <span className={parseFloat(region.optInRate) > 10 ? 'text-primary font-medium' : 'text-muted-foreground'}>
+                                            {region.optInRate}%
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <MapPin className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">No region data yet</p>
-                    <p className="text-xs mt-1">Sync orders to load geographic data</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Top Countries */}
-              <div className="metric-card">
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-primary" />
-                  Top Countries
-                </h2>
-                {orderAnalytics.geographic.topCountries && orderAnalytics.geographic.topCountries.length > 0 ? (
-                  <div className="space-y-2">
-                    {orderAnalytics.geographic.topCountries.slice(0, 8).map((country, i) => (
-                      <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/50">
-                        <span className="text-sm font-medium truncate max-w-[140px]" title={country.name}>{country.name}</span>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs text-muted-foreground">{country.total.toLocaleString()}</span>
-                          <span className={`text-sm font-bold ${parseFloat(country.optInRate) > 10 ? 'text-primary' : ''}`}>
-                            {country.optInRate}%
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <MapPin className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                    <p className="text-sm">No country data yet</p>
-                    <p className="text-xs mt-1">Sync orders to load geographic data</p>
-                  </div>
-                )}
-              </div>
-            </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* Monthly Opt-In Trend */}

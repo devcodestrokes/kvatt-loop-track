@@ -6,33 +6,81 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Valid countries list (comprehensive)
+// Valid countries list - ALL 195 UN member countries + territories + common aliases
 const VALID_COUNTRIES = new Set([
-  'United Kingdom', 'United States', 'Canada', 'Australia', 'Germany', 'France', 'Spain', 
-  'Italy', 'Netherlands', 'Belgium', 'Ireland', 'Sweden', 'Norway', 'Denmark', 'Finland',
-  'Austria', 'Switzerland', 'Portugal', 'Greece', 'Poland', 'Czech Republic', 'Hungary',
-  'Romania', 'Bulgaria', 'Croatia', 'Slovakia', 'Slovenia', 'Estonia', 'Latvia', 'Lithuania',
-  'Luxembourg', 'Malta', 'Cyprus', 'Iceland', 'New Zealand', 'Japan', 'South Korea', 'China',
-  'India', 'Brazil', 'Mexico', 'Argentina', 'Chile', 'Colombia', 'Peru', 'South Africa',
-  'Egypt', 'Morocco', 'Kenya', 'Nigeria', 'UAE', 'United Arab Emirates', 'Saudi Arabia',
-  'Israel', 'Turkey', 'Russia', 'Ukraine', 'Singapore', 'Malaysia', 'Thailand', 'Vietnam',
-  'Philippines', 'Indonesia', 'Taiwan', 'Hong Kong', 'Macau', 'Isle Of Man', 'Isle of Man',
-  'Jersey', 'Guernsey', 'Gibraltar', 'Monaco', 'Andorra', 'San Marino', 'Vatican City',
-  'Liechtenstein', 'Scotland', 'Wales', 'England', 'Northern Ireland', 'Republic of Ireland',
-  'USA', 'UK', 'GB', 'Great Britain'
+  // A
+  'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Antigua and Barbuda', 'Argentina', 'Armenia', 'Australia', 'Austria', 'Azerbaijan',
+  // B
+  'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium', 'Belize', 'Benin', 'Bhutan', 'Bolivia', 'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Brunei', 'Bulgaria', 'Burkina Faso', 'Burundi',
+  // C
+  'Cabo Verde', 'Cape Verde', 'Cambodia', 'Cameroon', 'Canada', 'Central African Republic', 'Chad', 'Chile', 'China', 'Colombia', 'Comoros', 'Congo', 'Costa Rica', 'Croatia', 'Cuba', 'Cyprus', 'Czech Republic', 'Czechia',
+  // D
+  'Denmark', 'Djibouti', 'Dominica', 'Dominican Republic', 'DRC', 'Democratic Republic of the Congo',
+  // E
+  'East Timor', 'Timor-Leste', 'Ecuador', 'Egypt', 'El Salvador', 'Equatorial Guinea', 'Eritrea', 'Estonia', 'Eswatini', 'Swaziland', 'Ethiopia',
+  // F
+  'Fiji', 'Finland', 'France',
+  // G
+  'Gabon', 'Gambia', 'Georgia', 'Germany', 'Ghana', 'Greece', 'Grenada', 'Guatemala', 'Guinea', 'Guinea-Bissau', 'Guyana',
+  // H
+  'Haiti', 'Honduras', 'Hungary',
+  // I
+  'Iceland', 'India', 'Indonesia', 'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy', 'Ivory Coast', "Côte d'Ivoire",
+  // J
+  'Jamaica', 'Japan', 'Jordan',
+  // K
+  'Kazakhstan', 'Kenya', 'Kiribati', 'Kuwait', 'Kyrgyzstan',
+  // L
+  'Laos', 'Latvia', 'Lebanon', 'Lesotho', 'Liberia', 'Libya', 'Liechtenstein', 'Lithuania', 'Luxembourg',
+  // M
+  'Madagascar', 'Malawi', 'Malaysia', 'Maldives', 'Mali', 'Malta', 'Marshall Islands', 'Mauritania', 'Mauritius', 'Mexico', 'Micronesia', 'Moldova', 'Monaco', 'Mongolia', 'Montenegro', 'Morocco', 'Mozambique', 'Myanmar', 'Burma',
+  // N
+  'Namibia', 'Nauru', 'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua', 'Niger', 'Nigeria', 'North Korea', 'North Macedonia', 'Macedonia', 'Norway',
+  // O
+  'Oman',
+  // P
+  'Pakistan', 'Palau', 'Palestine', 'Panama', 'Papua New Guinea', 'Paraguay', 'Peru', 'Philippines', 'Poland', 'Portugal',
+  // Q
+  'Qatar',
+  // R
+  'Romania', 'Russia', 'Russian Federation', 'Rwanda',
+  // S
+  'Saint Kitts and Nevis', 'Saint Lucia', 'Saint Vincent and the Grenadines', 'Samoa', 'San Marino', 'Sao Tome and Principe', 'Saudi Arabia', 'Senegal', 'Serbia', 'Seychelles', 'Sierra Leone', 'Singapore', 'Slovakia', 'Slovenia', 'Solomon Islands', 'Somalia', 'South Africa', 'South Korea', 'South Sudan', 'Spain', 'Sri Lanka', 'Sudan', 'Suriname', 'Sweden', 'Switzerland', 'Syria',
+  // T
+  'Taiwan', 'Tajikistan', 'Tanzania', 'Thailand', 'Togo', 'Tonga', 'Trinidad and Tobago', 'Tunisia', 'Turkey', 'Türkiye', 'Turkmenistan', 'Tuvalu',
+  // U
+  'Uganda', 'Ukraine', 'United Arab Emirates', 'UAE', 'United Kingdom', 'United States', 'Uruguay', 'Uzbekistan',
+  // V
+  'Vanuatu', 'Vatican City', 'Vatican', 'Venezuela', 'Vietnam', 'Viet Nam',
+  // Y
+  'Yemen',
+  // Z
+  'Zambia', 'Zimbabwe',
+  // Common aliases and territories
+  'USA', 'UK', 'GB', 'Great Britain', 'England', 'Scotland', 'Wales', 'Northern Ireland', 'Republic of Ireland',
+  'Hong Kong', 'Macau', 'Taiwan', 'Puerto Rico', 'Guam', 'US Virgin Islands', 'American Samoa',
+  'Isle of Man', 'Isle Of Man', 'Jersey', 'Guernsey', 'Gibraltar', 'Bermuda', 'Cayman Islands', 'British Virgin Islands',
+  'Greenland', 'Faroe Islands', 'French Polynesia', 'New Caledonia', 'Martinique', 'Guadeloupe', 'Réunion', 'Reunion',
+  'Aruba', 'Curaçao', 'Curacao', 'Sint Maarten', 'Turks and Caicos Islands', 'Anguilla', 'Montserrat',
+  'Falkland Islands', 'South Georgia', 'Cook Islands', 'Niue', 'Tokelau', 'Norfolk Island',
+  'Christmas Island', 'Cocos Islands', 'Antarctica'
 ]);
 
-// Valid UK regions/provinces
-const VALID_UK_REGIONS = new Set([
+// Valid regions/provinces/states - international coverage
+const VALID_REGIONS = new Set([
+  // UK Countries
   'England', 'Scotland', 'Wales', 'Northern Ireland',
+  // UK Regions
   'Greater London', 'South East', 'South West', 'East of England', 'East Midlands',
   'West Midlands', 'Yorkshire and the Humber', 'North West', 'North East',
+  // Scottish councils
   'Aberdeenshire', 'Angus', 'Argyll and Bute', 'Clackmannanshire', 'Dumfries and Galloway',
   'Dundee City', 'East Ayrshire', 'East Dunbartonshire', 'East Lothian', 'East Renfrewshire',
   'Edinburgh', 'Falkirk', 'Fife', 'Glasgow', 'Highland', 'Inverclyde', 'Midlothian',
   'Moray', 'North Ayrshire', 'North Lanarkshire', 'Orkney Islands', 'Perth and Kinross',
   'Renfrewshire', 'Scottish Borders', 'Shetland Islands', 'South Ayrshire', 'South Lanarkshire',
   'Stirling', 'West Dunbartonshire', 'West Lothian', 'Western Isles',
+  // English counties
   'Bedfordshire', 'Berkshire', 'Bristol', 'Buckinghamshire', 'Cambridgeshire', 'Cheshire',
   'Cornwall', 'Cumbria', 'Derbyshire', 'Devon', 'Dorset', 'Durham', 'Essex', 'Gloucestershire',
   'Hampshire', 'Herefordshire', 'Hertfordshire', 'Isle of Wight', 'Kent', 'Lancashire',
@@ -41,7 +89,9 @@ const VALID_UK_REGIONS = new Set([
   'Shropshire', 'Somerset', 'Staffordshire', 'Suffolk', 'Surrey', 'Sussex', 'East Sussex',
   'West Sussex', 'Tyne and Wear', 'Warwickshire', 'West Midlands', 'Wiltshire', 'Worcestershire',
   'Yorkshire', 'North Yorkshire', 'South Yorkshire', 'West Yorkshire', 'East Yorkshire',
+  // Northern Ireland
   'Antrim', 'Armagh', 'Down', 'Fermanagh', 'Londonderry', 'Tyrone',
+  // Wales
   'Anglesey', 'Blaenau Gwent', 'Bridgend', 'Caerphilly', 'Cardiff', 'Carmarthenshire',
   'Ceredigion', 'Conwy', 'Denbighshire', 'Flintshire', 'Gwynedd', 'Merthyr Tydfil',
   'Monmouthshire', 'Neath Port Talbot', 'Newport', 'Pembrokeshire', 'Powys',
@@ -54,8 +104,41 @@ const VALID_UK_REGIONS = new Set([
   'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio',
   'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota',
   'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia',
-  'Wisconsin', 'Wyoming', 'District of Columbia'
+  'Wisconsin', 'Wyoming', 'District of Columbia', 'DC',
+  // Canadian Provinces
+  'Ontario', 'Quebec', 'British Columbia', 'Alberta', 'Manitoba', 'Saskatchewan',
+  'Nova Scotia', 'New Brunswick', 'Newfoundland and Labrador', 'Prince Edward Island',
+  'Northwest Territories', 'Yukon', 'Nunavut',
+  // Australian States
+  'New South Wales', 'Victoria', 'Queensland', 'Western Australia', 'South Australia',
+  'Tasmania', 'Northern Territory', 'Australian Capital Territory',
+  // German States
+  'Bavaria', 'Baden-Württemberg', 'Berlin', 'Brandenburg', 'Bremen', 'Hamburg', 'Hesse',
+  'Lower Saxony', 'Mecklenburg-Vorpommern', 'North Rhine-Westphalia', 'Rhineland-Palatinate',
+  'Saarland', 'Saxony', 'Saxony-Anhalt', 'Schleswig-Holstein', 'Thuringia',
+  // French Regions
+  'Île-de-France', 'Provence-Alpes-Côte d\'Azur', 'Auvergne-Rhône-Alpes', 'Occitanie',
+  'Nouvelle-Aquitaine', 'Brittany', 'Normandy', 'Grand Est', 'Hauts-de-France',
+  'Pays de la Loire', 'Centre-Val de Loire', 'Burgundy', 'Corsica',
+  // Spanish Regions
+  'Andalusia', 'Catalonia', 'Madrid', 'Valencia', 'Galicia', 'Basque Country',
+  'Castile and León', 'Canary Islands', 'Aragon', 'Murcia',
+  // Italian Regions
+  'Lombardy', 'Lazio', 'Campania', 'Sicily', 'Veneto', 'Piedmont', 'Emilia-Romagna',
+  'Tuscany', 'Puglia', 'Calabria',
+  // Irish Counties
+  'Dublin', 'Cork', 'Galway', 'Limerick', 'Waterford', 'Kildare', 'Meath', 'Wicklow',
+  'Kerry', 'Clare', 'Mayo', 'Tipperary', 'Donegal', 'Wexford', 'Sligo', 'Louth',
+  // Netherlands
+  'North Holland', 'South Holland', 'Utrecht', 'North Brabant', 'Gelderland', 'Limburg',
+  'Overijssel', 'Flevoland', 'Groningen', 'Friesland', 'Drenthe', 'Zeeland'
 ]);
+
+// Check if a value is a valid region
+const isValidRegion = (value: string): boolean => {
+  if (!value || value === 'Unknown') return false;
+  return VALID_REGIONS.has(value) || VALID_REGIONS.has(value.trim());
+};
 
 // Patterns that indicate an address, not a geographic name
 const ADDRESS_PATTERNS = [
@@ -95,11 +178,6 @@ const isValidCountry = (value: string): boolean => {
   return VALID_COUNTRIES.has(value) || VALID_COUNTRIES.has(value.trim());
 };
 
-// Check if a value is a valid region
-const isValidRegion = (value: string): boolean => {
-  if (!value || value === 'Unknown') return false;
-  return VALID_UK_REGIONS.has(value) || VALID_UK_REGIONS.has(value.trim());
-};
 
 // Check if a value looks like an address rather than a city name
 const looksLikeAddress = (value: string): boolean => {
@@ -283,6 +361,13 @@ serve(async (req) => {
     
     // Province aggregation
     const provinceMap = new Map<string, { total: number; optIn: number; revenue: number }>();
+    
+    // Hierarchical data: Country -> Cities -> Regions
+    const hierarchyMap = new Map<string, { 
+      total: number; 
+      optIn: number; 
+      cities: Map<string, { total: number; optIn: number; regions: Map<string, { total: number; optIn: number }> }>
+    }>();
 
     // Day of week aggregation
     const dayOfWeekMap = new Map<number, { total: number; optIn: number }>();
@@ -353,6 +438,38 @@ serve(async (req) => {
         provinceData.total++;
         if (isOptIn) provinceData.optIn++;
         provinceMap.set(province, provinceData);
+      }
+
+      // Build hierarchical data: Country -> City -> Region
+      if (isValidCountry(country)) {
+        const countryHierarchy = hierarchyMap.get(country) || { 
+          total: 0, 
+          optIn: 0, 
+          cities: new Map() 
+        };
+        countryHierarchy.total++;
+        if (isOptIn) countryHierarchy.optIn++;
+        
+        if (city !== 'Unknown' && !looksLikeAddress(city) && !looksLikeJson(city)) {
+          const cityHierarchy = countryHierarchy.cities.get(city) || {
+            total: 0,
+            optIn: 0,
+            regions: new Map()
+          };
+          cityHierarchy.total++;
+          if (isOptIn) cityHierarchy.optIn++;
+          
+          if (isValidRegion(province)) {
+            const regionData = cityHierarchy.regions.get(province) || { total: 0, optIn: 0 };
+            regionData.total++;
+            if (isOptIn) regionData.optIn++;
+            cityHierarchy.regions.set(province, regionData);
+          }
+          
+          countryHierarchy.cities.set(city, cityHierarchy);
+        }
+        
+        hierarchyMap.set(country, countryHierarchy);
       }
 
       // Temporal analysis
@@ -514,6 +631,35 @@ serve(async (req) => {
       });
     }
 
+    // Build hierarchical output: Country -> Cities -> Regions
+    const geographicHierarchy = Array.from(hierarchyMap.entries())
+      .map(([countryName, countryData]) => ({
+        name: countryName,
+        total: countryData.total,
+        optIn: countryData.optIn,
+        optInRate: countryData.total > 0 ? ((countryData.optIn / countryData.total) * 100).toFixed(2) : '0.00',
+        cities: Array.from(countryData.cities.entries())
+          .map(([cityName, cityData]) => ({
+            name: cityName,
+            total: cityData.total,
+            optIn: cityData.optIn,
+            optInRate: cityData.total > 0 ? ((cityData.optIn / cityData.total) * 100).toFixed(2) : '0.00',
+            regions: Array.from(cityData.regions.entries())
+              .map(([regionName, regionData]) => ({
+                name: regionName,
+                total: regionData.total,
+                optIn: regionData.optIn,
+                optInRate: regionData.total > 0 ? ((regionData.optIn / regionData.total) * 100).toFixed(2) : '0.00',
+              }))
+              .sort((a, b) => b.total - a.total)
+              .slice(0, 5)
+          }))
+          .sort((a, b) => b.total - a.total)
+          .slice(0, 10)
+      }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10);
+
     const analytics = {
       summary: {
         totalOrders,
@@ -530,6 +676,7 @@ serve(async (req) => {
         bestCitiesByOptIn,
         topCountries,
         topProvinces,
+        hierarchy: geographicHierarchy,
       },
       stores,
       temporal: {
