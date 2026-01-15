@@ -229,18 +229,22 @@ serve(async (req) => {
 
     console.log(`Current DB count: ${currentDbCount}`);
 
-    // For incremental sync, get the highest external_id we have
+    // For incremental sync, get the latest shopify_created_at timestamp
+    let lastCreatedAt: string | null = null;
     let lastExternalId: string | null = null;
+    
     if (useIncremental && !forceFull) {
+      // Get the most recently created order by shopify_created_at
       const { data: lastOrder } = await supabase
         .from('imported_orders')
-        .select('external_id')
-        .order('external_id', { ascending: false })
+        .select('external_id, shopify_created_at')
+        .order('shopify_created_at', { ascending: false, nullsFirst: false })
         .limit(1)
         .single();
       
       lastExternalId = lastOrder?.external_id || null;
-      console.log(`Last external_id in DB: ${lastExternalId}`);
+      lastCreatedAt = lastOrder?.shopify_created_at || null;
+      console.log(`Last order - external_id: ${lastExternalId}, created_at: ${lastCreatedAt}`);
     }
 
     // Build API URL - ALWAYS use force_fresh=true for LIVE data from database
@@ -250,14 +254,15 @@ serve(async (req) => {
     // Always use force_fresh=true to get live data from the database (not cached)
     const forceFreshParam = 'force_fresh=true';
     
-    if (forceFull || !lastExternalId) {
+    if (forceFull || !lastCreatedAt) {
       // Full sync - fetch all with pagination, force fresh data
       apiUrl = `${baseUrl}?${forceFreshParam}&stream_all=true`;
       console.log('Performing FULL sync with LIVE data (force_fresh=true)...');
     } else {
-      // Incremental sync - only fetch orders after lastExternalId, force fresh data
-      apiUrl = `${baseUrl}?${forceFreshParam}&after_id=${lastExternalId}`;
-      console.log(`Performing INCREMENTAL sync with LIVE data after ID: ${lastExternalId}`);
+      // Incremental sync - use after_date for more reliable incremental fetching
+      // Fall back to after_id if the API doesn't support after_date
+      apiUrl = `${baseUrl}?${forceFreshParam}&after_date=${encodeURIComponent(lastCreatedAt)}`;
+      console.log(`Performing INCREMENTAL sync with LIVE data after date: ${lastCreatedAt}`);
     }
 
     console.log(`Fetching LIVE data from: ${apiUrl}`);
@@ -341,21 +346,35 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('API Response - count:', data.count, 'status:', data.status);
+    console.log('API Response - count:', data.count, 'status:', data.status, 'data_length:', data.data?.length);
+
+    // Handle API busy states - return retryable error
+    if (data.status === 'already_updating' || data.status === 'refresh_triggered') {
+      console.log('External API is updating, will retry...');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'External data source is refreshing. Please wait 2-3 minutes and try again.',
+          retryable: true,
+          apiStatus: data.status,
+          dbCount: currentDbCount,
+          apiReportedCount: data.count
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
+    }
 
     const orders = data.data || [];
     
-    // If API doesn't support after_id, filter client-side
+    // If API doesn't support after_date, filter client-side by created_at
     let ordersToProcess = orders;
-    if (useIncremental && lastExternalId && !forceFull) {
-      const lastIdNum = parseInt(lastExternalId);
-      if (!isNaN(lastIdNum)) {
-        ordersToProcess = orders.filter((order: any) => {
-          const orderId = parseInt(order.id?.toString() || order.external_id?.toString() || '0');
-          return orderId > lastIdNum;
-        });
-        console.log(`Filtered to ${ordersToProcess.length} new orders (from ${orders.length} total)`);
-      }
+    if (useIncremental && lastCreatedAt && !forceFull) {
+      const lastDate = new Date(lastCreatedAt);
+      ordersToProcess = orders.filter((order: any) => {
+        const orderDate = new Date(order.created_at || order.shopify_created_at || '1970-01-01');
+        return orderDate > lastDate;
+      });
+      console.log(`Filtered to ${ordersToProcess.length} new orders (from ${orders.length} total) by date`);
     }
 
     if (ordersToProcess.length === 0) {
