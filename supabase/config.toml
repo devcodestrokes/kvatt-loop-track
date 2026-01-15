@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.fetch-orders-api]
 verify_jwt = false
+
+[functions.delete-admin-user]
+verify_jwt = false
