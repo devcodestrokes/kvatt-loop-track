@@ -122,28 +122,56 @@ const Settings = () => {
 
     setIsInviting(true);
     try {
-      // Check if already invited
-      const { data: existing } = await supabase
-        .from('admin_invites')
-        .select('id, accepted_at')
-        .eq('email', inviteEmail.trim())
+      const trimmedEmail = inviteEmail.trim();
+      
+      // Check if user is already an admin by checking profiles + user_roles
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', trimmedEmail)
         .maybeSingle();
 
-      if (existing) {
-        if (existing.accepted_at) {
-          toast.error('This email has already been registered as an admin');
-        } else {
-          toast.error('This email has already been invited');
+      if (existingProfile) {
+        // Check if they have an admin role
+        const { data: existingRole } = await supabase
+          .from('user_roles')
+          .select('id')
+          .eq('user_id', existingProfile.id)
+          .maybeSingle();
+
+        if (existingRole) {
+          toast.error('This email is already an admin');
+          setIsInviting(false);
+          return;
         }
+      }
+
+      // Check if there's already a pending (non-accepted) invite
+      const { data: existingInvite } = await supabase
+        .from('admin_invites')
+        .select('id, accepted_at')
+        .eq('email', trimmedEmail)
+        .is('accepted_at', null)
+        .gt('expires_at', new Date().toISOString())
+        .maybeSingle();
+
+      if (existingInvite) {
+        toast.error('This email has already been invited');
         setIsInviting(false);
         return;
       }
+
+      // Delete any old/accepted invites for this email to allow re-invite
+      await supabase
+        .from('admin_invites')
+        .delete()
+        .eq('email', trimmedEmail);
 
       // Create invite
       const { error } = await supabase
         .from('admin_invites')
         .insert({
-          email: inviteEmail.trim(),
+          email: trimmedEmail,
           expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         });
 
@@ -152,18 +180,18 @@ const Settings = () => {
       // Send email notification
       try {
         const { error: emailError } = await supabase.functions.invoke('send-admin-invite', {
-          body: { email: inviteEmail.trim() }
+          body: { email: trimmedEmail }
         });
 
         if (emailError) {
           console.error('Email send error:', emailError);
-          toast.success(`Invite created for ${inviteEmail} (email delivery may be delayed)`);
+          toast.success(`Invite created for ${trimmedEmail} (email delivery may be delayed)`);
         } else {
-          toast.success(`Invite sent to ${inviteEmail}`);
+          toast.success(`Invite sent to ${trimmedEmail}`);
         }
       } catch (emailErr) {
         console.error('Email function error:', emailErr);
-        toast.success(`Invite created for ${inviteEmail}`);
+        toast.success(`Invite created for ${trimmedEmail}`);
       }
 
       setInviteEmail('');
