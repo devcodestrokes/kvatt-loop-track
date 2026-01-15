@@ -62,6 +62,63 @@ const parseDestination = (destination: string | null | undefined): {
   }
 };
 
+// Extract address from any field that might contain JSON address data
+const extractAddressFromAnyField = (order: any): { 
+  city: string | null; 
+  province: string | null; 
+  country: string | null;
+} => {
+  // Try to find address data in various possible locations
+  const fieldsToCheck = [
+    order.destination,
+    order.shipping_address,
+    order.billing_address,
+    order.city, // Sometimes the city field itself contains the full address JSON
+    order.country,
+    order.province,
+  ];
+  
+  for (const field of fieldsToCheck) {
+    if (!field || typeof field !== 'string') continue;
+    
+    // Check if this field looks like JSON
+    if (field.includes('{') || field.startsWith('"')) {
+      try {
+        let parsed: any = field;
+        // Handle double-escaped JSON
+        if (typeof parsed === 'string') {
+          parsed = JSON.parse(parsed);
+          if (typeof parsed === 'string') {
+            parsed = JSON.parse(parsed);
+          }
+        }
+        
+        // If we found valid address components, return them
+        if (parsed && typeof parsed === 'object') {
+          const city = parsed?.city || null;
+          const province = parsed?.province || null;
+          const country = parsed?.country || null;
+          
+          if (city || province || country) {
+            return { city, province, country };
+          }
+        }
+      } catch (e) {
+        // Continue to next field
+      }
+    }
+  }
+  
+  return { city: null, province: null, country: null };
+};
+
+// Check if a value is a clean string (not JSON)
+const isCleanValue = (val: string | null | undefined): boolean => {
+  if (!val) return false;
+  if (val === 'null' || val === 'undefined') return false;
+  return !val.includes('{') && !val.includes('\\') && !val.startsWith('"') && !val.includes(':');
+};
+
 const processAndUpsertOrders = async (supabase: any, orders: any[]) => {
   let inserted = 0;
   let errors = 0;
@@ -71,25 +128,31 @@ const processAndUpsertOrders = async (supabase: any, orders: any[]) => {
     const batch = orders.slice(i, i + batchSize);
     
     const formattedBatch = batch.map((order: any) => {
+      // First try to parse from destination field
       const parsedDestination = parseDestination(order.destination);
       
-      const isCleanValue = (val: string | null | undefined): boolean => {
-        if (!val) return false;
-        return !val.includes('{') && !val.includes('\\') && !val.startsWith('"');
+      // If destination parsing failed, try other fields
+      let addressData = { 
+        city: parsedDestination.city, 
+        province: parsedDestination.province, 
+        country: parsedDestination.country 
       };
       
-      const city = parsedDestination.city || 
-                   (isCleanValue(order.city) ? order.city : null) || 
+      // If we don't have address data yet, try extracting from any field
+      if (!addressData.city && !addressData.province && !addressData.country) {
+        addressData = extractAddressFromAnyField(order);
+      }
+      
+      // Fallback to direct fields only if they're clean values
+      const city = addressData.city || 
                    (isCleanValue(order.shipping_city) ? order.shipping_city : null) || 
                    null;
       
-      const province = parsedDestination.province || 
-                       (isCleanValue(order.province) ? order.province : null) || 
+      const province = addressData.province || 
                        (isCleanValue(order.shipping_province) ? order.shipping_province : null) || 
                        null;
       
-      const country = parsedDestination.country || 
-                      (isCleanValue(order.country) ? order.country : null) || 
+      const country = addressData.country || 
                       (isCleanValue(order.shipping_country) ? order.shipping_country : null) || 
                       null;
       
