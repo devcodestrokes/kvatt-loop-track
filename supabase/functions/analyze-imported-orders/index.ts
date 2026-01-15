@@ -6,6 +6,107 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Valid countries list (comprehensive)
+const VALID_COUNTRIES = new Set([
+  'United Kingdom', 'United States', 'Canada', 'Australia', 'Germany', 'France', 'Spain', 
+  'Italy', 'Netherlands', 'Belgium', 'Ireland', 'Sweden', 'Norway', 'Denmark', 'Finland',
+  'Austria', 'Switzerland', 'Portugal', 'Greece', 'Poland', 'Czech Republic', 'Hungary',
+  'Romania', 'Bulgaria', 'Croatia', 'Slovakia', 'Slovenia', 'Estonia', 'Latvia', 'Lithuania',
+  'Luxembourg', 'Malta', 'Cyprus', 'Iceland', 'New Zealand', 'Japan', 'South Korea', 'China',
+  'India', 'Brazil', 'Mexico', 'Argentina', 'Chile', 'Colombia', 'Peru', 'South Africa',
+  'Egypt', 'Morocco', 'Kenya', 'Nigeria', 'UAE', 'United Arab Emirates', 'Saudi Arabia',
+  'Israel', 'Turkey', 'Russia', 'Ukraine', 'Singapore', 'Malaysia', 'Thailand', 'Vietnam',
+  'Philippines', 'Indonesia', 'Taiwan', 'Hong Kong', 'Macau', 'Isle Of Man', 'Isle of Man',
+  'Jersey', 'Guernsey', 'Gibraltar', 'Monaco', 'Andorra', 'San Marino', 'Vatican City',
+  'Liechtenstein', 'Scotland', 'Wales', 'England', 'Northern Ireland', 'Republic of Ireland',
+  'USA', 'UK', 'GB', 'Great Britain'
+]);
+
+// Valid UK regions/provinces
+const VALID_UK_REGIONS = new Set([
+  'England', 'Scotland', 'Wales', 'Northern Ireland',
+  'Greater London', 'South East', 'South West', 'East of England', 'East Midlands',
+  'West Midlands', 'Yorkshire and the Humber', 'North West', 'North East',
+  'Aberdeenshire', 'Angus', 'Argyll and Bute', 'Clackmannanshire', 'Dumfries and Galloway',
+  'Dundee City', 'East Ayrshire', 'East Dunbartonshire', 'East Lothian', 'East Renfrewshire',
+  'Edinburgh', 'Falkirk', 'Fife', 'Glasgow', 'Highland', 'Inverclyde', 'Midlothian',
+  'Moray', 'North Ayrshire', 'North Lanarkshire', 'Orkney Islands', 'Perth and Kinross',
+  'Renfrewshire', 'Scottish Borders', 'Shetland Islands', 'South Ayrshire', 'South Lanarkshire',
+  'Stirling', 'West Dunbartonshire', 'West Lothian', 'Western Isles',
+  'Bedfordshire', 'Berkshire', 'Bristol', 'Buckinghamshire', 'Cambridgeshire', 'Cheshire',
+  'Cornwall', 'Cumbria', 'Derbyshire', 'Devon', 'Dorset', 'Durham', 'Essex', 'Gloucestershire',
+  'Hampshire', 'Herefordshire', 'Hertfordshire', 'Isle of Wight', 'Kent', 'Lancashire',
+  'Leicestershire', 'Lincolnshire', 'London', 'Manchester', 'Merseyside', 'Norfolk',
+  'Northamptonshire', 'Northumberland', 'Nottinghamshire', 'Oxfordshire', 'Rutland',
+  'Shropshire', 'Somerset', 'Staffordshire', 'Suffolk', 'Surrey', 'Sussex', 'East Sussex',
+  'West Sussex', 'Tyne and Wear', 'Warwickshire', 'West Midlands', 'Wiltshire', 'Worcestershire',
+  'Yorkshire', 'North Yorkshire', 'South Yorkshire', 'West Yorkshire', 'East Yorkshire',
+  'Antrim', 'Armagh', 'Down', 'Fermanagh', 'Londonderry', 'Tyrone',
+  'Anglesey', 'Blaenau Gwent', 'Bridgend', 'Caerphilly', 'Cardiff', 'Carmarthenshire',
+  'Ceredigion', 'Conwy', 'Denbighshire', 'Flintshire', 'Gwynedd', 'Merthyr Tydfil',
+  'Monmouthshire', 'Neath Port Talbot', 'Newport', 'Pembrokeshire', 'Powys',
+  'Rhondda Cynon Taf', 'Swansea', 'Torfaen', 'Vale of Glamorgan', 'Wrexham',
+  // US States
+  'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
+  'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa',
+  'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan',
+  'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire',
+  'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio',
+  'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota',
+  'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia',
+  'Wisconsin', 'Wyoming', 'District of Columbia'
+]);
+
+// Patterns that indicate an address, not a geographic name
+const ADDRESS_PATTERNS = [
+  /^\d+/,                      // Starts with number
+  /\bflat\b/i,                 // Contains "flat"
+  /\bfloor\b/i,                // Contains "floor"
+  /\bstreet\b/i,               // Contains "street"
+  /\broad\b/i,                 // Contains "road"
+  /\blane\b/i,                 // Contains "lane"
+  /\bclose\b/i,                // Contains "close"
+  /\bdrive\b/i,                // Contains "drive"
+  /\bavenue\b/i,               // Contains "avenue"
+  /\bway\b/i,                  // Contains "way"
+  /\bcourt\b/i,                // Contains "court"
+  /\bplace\b/i,                // Contains "place"
+  /\bterrace\b/i,              // Contains "terrace"
+  /\bgardens\b/i,              // Contains "gardens"
+  /\bcrescent\b/i,             // Contains "crescent"
+  /\bsquare\b/i,               // Contains "square" (except Leicester Square etc)
+  /\bgrove\b/i,                // Contains "grove"
+  /\bhigh\s+street\b/i,        // High Street
+  /\bunit\b/i,                 // Contains "unit"
+  /\bapartment\b/i,            // Contains "apartment"
+  /\bbuilding\b/i,             // Contains "building"
+  /\bhouse\b/i,                // Contains "house"
+  /\bestate\b/i,               // Contains "estate"
+  /\bpark\b/i,                 // Contains "park" (often address)
+  /\bst\.\s/i,                 // St. (street abbreviation)
+  /\brd\b/i,                   // rd (road abbreviation)
+  /\bln\b/i,                   // ln (lane abbreviation)
+  /\bdr\b/i,                   // dr (drive abbreviation)
+];
+
+// Check if a value is a valid country
+const isValidCountry = (value: string): boolean => {
+  if (!value || value === 'Unknown') return false;
+  return VALID_COUNTRIES.has(value) || VALID_COUNTRIES.has(value.trim());
+};
+
+// Check if a value is a valid region
+const isValidRegion = (value: string): boolean => {
+  if (!value || value === 'Unknown') return false;
+  return VALID_UK_REGIONS.has(value) || VALID_UK_REGIONS.has(value.trim());
+};
+
+// Check if a value looks like an address rather than a city name
+const looksLikeAddress = (value: string): boolean => {
+  if (!value) return true;
+  return ADDRESS_PATTERNS.some(pattern => pattern.test(value));
+};
+
 // Check if a value looks like JSON or contains JSON artifacts
 const looksLikeJson = (value: string): boolean => {
   if (!value) return false;
@@ -228,8 +329,8 @@ serve(async (req) => {
       const province = geo.province || 'Unknown';
       const country = geo.country || 'Unknown';
 
-      // City aggregation (skip if it still looks like JSON or empty)
-      if (!city.startsWith('{') && !city.startsWith('"')) {
+      // City aggregation - only include if it doesn't look like an address
+      if (city !== 'Unknown' && !looksLikeAddress(city) && !looksLikeJson(city)) {
         const cityData = cityMap.get(city) || { total: 0, optIn: 0, revenue: 0 };
         cityData.total++;
         if (isOptIn) cityData.optIn++;
@@ -237,8 +338,8 @@ serve(async (req) => {
         cityMap.set(city, cityData);
       }
 
-      // Country aggregation (skip if it still looks like JSON)
-      if (!country.startsWith('{') && !country.startsWith('"')) {
+      // Country aggregation - only include valid countries
+      if (isValidCountry(country)) {
         const countryData = countryMap.get(country) || { total: 0, optIn: 0, revenue: 0 };
         countryData.total++;
         if (isOptIn) countryData.optIn++;
@@ -246,8 +347,8 @@ serve(async (req) => {
         countryMap.set(country, countryData);
       }
 
-      // Province aggregation (skip if it still looks like JSON)
-      if (!province.startsWith('{') && !province.startsWith('"')) {
+      // Province aggregation - only include valid regions
+      if (isValidRegion(province)) {
         const provinceData = provinceMap.get(province) || { total: 0, optIn: 0, revenue: 0 };
         provinceData.total++;
         if (isOptIn) provinceData.optIn++;
