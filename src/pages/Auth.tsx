@@ -17,7 +17,7 @@ const passwordSchema = z.string().min(8, 'Password must be at least 8 characters
 export default function Auth() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, isAdmin, loading, signIn, signUp } = useAuthContext();
+  const { user, isAdmin, loading, signIn, signUp, signOut } = useAuthContext();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -119,8 +119,8 @@ export default function Auth() {
               variant="outline" 
               className="w-full"
               onClick={async () => {
-                const { signOut } = useAuthContext();
                 await signOut();
+                navigate('/auth');
               }}
             >
               Sign Out
