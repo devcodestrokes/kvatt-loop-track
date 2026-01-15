@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Globe, Building2, MapPin } from 'lucide-react';
 
 interface Region {
   name: string;
@@ -28,27 +28,68 @@ interface CollapsibleHierarchyProps {
   hierarchy: Country[];
 }
 
-// Country flag emoji mapping
-const countryFlags: Record<string, string> = {
-  'United Kingdom': '🇬🇧',
-  'United States': '🇺🇸',
-  'USA': '🇺🇸',
-  'Canada': '🇨🇦',
-  'Australia': '🇦🇺',
-  'Germany': '🇩🇪',
-  'France': '🇫🇷',
-  'Spain': '🇪🇸',
-  'Italy': '🇮🇹',
-  'Netherlands': '🇳🇱',
-  'Belgium': '🇧🇪',
-  'Ireland': '🇮🇪',
-  'Isle of Man': '🇮🇲',
-  'Isle Of Man': '🇮🇲',
-  'Jersey': '🇯🇪',
-  'Guernsey': '🇬🇬',
+// Country code mapping
+const countryCodes: Record<string, string> = {
+  'United Kingdom': 'UK',
+  'United States': 'US',
+  'USA': 'US',
+  'Canada': 'CA',
+  'Australia': 'AU',
+  'Germany': 'DE',
+  'France': 'FR',
+  'Spain': 'ES',
+  'Italy': 'IT',
+  'Netherlands': 'NL',
+  'Belgium': 'BE',
+  'Ireland': 'IE',
+  'Sweden': 'SE',
+  'Norway': 'NO',
+  'Denmark': 'DK',
+  'Finland': 'FI',
+  'Austria': 'AT',
+  'Switzerland': 'CH',
+  'Portugal': 'PT',
+  'Greece': 'GR',
+  'Poland': 'PL',
+  'Czech Republic': 'CZ',
+  'Japan': 'JP',
+  'South Korea': 'KR',
+  'China': 'CN',
+  'India': 'IN',
+  'Brazil': 'BR',
+  'Mexico': 'MX',
+  'South Africa': 'ZA',
+  'New Zealand': 'NZ',
+  'Singapore': 'SG',
+  'UAE': 'AE',
+  'United Arab Emirates': 'AE',
+  'Saudi Arabia': 'SA',
+  'Israel': 'IL',
+  'Turkey': 'TR',
+  'Russia': 'RU',
+  'Ukraine': 'UA',
+  'Hong Kong': 'HK',
+  'Taiwan': 'TW',
+  'Malaysia': 'MY',
+  'Thailand': 'TH',
+  'Vietnam': 'VN',
+  'Philippines': 'PH',
+  'Indonesia': 'ID',
+  'Argentina': 'AR',
+  'Chile': 'CL',
+  'Colombia': 'CO',
+  'Egypt': 'EG',
+  'Morocco': 'MA',
+  'Kenya': 'KE',
+  'Nigeria': 'NG',
+  'Isle of Man': 'IM',
+  'Isle Of Man': 'IM',
+  'Jersey': 'JE',
+  'Guernsey': 'GG',
+  'Gibraltar': 'GI',
 };
 
-const getFlag = (country: string): string => countryFlags[country] || '🌍';
+const getCountryCode = (country: string): string => countryCodes[country] || country.slice(0, 2).toUpperCase();
 
 export const CollapsibleHierarchy = ({ hierarchy }: CollapsibleHierarchyProps) => {
   const [expandedCountries, setExpandedCountries] = useState<Set<string>>(new Set());
@@ -105,7 +146,10 @@ export const CollapsibleHierarchy = ({ hierarchy }: CollapsibleHierarchyProps) =
                 ) : (
                   <span className="w-4" />
                 )}
-                <span className="text-lg">{getFlag(country.name)}</span>
+                <div className="flex items-center justify-center w-6 h-6 rounded bg-primary/10">
+                  <Globe className="h-3.5 w-3.5 text-primary" />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground w-6">{getCountryCode(country.name)}</span>
                 <span className="font-semibold text-left">{country.name}</span>
               </div>
               <div className="flex items-center gap-3">
@@ -145,7 +189,9 @@ export const CollapsibleHierarchy = ({ hierarchy }: CollapsibleHierarchyProps) =
                           ) : (
                             <span className="w-3.5" />
                           )}
-                          <span className="text-sm">🏙️</span>
+                          <div className="flex items-center justify-center w-5 h-5 rounded bg-sky-100 dark:bg-sky-900/30">
+                            <Building2 className="h-3 w-3 text-sky-600 dark:text-sky-400" />
+                          </div>
                           <span className="text-sm font-medium text-left">{city.name}</span>
                         </div>
                         <div className="flex items-center gap-3">
@@ -165,7 +211,7 @@ export const CollapsibleHierarchy = ({ hierarchy }: CollapsibleHierarchyProps) =
                               className="flex items-center justify-between p-2.5 pl-14 text-xs border-b border-border/50 last:border-b-0"
                             >
                               <div className="flex items-center gap-1.5">
-                                <span className="text-muted-foreground">📍</span>
+                                <MapPin className="h-3 w-3 text-rose-400" />
                                 <span className="text-muted-foreground">{region.name}</span>
                               </div>
                               <div className="flex items-center gap-3">
