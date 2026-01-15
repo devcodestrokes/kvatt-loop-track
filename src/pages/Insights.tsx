@@ -21,6 +21,7 @@ import { MultiStoreSelector } from '@/components/dashboard/MultiStoreSelector';
 import { InsightsChatbot } from '@/components/dashboard/InsightsChatbot';
 import { ApiSyncStatus } from '@/components/dashboard/ApiSyncStatus';
 import { GeographicHeatmap } from '@/components/dashboard/GeographicHeatmap';
+import { CollapsibleHierarchy } from '@/components/dashboard/CollapsibleHierarchy';
 
 import { useStoreFilter } from '@/hooks/useStoreFilter';
 import { useApiSync } from '@/hooks/useApiSync';
@@ -902,74 +903,15 @@ const Insights = () => {
                 </div>
               </div>
 
-              {/* Geographic Hierarchy: Countries > Cities > Regions */}
+              {/* Geographic Hierarchy: Countries > Cities > Regions (Collapsible) */}
               {orderAnalytics.geographic.hierarchy && orderAnalytics.geographic.hierarchy.length > 0 && (
                 <div className="metric-card">
                   <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                     <Layers className="h-5 w-5 text-primary" />
                     Geographic Hierarchy
+                    <span className="text-xs font-normal text-muted-foreground ml-2">click to expand</span>
                   </h2>
-                  <div className="space-y-4">
-                    {orderAnalytics.geographic.hierarchy.slice(0, 5).map((country, i) => (
-                      <div key={i} className="border border-border rounded-lg overflow-hidden">
-                        {/* Country Level */}
-                        <div className="flex items-center justify-between p-3 bg-primary/5 border-b border-border">
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg">🌍</span>
-                            <span className="font-semibold">{country.name}</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <span className="text-sm text-muted-foreground">{country.total.toLocaleString()} orders</span>
-                            <span className={`text-sm font-bold ${parseFloat(country.optInRate) > 10 ? 'text-primary' : ''}`}>
-                              {country.optInRate}%
-                            </span>
-                          </div>
-                        </div>
-                        
-                        {/* Cities Level */}
-                        {country.cities.length > 0 && (
-                          <div className="p-3 space-y-2">
-                            {country.cities.slice(0, 5).map((city, j) => (
-                              <div key={j} className="pl-4 border-l-2 border-muted">
-                                <div className="flex items-center justify-between p-2 rounded bg-muted/30">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm">🏙️</span>
-                                    <span className="text-sm font-medium">{city.name}</span>
-                                  </div>
-                                  <div className="flex items-center gap-3">
-                                    <span className="text-xs text-muted-foreground">{city.total.toLocaleString()}</span>
-                                    <span className={`text-sm font-medium ${parseFloat(city.optInRate) > 10 ? 'text-primary' : ''}`}>
-                                      {city.optInRate}%
-                                    </span>
-                                  </div>
-                                </div>
-                                
-                                {/* Regions Level */}
-                                {city.regions.length > 0 && (
-                                  <div className="mt-1 ml-6 space-y-1">
-                                    {city.regions.slice(0, 3).map((region, k) => (
-                                      <div key={k} className="flex items-center justify-between p-1.5 text-xs">
-                                        <div className="flex items-center gap-1.5">
-                                          <span className="text-muted-foreground">📍</span>
-                                          <span className="text-muted-foreground">{region.name}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-muted-foreground">{region.total}</span>
-                                          <span className={parseFloat(region.optInRate) > 10 ? 'text-primary font-medium' : 'text-muted-foreground'}>
-                                            {region.optInRate}%
-                                          </span>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  <CollapsibleHierarchy hierarchy={orderAnalytics.geographic.hierarchy} />
                 </div>
               )}
 
