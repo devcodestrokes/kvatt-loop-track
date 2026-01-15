@@ -231,17 +231,19 @@ const Settings = () => {
 
     setDeletingId(roleId);
     try {
-      const { error } = await supabase
-        .from('user_roles')
-        .delete()
-        .eq('id', roleId);
+      // Call edge function to fully delete admin user
+      const { data, error } = await supabase.functions.invoke('delete-admin-user', {
+        body: { userId }
+      });
 
       if (error) throw error;
-      toast.success('Admin removed');
+      if (data?.error) throw new Error(data.error);
+      
+      toast.success('Admin completely deleted');
       fetchAdminData();
-    } catch (error) {
-      console.error('Error removing admin:', error);
-      toast.error('Failed to remove admin');
+    } catch (error: any) {
+      console.error('Error deleting admin:', error);
+      toast.error(error.message || 'Failed to delete admin');
     } finally {
       setDeletingId(null);
     }
