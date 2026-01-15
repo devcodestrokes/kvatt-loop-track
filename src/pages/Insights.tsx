@@ -20,6 +20,7 @@ import { Progress } from '@/components/ui/progress';
 import { MultiStoreSelector } from '@/components/dashboard/MultiStoreSelector';
 import { InsightsChatbot } from '@/components/dashboard/InsightsChatbot';
 import { ApiSyncStatus } from '@/components/dashboard/ApiSyncStatus';
+import { GeographicHeatmap } from '@/components/dashboard/GeographicHeatmap';
 
 import { useStoreFilter } from '@/hooks/useStoreFilter';
 import { useApiSync } from '@/hooks/useApiSync';
@@ -969,6 +970,18 @@ const Insights = () => {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Geographic Heatmap */}
+              {orderAnalytics.geographic.topCountries && orderAnalytics.geographic.topCountries.length > 0 && (
+                <div className="metric-card">
+                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-primary" />
+                    Geographic Heatmap
+                    <span className="text-xs font-normal text-muted-foreground ml-2">by opt-in rate</span>
+                  </h2>
+                  <GeographicHeatmap countries={orderAnalytics.geographic.topCountries} />
                 </div>
               )}
             </>
