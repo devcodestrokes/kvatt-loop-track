@@ -256,6 +256,7 @@ const Analytics = () => {
             fetchDailyData={fetchDailyData}
             selectedStores={selectedStores}
             isLoading={isLoading}
+            dateRange={dateRange || undefined}
           />
 
           {/* Weekly Performance Chart */}
