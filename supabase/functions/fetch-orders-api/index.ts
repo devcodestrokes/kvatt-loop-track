@@ -6,8 +6,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Parse destination field which can be an escaped JSON string or regular JSON
-const parseDestination = (destination: string | null | undefined): { 
+// Parse destination field which can be an object or escaped JSON string
+const parseDestination = (destination: any): { 
   city: string | null; 
   province: string | null; 
   country: string | null;
@@ -35,7 +35,11 @@ const parseDestination = (destination: string | null | undefined): {
   try {
     let parsed: any = destination;
     
-    if (typeof destination === 'string') {
+    // If it's already an object (new API auto-parses), use it directly
+    if (typeof destination === 'object') {
+      parsed = destination;
+    } else if (typeof destination === 'string') {
+      // Handle escaped JSON string
       parsed = JSON.parse(destination);
       if (typeof parsed === 'string') {
         parsed = JSON.parse(parsed);
@@ -62,56 +66,6 @@ const parseDestination = (destination: string | null | undefined): {
   }
 };
 
-// Extract address from any field that might contain JSON address data
-const extractAddressFromAnyField = (order: any): { 
-  city: string | null; 
-  province: string | null; 
-  country: string | null;
-} => {
-  // Try to find address data in various possible locations
-  const fieldsToCheck = [
-    order.destination,
-    order.shipping_address,
-    order.billing_address,
-    order.city, // Sometimes the city field itself contains the full address JSON
-    order.country,
-    order.province,
-  ];
-  
-  for (const field of fieldsToCheck) {
-    if (!field || typeof field !== 'string') continue;
-    
-    // Check if this field looks like JSON
-    if (field.includes('{') || field.startsWith('"')) {
-      try {
-        let parsed: any = field;
-        // Handle double-escaped JSON
-        if (typeof parsed === 'string') {
-          parsed = JSON.parse(parsed);
-          if (typeof parsed === 'string') {
-            parsed = JSON.parse(parsed);
-          }
-        }
-        
-        // If we found valid address components, return them
-        if (parsed && typeof parsed === 'object') {
-          const city = parsed?.city || null;
-          const province = parsed?.province || null;
-          const country = parsed?.country || null;
-          
-          if (city || province || country) {
-            return { city, province, country };
-          }
-        }
-      } catch (e) {
-        // Continue to next field
-      }
-    }
-  }
-  
-  return { city: null, province: null, country: null };
-};
-
 // Check if a value is a clean string (not JSON)
 const isCleanValue = (val: string | null | undefined): boolean => {
   if (!val) return false;
@@ -122,39 +76,24 @@ const isCleanValue = (val: string | null | undefined): boolean => {
 const processAndUpsertOrders = async (supabase: any, orders: any[]) => {
   let inserted = 0;
   let errors = 0;
-  const batchSize = 1000; // Larger batches for efficiency
+  const batchSize = 1000;
 
   for (let i = 0; i < orders.length; i += batchSize) {
     const batch = orders.slice(i, i + batchSize);
     
     const formattedBatch = batch.map((order: any) => {
-      // First try to parse from destination field
+      // Parse destination - new API auto-parses to object
       const parsedDestination = parseDestination(order.destination);
       
-      // If destination parsing failed, try other fields
-      let addressData = { 
-        city: parsedDestination.city, 
-        province: parsedDestination.province, 
-        country: parsedDestination.country 
-      };
+      // Use parsed destination values, fallback to direct fields
+      const city = parsedDestination.city || 
+                   (isCleanValue(order.shipping_city) ? order.shipping_city : null);
       
-      // If we don't have address data yet, try extracting from any field
-      if (!addressData.city && !addressData.province && !addressData.country) {
-        addressData = extractAddressFromAnyField(order);
-      }
+      const province = parsedDestination.province || 
+                       (isCleanValue(order.shipping_province) ? order.shipping_province : null);
       
-      // Fallback to direct fields only if they're clean values
-      const city = addressData.city || 
-                   (isCleanValue(order.shipping_city) ? order.shipping_city : null) || 
-                   null;
-      
-      const province = addressData.province || 
-                       (isCleanValue(order.shipping_province) ? order.shipping_province : null) || 
-                       null;
-      
-      const country = addressData.country || 
-                      (isCleanValue(order.shipping_country) ? order.shipping_country : null) || 
-                      null;
+      const country = parsedDestination.country || 
+                      (isCleanValue(order.shipping_country) ? order.shipping_country : null);
       
       return {
         external_id: order.id?.toString() || order.external_id?.toString() || `api-${Date.now()}-${Math.random()}`,
@@ -190,10 +129,6 @@ const processAndUpsertOrders = async (supabase: any, orders: any[]) => {
   return { inserted, errors };
 };
 
-// Sync lock key in database to prevent concurrent syncs
-const SYNC_LOCK_KEY = 'orders_api_sync_lock';
-const LOCK_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -210,185 +145,167 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     let triggerRefresh = false;
-    let useIncremental = true; // Default to incremental sync
     let forceFull = false;
     
     try {
       const body = await req.json();
       triggerRefresh = body.refresh === true;
-      useIncremental = body.incremental !== false; // Default true
       forceFull = body.forceFull === true;
     } catch {
       // No body or invalid JSON
     }
 
-    // Get current DB count and last order ID for incremental sync
+    // Get current DB count
     const { count: currentDbCount } = await supabase
       .from('imported_orders')
       .select('*', { count: 'exact', head: true });
 
     console.log(`Current DB count: ${currentDbCount}`);
 
-    // For incremental sync, get the latest shopify_created_at timestamp
-    let lastCreatedAt: string | null = null;
-    let lastExternalId: string | null = null;
+    // New API base URL - using /api/data endpoint
+    const baseUrl = 'https://shopify-phpmyadmin-extractor-api.onrender.com/api/data';
     
-    if (useIncremental && !forceFull) {
-      // Get the most recently created order by shopify_created_at
+    // For incremental sync, get the latest external_id to know where we are
+    let lastExternalId: number | null = null;
+    
+    if (!forceFull) {
       const { data: lastOrder } = await supabase
         .from('imported_orders')
-        .select('external_id, shopify_created_at')
-        .order('shopify_created_at', { ascending: false, nullsFirst: false })
+        .select('external_id')
+        .order('external_id', { ascending: false })
         .limit(1)
         .single();
       
-      lastExternalId = lastOrder?.external_id || null;
-      lastCreatedAt = lastOrder?.shopify_created_at || null;
-      console.log(`Last order - external_id: ${lastExternalId}, created_at: ${lastCreatedAt}`);
+      if (lastOrder?.external_id) {
+        lastExternalId = parseInt(lastOrder.external_id);
+        console.log(`Last external_id in DB: ${lastExternalId}`);
+      }
     }
 
-    // Build API URL - ALWAYS use force_fresh=true for LIVE data from database
-    let apiUrl: string;
-    const baseUrl = 'https://shopify-phpmyadmin-extractor-api.onrender.com/fetch-data';
-    
-    // Always use force_fresh=true to get live data from the database (not cached)
-    const forceFreshParam = 'force_fresh=true';
-    
-    if (forceFull || !lastCreatedAt) {
-      // Full sync - fetch all with pagination, force fresh data
-      apiUrl = `${baseUrl}?${forceFreshParam}&stream_all=true`;
-      console.log('Performing FULL sync with LIVE data (force_fresh=true)...');
-    } else {
-      // Incremental sync - use after_date for more reliable incremental fetching
-      // Fall back to after_id if the API doesn't support after_date
-      apiUrl = `${baseUrl}?${forceFreshParam}&after_date=${encodeURIComponent(lastCreatedAt)}`;
-      console.log(`Performing INCREMENTAL sync with LIVE data after date: ${lastCreatedAt}`);
+    // First, get metadata to check total count
+    console.log('Fetching metadata...');
+    const metadataResponse = await fetch(
+      'https://shopify-phpmyadmin-extractor-api.onrender.com/api/metadata',
+      {
+        method: 'GET',
+        headers: { 'X-API-Key': API_KEY },
+      }
+    );
+
+    if (!metadataResponse.ok) {
+      const errorText = await metadataResponse.text();
+      console.error('Metadata API error:', metadataResponse.status, errorText);
+      throw new Error(`Metadata API failed: ${metadataResponse.status}`);
     }
 
-    console.log(`Fetching LIVE data from: ${apiUrl}`);
+    const metadata = await metadataResponse.json();
+    const apiTotalCount = metadata.total_count || 0;
+    console.log(`API total count: ${apiTotalCount}, DB count: ${currentDbCount}`);
 
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      headers: {
-        'X-API-Key': API_KEY,
-        'Accept': 'application/json',
-        'Accept-Encoding': 'gzip',
-      },
-    });
-
-    // Handle API errors
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API error:', response.status, errorText);
-      
-      if (response.status === 401) {
-        throw new Error('API authentication failed - check API key');
-      }
-      
-      if (response.status === 503) {
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: 'Data sync in progress on external API. Please wait 2-3 minutes and try again.',
-            retryable: true,
-            apiStatus: 503,
-            dbCount: currentDbCount
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-        );
-      }
-      
-      if (response.status >= 500) {
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: 'External API temporarily unavailable.',
-            retryable: true,
-            apiStatus: response.status,
-            dbCount: currentDbCount
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-        );
-      }
-      
-      // If incremental sync fails (API might not support after_id), fall back to checking count
-      if (useIncremental && !forceFull && response.status === 400) {
-        console.log('Incremental API not supported, checking if full sync needed...');
-        
-        // Get total count from API
-        const countResponse = await fetch(
-          'https://shopify-phpmyadmin-extractor-api.onrender.com/fetch-data?limit=1',
-          { headers: { 'X-API-Key': API_KEY } }
-        );
-        
-        if (countResponse.ok) {
-          const countData = await countResponse.json();
-          const apiTotal = countData.count || 0;
-          
-          if (apiTotal <= (currentDbCount || 0)) {
-            return new Response(
-              JSON.stringify({ 
-                success: true, 
-                inserted: 0,
-                errors: 0,
-                total: currentDbCount,
-                apiRecordCount: apiTotal,
-                message: 'Database is up to date',
-                timestamp: new Date().toISOString()
-              }),
-              { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-            );
-          }
-        }
-      }
-      
-      throw new Error(`API request failed: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log('API Response - count:', data.count, 'status:', data.status, 'data_length:', data.data?.length);
-
-    // Handle API busy states - return retryable error
-    if (data.status === 'already_updating' || data.status === 'refresh_triggered') {
-      console.log('External API is updating, will retry...');
+    // If DB is up to date, no need to fetch
+    if (!forceFull && currentDbCount && currentDbCount >= apiTotalCount) {
+      console.log('Database is up to date');
       return new Response(
         JSON.stringify({ 
-          success: false, 
-          error: 'External data source is refreshing. Please wait 2-3 minutes and try again.',
-          retryable: true,
-          apiStatus: data.status,
-          dbCount: currentDbCount,
-          apiReportedCount: data.count
+          success: true, 
+          inserted: 0,
+          errors: 0,
+          total: currentDbCount,
+          apiRecordCount: apiTotalCount,
+          message: 'Database is up to date',
+          timestamp: new Date().toISOString()
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
       );
     }
 
-    const orders = data.data || [];
+    // Calculate which rows to fetch
+    const startRow = forceFull ? 1 : (currentDbCount || 0) + 1;
+    const batchSize = 5000; // Fetch in batches
     
-    // If API doesn't support after_date, filter client-side by created_at
-    let ordersToProcess = orders;
-    if (useIncremental && lastCreatedAt && !forceFull) {
-      const lastDate = new Date(lastCreatedAt);
-      ordersToProcess = orders.filter((order: any) => {
-        const orderDate = new Date(order.created_at || order.shopify_created_at || '1970-01-01');
-        return orderDate > lastDate;
+    let allOrders: any[] = [];
+    let currentStart = startRow;
+    let hasMoreData = true;
+
+    console.log(`Fetching orders starting from row ${startRow}...`);
+
+    while (hasMoreData && currentStart <= apiTotalCount) {
+      const endRow = Math.min(currentStart + batchSize - 1, apiTotalCount);
+      
+      // Use refresh=true for background refresh, parse_json=true for auto-parsed destination
+      const apiUrl = `${baseUrl}?start_row=${currentStart}&end_row=${endRow}&refresh=${triggerRefresh}`;
+      console.log(`Fetching rows ${currentStart}-${endRow}...`);
+
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'X-API-Key': API_KEY,
+          'Accept': 'application/json',
+        },
       });
-      console.log(`Filtered to ${ordersToProcess.length} new orders (from ${orders.length} total) by date`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API error:', response.status, errorText);
+        
+        if (response.status === 401) {
+          throw new Error('API authentication failed - check API key');
+        }
+        
+        if (response.status === 503 || response.status >= 500) {
+          // Return partial success if we got some data
+          if (allOrders.length > 0) {
+            console.log('API temporarily unavailable, processing partial data...');
+            break;
+          }
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: 'External API temporarily unavailable.',
+              retryable: true,
+              apiStatus: response.status,
+              dbCount: currentDbCount
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+          );
+        }
+        
+        throw new Error(`API request failed: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log(`Received ${data.returned_count || 0} orders, source: ${data.source}`);
+
+      const orders = data.data || [];
+      if (orders.length === 0) {
+        hasMoreData = false;
+      } else {
+        allOrders = allOrders.concat(orders);
+        currentStart = endRow + 1;
+        
+        // If we got fewer than requested, we're done
+        if (orders.length < batchSize) {
+          hasMoreData = false;
+        }
+      }
+
+      // Safety limit - don't fetch more than 50k in one sync
+      if (allOrders.length >= 50000) {
+        console.log('Reached 50k order limit for single sync');
+        hasMoreData = false;
+      }
     }
 
-    if (ordersToProcess.length === 0) {
-      const finalCount = await supabase
-        .from('imported_orders')
-        .select('*', { count: 'exact', head: true });
-        
+    console.log(`Total orders fetched: ${allOrders.length}`);
+
+    if (allOrders.length === 0) {
       return new Response(
         JSON.stringify({ 
           success: true, 
           inserted: 0, 
           errors: 0,
-          total: finalCount.count || currentDbCount,
-          apiRecordCount: data.count,
+          total: currentDbCount,
+          apiRecordCount: apiTotalCount,
           message: 'No new orders to process',
           timestamp: new Date().toISOString()
         }),
@@ -396,7 +313,7 @@ serve(async (req) => {
       );
     }
 
-    const { inserted, errors } = await processAndUpsertOrders(supabase, ordersToProcess);
+    const { inserted, errors } = await processAndUpsertOrders(supabase, allOrders);
 
     // Get final count
     const { count: finalDbCount } = await supabase
@@ -411,10 +328,8 @@ serve(async (req) => {
         inserted, 
         errors,
         total: finalDbCount,
-        apiRecordCount: data.count,
-        lastUpdated: data.last_updated,
+        apiRecordCount: apiTotalCount,
         refreshTriggered: triggerRefresh,
-        wasIncremental: useIncremental && !forceFull,
         timestamp: new Date().toISOString()
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
