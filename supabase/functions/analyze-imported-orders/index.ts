@@ -187,7 +187,7 @@ serve(async (req) => {
       .sort((a, b) => parseFloat(b.optInRate) - parseFloat(a.optInRate))
       .slice(0, 10);
 
-    // Get ALL valid countries (not just top 10) - filter to those with at least 2 orders
+    // Get ALL valid countries (no minimum threshold)
     const topCountries = Array.from(countryMap.entries())
       .map(([name, data]) => ({
         name,
@@ -196,10 +196,9 @@ serve(async (req) => {
         optInRate: data.total > 0 ? ((data.optIn / data.total) * 100).toFixed(2) : '0.00',
         avgOrderValue: data.total > 0 ? (data.revenue / data.total).toFixed(2) : '0.00',
       }))
-      .filter(c => c.total >= 2) // Only show countries with at least 2 orders
       .sort((a, b) => b.total - a.total);
 
-    console.log(`Found ${topCountries.length} valid countries:`, topCountries.map(c => c.name));
+    console.log(`Found ${topCountries.length} valid countries:`, topCountries.map(c => `${c.name}(${c.total})`));
 
     const topProvinces = Array.from(provinceMap.entries())
       .map(([name, data]) => ({
