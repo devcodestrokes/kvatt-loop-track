@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { format, startOfWeek, addDays, getISOWeek } from 'date-fns';
+import { useState, useEffect, useMemo } from 'react';
+import { format, startOfWeek, endOfWeek, addDays, getISOWeek, isWithinInterval, isBefore, isAfter, max, min } from 'date-fns';
 import { Calendar, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,13 +25,39 @@ interface WeeklyBreakdownProps {
   fetchDailyData: (date: Date) => Promise<{ checkouts: number; optIns: number; optOuts: number }>;
   selectedStores: string[];
   isLoading?: boolean;
+  dateRange?: { from?: Date; to?: Date };
 }
 
-export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: externalLoading }: WeeklyBreakdownProps) {
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: externalLoading, dateRange }: WeeklyBreakdownProps) {
+  // Calculate weeks within the date range
+  const weeksInRange = useMemo(() => {
+    if (!dateRange?.from || !dateRange?.to) {
+      // Default to current week if no range
+      return [startOfWeek(new Date(), { weekStartsOn: 1 })];
+    }
+    
+    const weeks: Date[] = [];
+    let currentWeekStart = startOfWeek(dateRange.from, { weekStartsOn: 1 });
+    const rangeEnd = dateRange.to;
+    
+    while (isBefore(currentWeekStart, rangeEnd) || currentWeekStart.getTime() === startOfWeek(rangeEnd, { weekStartsOn: 1 }).getTime()) {
+      weeks.push(currentWeekStart);
+      currentWeekStart = addDays(currentWeekStart, 7);
+    }
+    
+    return weeks;
+  }, [dateRange]);
+
+  const [currentWeekIndex, setCurrentWeekIndex] = useState(0);
   const [dailyData, setDailyData] = useState<DailyData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Reset to first week when date range changes
+  useEffect(() => {
+    setCurrentWeekIndex(0);
+  }, [dateRange?.from?.getTime(), dateRange?.to?.getTime()]);
+
+  const weekStart = weeksInRange[currentWeekIndex] || startOfWeek(new Date(), { weekStartsOn: 1 });
   const weekNumber = getISOWeek(weekStart);
   const weekEnd = addDays(weekStart, 6);
 
@@ -44,8 +70,13 @@ export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: ext
         const date = addDays(weekStart, i);
         const dayName = format(date, 'EEEE');
         
-        // Only fetch data for past/current days
-        if (date <= new Date()) {
+        // Check if date is within the selected date range
+        const isInRange = dateRange?.from && dateRange?.to
+          ? isWithinInterval(date, { start: dateRange.from, end: dateRange.to })
+          : true;
+        
+        // Only fetch data for past/current days that are in range
+        if (date <= new Date() && isInRange) {
           try {
             const data = await fetchDailyData(date);
             const optInRate = data.checkouts > 0 
@@ -78,7 +109,8 @@ export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: ext
             optIns: 0,
             optOuts: 0,
             optInRate: '-',
-          });
+            isOutOfRange: !isInRange,
+          } as DailyData & { isOutOfRange?: boolean });
         }
       }
 
@@ -87,14 +119,27 @@ export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: ext
     };
 
     loadWeekData();
-  }, [weekStart, fetchDailyData, selectedStores]);
+  }, [weekStart, fetchDailyData, selectedStores, dateRange]);
 
   const navigateWeek = (direction: 'prev' | 'next') => {
-    setWeekStart(prev => addDays(prev, direction === 'prev' ? -7 : 7));
+    if (direction === 'prev' && currentWeekIndex > 0) {
+      setCurrentWeekIndex(prev => prev - 1);
+    } else if (direction === 'next' && currentWeekIndex < weeksInRange.length - 1) {
+      setCurrentWeekIndex(prev => prev + 1);
+    }
   };
 
   const goToCurrentWeek = () => {
-    setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
+    // Find the week that contains today within the range
+    const today = new Date();
+    const todayWeekStart = startOfWeek(today, { weekStartsOn: 1 });
+    const index = weeksInRange.findIndex(w => w.getTime() === todayWeekStart.getTime());
+    if (index >= 0) {
+      setCurrentWeekIndex(index);
+    } else {
+      // If today is not in range, go to the last week in range
+      setCurrentWeekIndex(weeksInRange.length - 1);
+    }
   };
 
   const totals = dailyData.reduce(
@@ -142,8 +187,10 @@ export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: ext
     a.click();
   };
 
-  const isCurrentWeek = startOfWeek(new Date(), { weekStartsOn: 1 }).getTime() === weekStart.getTime();
-  const isFutureWeek = weekStart > new Date();
+  const canNavigatePrev = currentWeekIndex > 0;
+  const canNavigateNext = currentWeekIndex < weeksInRange.length - 1;
+  const isCurrentWeekInRange = weeksInRange.some(w => w.getTime() === startOfWeek(new Date(), { weekStartsOn: 1 }).getTime());
+  const isOnCurrentWeek = weeksInRange[currentWeekIndex]?.getTime() === startOfWeek(new Date(), { weekStartsOn: 1 }).getTime();
 
   return (
     <div className="data-table">
@@ -154,6 +201,7 @@ export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: ext
             <h3 className="text-lg font-semibold text-foreground">Weekly Breakdown</h3>
             <p className="text-sm text-muted-foreground">
               Week {weekNumber} • {format(weekStart, 'MMM d')} – {format(weekEnd, 'MMM d, yyyy')}
+              {weeksInRange.length > 1 && <span className="ml-2 text-xs">({currentWeekIndex + 1} of {weeksInRange.length})</span>}
             </p>
           </div>
         </div>
@@ -162,6 +210,7 @@ export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: ext
             variant="outline"
             size="icon"
             onClick={() => navigateWeek('prev')}
+            disabled={!canNavigatePrev}
             className="h-8 w-8"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -170,7 +219,7 @@ export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: ext
             variant="outline"
             size="sm"
             onClick={goToCurrentWeek}
-            disabled={isCurrentWeek}
+            disabled={!isCurrentWeekInRange || isOnCurrentWeek}
           >
             Today
           </Button>
@@ -178,7 +227,7 @@ export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: ext
             variant="outline"
             size="icon"
             onClick={() => navigateWeek('next')}
-            disabled={isFutureWeek}
+            disabled={!canNavigateNext}
             className="h-8 w-8"
           >
             <ChevronRight className="h-4 w-4" />
