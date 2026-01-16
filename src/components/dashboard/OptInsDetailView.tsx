@@ -27,15 +27,22 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 
+interface Destination {
+  city?: string | null;
+  country?: string | null;
+  province?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+}
+
 interface OptInOrder {
   id: string;
-  order_number: string | null;
+  name: string | null;
   total_price: number | null;
   shopify_created_at: string | null;
-  store_id: string | null;
+  user_id: string | null;
   payment_status: string | null;
-  city: string | null;
-  country: string | null;
+  destination: Record<string, unknown> | null;
 }
 
 interface OptInsDetailViewProps {
@@ -46,7 +53,7 @@ interface OptInsDetailViewProps {
   dateTo?: Date;
 }
 
-type SortField = 'order_number' | 'total_price' | 'shopify_created_at' | 'store_id';
+type SortField = 'name' | 'total_price' | 'shopify_created_at' | 'user_id';
 type SortDirection = 'asc' | 'desc';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100, 150, 200] as const;
@@ -81,7 +88,7 @@ export function OptInsDetailView({
     try {
       const { data, error } = await supabase
         .from('imported_orders')
-        .select('id, order_number, total_price, shopify_created_at, store_id, payment_status, city, country')
+        .select('id, name, total_price, shopify_created_at, user_id, payment_status, destination')
         .eq('opt_in', true)
         .order('shopify_created_at', { ascending: false })
         .limit(1000);
@@ -90,7 +97,7 @@ export function OptInsDetailView({
         console.error('Error fetching opt-in orders:', error);
         setOrders([]);
       } else {
-        setOrders(data || []);
+        setOrders((data as unknown as OptInOrder[]) || []);
       }
     } catch (err) {
       console.error('Error:', err);
@@ -133,17 +140,25 @@ export function OptInsDetailView({
   const endIndex = startIndex + pageSize;
   const paginatedOrders = sortedOrders.slice(startIndex, endIndex);
 
+  const getLocation = (dest: Destination | null): string => {
+    if (!dest) return '-';
+    return [dest.city, dest.country].filter(Boolean).join(', ') || '-';
+  };
+
   const exportToCSV = () => {
     const headers = ['Order ID', 'Order Value', 'Timestamp', 'Store', 'Payment Status', 'City', 'Country'];
-    const rows = sortedOrders.map((order) => [
-      order.order_number || '-',
-      order.total_price?.toFixed(2) || '0.00',
-      order.shopify_created_at ? format(new Date(order.shopify_created_at), 'yyyy-MM-dd HH:mm') : '-',
-      order.store_id?.replace('.myshopify.com', '') || '-',
-      order.payment_status || '-',
-      order.city || '-',
-      order.country || '-',
-    ]);
+    const rows = sortedOrders.map((order) => {
+      const dest = order.destination as Destination | null;
+      return [
+        order.name || '-',
+        order.total_price?.toFixed(2) || '0.00',
+        order.shopify_created_at ? format(new Date(order.shopify_created_at), 'yyyy-MM-dd HH:mm') : '-',
+        order.user_id || '-',
+        order.payment_status || '-',
+        dest?.city || '-',
+        dest?.country || '-',
+      ];
+    });
 
     const csv = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -187,7 +202,7 @@ export function OptInsDetailView({
             <TableHeader>
               <TableRow className="hover:bg-transparent border-border">
                 <TableHead className="text-muted-foreground">
-                  <SortButton field="order_number">Order ID</SortButton>
+                  <SortButton field="name">Order ID</SortButton>
                 </TableHead>
                 <TableHead className="text-right text-muted-foreground">
                   <SortButton field="total_price">Value</SortButton>
@@ -196,7 +211,7 @@ export function OptInsDetailView({
                   <SortButton field="shopify_created_at">Timestamp</SortButton>
                 </TableHead>
                 <TableHead className="text-muted-foreground">
-                  <SortButton field="store_id">Store</SortButton>
+                  <SortButton field="user_id">Store</SortButton>
                 </TableHead>
                 <TableHead className="text-muted-foreground">Status</TableHead>
                 <TableHead className="text-muted-foreground">Location</TableHead>
@@ -221,38 +236,41 @@ export function OptInsDetailView({
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedOrders.map((order) => (
-                  <TableRow key={order.id} className="border-border hover:bg-secondary/50">
-                    <TableCell className="font-mono text-sm">
-                      {order.order_number || '-'}
-                    </TableCell>
-                    <TableCell className="text-right font-mono">
-                      ${order.total_price?.toFixed(2) || '0.00'}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {order.shopify_created_at
-                        ? format(new Date(order.shopify_created_at), 'MMM d, yyyy HH:mm')
-                        : '-'
-                      }
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {order.store_id?.replace('.myshopify.com', '') || '-'}
-                    </TableCell>
-                    <TableCell>
-                      {order.payment_status && (
-                        <Badge
-                          variant={order.payment_status === 'paid' ? 'default' : 'secondary'}
-                          className="text-xs"
-                        >
-                          {order.payment_status}
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {[order.city, order.country].filter(Boolean).join(', ') || '-'}
-                    </TableCell>
-                  </TableRow>
-                ))
+                paginatedOrders.map((order) => {
+                  const dest = order.destination as Destination | null;
+                  return (
+                    <TableRow key={order.id} className="border-border hover:bg-secondary/50">
+                      <TableCell className="font-mono text-sm">
+                        {order.name || '-'}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        ${order.total_price?.toFixed(2) || '0.00'}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {order.shopify_created_at
+                          ? format(new Date(order.shopify_created_at), 'MMM d, yyyy HH:mm')
+                          : '-'
+                        }
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {order.user_id || '-'}
+                      </TableCell>
+                      <TableCell>
+                        {order.payment_status && (
+                          <Badge
+                            variant={order.payment_status === 'paid' ? 'default' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {order.payment_status}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {getLocation(dest)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

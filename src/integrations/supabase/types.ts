@@ -144,49 +144,58 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string
-          customer_external_id: string | null
+          customer_id: string | null
+          destination: Json | null
           external_id: string
           id: string
+          name: string | null
           opt_in: boolean | null
-          order_number: string | null
           payment_status: string | null
           province: string | null
           shopify_created_at: string | null
           shopify_order_id: string | null
           store_id: string | null
           total_price: number | null
+          updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           city?: string | null
           country?: string | null
           created_at?: string
-          customer_external_id?: string | null
+          customer_id?: string | null
+          destination?: Json | null
           external_id: string
           id?: string
+          name?: string | null
           opt_in?: boolean | null
-          order_number?: string | null
           payment_status?: string | null
           province?: string | null
           shopify_created_at?: string | null
           shopify_order_id?: string | null
           store_id?: string | null
           total_price?: number | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           city?: string | null
           country?: string | null
           created_at?: string
-          customer_external_id?: string | null
+          customer_id?: string | null
+          destination?: Json | null
           external_id?: string
           id?: string
+          name?: string | null
           opt_in?: boolean | null
-          order_number?: string | null
           payment_status?: string | null
           province?: string | null
           shopify_created_at?: string | null
           shopify_order_id?: string | null
           store_id?: string | null
           total_price?: number | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
