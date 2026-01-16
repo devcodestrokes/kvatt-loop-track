@@ -29,6 +29,11 @@ const processAndUpsertOrders = async (supabase: any, orders: any[]) => {
         }
       }
 
+      // Extract city, country, province from destination
+      const city = (destination as any).city || null;
+      const country = (destination as any).country || null;
+      const province = (destination as any).province || null;
+
       return {
         external_id: order.id?.toString() || `api-${Date.now()}-${Math.random()}`,
         name: order.name || null,
@@ -37,6 +42,9 @@ const processAndUpsertOrders = async (supabase: any, orders: any[]) => {
         opt_in: order.opt_in === true || order.opt_in === 'true' || order.opt_in === 1 || order.opt_in === '1',
         total_price: parseFloat(order.total_price) || 0,
         destination,
+        city,
+        country,
+        province,
         user_id: order.user_id?.toString() || null,
         payment_status: order.payment_status || null,
         shopify_created_at: order.shopify_created_at || order.created_at || null,
