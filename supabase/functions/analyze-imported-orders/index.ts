@@ -129,9 +129,13 @@ serve(async (req) => {
 
     const isValidValue = (val: string | null): boolean => {
       if (!val) return false;
-      if (val === 'Unknown' || val === 'null' || val === 'undefined') return false;
-      if (val.includes('{') || val.includes('"') || val.includes('\\')) return false;
-      if (/^\d+/.test(val)) return false; // Starts with number (address)
+      const trimmed = val.trim();
+      if (trimmed.length === 0) return false;
+      if (trimmed === 'Unknown' || trimmed === 'null' || trimmed === 'undefined' || trimmed === 'N/A') return false;
+      if (trimmed.includes('{') || trimmed.includes('"') || trimmed.includes('\\') || trimmed.includes(':')) return false;
+      if (/^\d+/.test(trimmed)) return false; // Starts with number (address)
+      if (/^\+?\d{10,}$/.test(trimmed.replace(/\s/g, ''))) return false; // Phone number
+      if (trimmed.includes('Floor') || trimmed.includes('Street') || trimmed.includes('Road')) return false; // Address parts
       return true;
     };
 
@@ -183,6 +187,7 @@ serve(async (req) => {
       .sort((a, b) => parseFloat(b.optInRate) - parseFloat(a.optInRate))
       .slice(0, 10);
 
+    // Get ALL valid countries (not just top 10) - filter to those with at least 2 orders
     const topCountries = Array.from(countryMap.entries())
       .map(([name, data]) => ({
         name,
@@ -191,8 +196,10 @@ serve(async (req) => {
         optInRate: data.total > 0 ? ((data.optIn / data.total) * 100).toFixed(2) : '0.00',
         avgOrderValue: data.total > 0 ? (data.revenue / data.total).toFixed(2) : '0.00',
       }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 10);
+      .filter(c => c.total >= 2) // Only show countries with at least 2 orders
+      .sort((a, b) => b.total - a.total);
+
+    console.log(`Found ${topCountries.length} valid countries:`, topCountries.map(c => c.name));
 
     const topProvinces = Array.from(provinceMap.entries())
       .map(([name, data]) => ({
