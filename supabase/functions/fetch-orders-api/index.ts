@@ -6,73 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Parse destination field which can be an object or escaped JSON string
-const parseDestination = (destination: any): { 
-  city: string | null; 
-  province: string | null; 
-  country: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  address1: string | null;
-  address2: string | null;
-  zip: string | null;
-  phone: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  country_code: string | null;
-  province_code: string | null;
-} => {
-  const emptyResult = { 
-    city: null, province: null, country: null, first_name: null, last_name: null,
-    address1: null, address2: null, zip: null, phone: null, latitude: null, 
-    longitude: null, country_code: null, province_code: null 
-  };
-  
-  if (!destination) {
-    return emptyResult;
-  }
-  
-  try {
-    let parsed: any = destination;
-    
-    // If it's already an object (new API auto-parses), use it directly
-    if (typeof destination === 'object') {
-      parsed = destination;
-    } else if (typeof destination === 'string') {
-      // Handle escaped JSON string
-      parsed = JSON.parse(destination);
-      if (typeof parsed === 'string') {
-        parsed = JSON.parse(parsed);
-      }
-    }
-    
-    return {
-      city: parsed?.city || null,
-      province: parsed?.province || null,
-      country: parsed?.country || null,
-      first_name: parsed?.first_name || null,
-      last_name: parsed?.last_name || null,
-      address1: parsed?.address1 || null,
-      address2: parsed?.address2 || null,
-      zip: parsed?.zip || null,
-      phone: parsed?.phone || null,
-      latitude: parsed?.latitude || null,
-      longitude: parsed?.longitude || null,
-      country_code: parsed?.country_code || null,
-      province_code: parsed?.province_code || null,
-    };
-  } catch (e) {
-    return emptyResult;
-  }
-};
-
-// Check if a value is a clean string (not JSON)
-const isCleanValue = (val: string | null | undefined): boolean => {
-  if (!val) return false;
-  if (val === 'null' || val === 'undefined') return false;
-  return !val.includes('{') && !val.includes('\\') && !val.startsWith('"') && !val.includes(':');
-};
-
 const processAndUpsertOrders = async (supabase: any, orders: any[]) => {
   let inserted = 0;
   let errors = 0;
@@ -82,32 +15,32 @@ const processAndUpsertOrders = async (supabase: any, orders: any[]) => {
     const batch = orders.slice(i, i + batchSize);
     
     const formattedBatch = batch.map((order: any) => {
-      // Parse destination - new API auto-parses to object
-      const parsedDestination = parseDestination(order.destination);
-      
-      // Use parsed destination values, fallback to direct fields
-      const city = parsedDestination.city || 
-                   (isCleanValue(order.shipping_city) ? order.shipping_city : null);
-      
-      const province = parsedDestination.province || 
-                       (isCleanValue(order.shipping_province) ? order.shipping_province : null);
-      
-      const country = parsedDestination.country || 
-                      (isCleanValue(order.shipping_country) ? order.shipping_country : null);
-      
+      // Parse destination - can be object or string
+      let destination = {};
+      if (order.destination) {
+        if (typeof order.destination === 'object') {
+          destination = order.destination;
+        } else if (typeof order.destination === 'string') {
+          try {
+            destination = JSON.parse(order.destination);
+          } catch {
+            destination = {};
+          }
+        }
+      }
+
       return {
-        external_id: order.id?.toString() || order.external_id?.toString() || `api-${Date.now()}-${Math.random()}`,
-        order_number: order.order_number?.toString() || order.name || null,
-        shopify_order_id: order.shopify_order_id?.toString() || order.id?.toString() || null,
-        customer_external_id: order.customer_id?.toString() || order.customer_external_id?.toString() || null,
+        external_id: order.id?.toString() || `api-${Date.now()}-${Math.random()}`,
+        name: order.name || null,
+        shopify_order_id: order.shopify_order_id?.toString() || null,
+        customer_id: order.customer_id?.toString() || null,
         opt_in: order.opt_in === true || order.opt_in === 'true' || order.opt_in === 1 || order.opt_in === '1',
         total_price: parseFloat(order.total_price) || 0,
-        city,
-        province,
-        country,
-        store_id: order.store_id || order.store || order.user_id?.toString() || null,
-        payment_status: order.payment_status || order.financial_status || null,
-        shopify_created_at: order.created_at || order.shopify_created_at || null,
+        destination,
+        user_id: order.user_id?.toString() || null,
+        payment_status: order.payment_status || null,
+        shopify_created_at: order.shopify_created_at || order.created_at || null,
+        updated_at: order.updated_at || new Date().toISOString(),
       };
     });
 
@@ -162,25 +95,8 @@ serve(async (req) => {
 
     console.log(`Current DB count: ${currentDbCount}`);
 
-    // New API base URL - using /api/data endpoint
+    // New API base URL
     const baseUrl = 'https://shopify-phpmyadmin-extractor-api.onrender.com/api/data';
-    
-    // For incremental sync, get the latest external_id to know where we are
-    let lastExternalId: number | null = null;
-    
-    if (!forceFull) {
-      const { data: lastOrder } = await supabase
-        .from('imported_orders')
-        .select('external_id')
-        .order('external_id', { ascending: false })
-        .limit(1)
-        .single();
-      
-      if (lastOrder?.external_id) {
-        lastExternalId = parseInt(lastOrder.external_id);
-        console.log(`Last external_id in DB: ${lastExternalId}`);
-      }
-    }
 
     // First, get metadata to check total count
     console.log('Fetching metadata...');
@@ -221,7 +137,7 @@ serve(async (req) => {
 
     // Calculate which rows to fetch
     const startRow = forceFull ? 1 : (currentDbCount || 0) + 1;
-    const batchSize = 5000; // Fetch in batches
+    const batchSize = 5000;
     
     let allOrders: any[] = [];
     let currentStart = startRow;
@@ -232,7 +148,6 @@ serve(async (req) => {
     while (hasMoreData && currentStart <= apiTotalCount) {
       const endRow = Math.min(currentStart + batchSize - 1, apiTotalCount);
       
-      // Use refresh=true for background refresh, parse_json=true for auto-parsed destination
       const apiUrl = `${baseUrl}?start_row=${currentStart}&end_row=${endRow}&refresh=${triggerRefresh}`;
       console.log(`Fetching rows ${currentStart}-${endRow}...`);
 
@@ -253,7 +168,6 @@ serve(async (req) => {
         }
         
         if (response.status === 503 || response.status >= 500) {
-          // Return partial success if we got some data
           if (allOrders.length > 0) {
             console.log('API temporarily unavailable, processing partial data...');
             break;
@@ -283,13 +197,11 @@ serve(async (req) => {
         allOrders = allOrders.concat(orders);
         currentStart = endRow + 1;
         
-        // If we got fewer than requested, we're done
         if (orders.length < batchSize) {
           hasMoreData = false;
         }
       }
 
-      // Safety limit - don't fetch more than 50k in one sync
       if (allOrders.length >= 50000) {
         console.log('Reached 50k order limit for single sync');
         hasMoreData = false;
