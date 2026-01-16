@@ -130,42 +130,32 @@ serve(async (req) => {
       return true;
     };
 
-    // 3. Get geographic stats using SQL aggregation for accuracy
-    // Query countries - aggregate ALL data directly in SQL
-    const { data: countryAggData } = await supabase
-      .rpc('aggregate_by_field', { field_name: 'country' })
-      .throwOnError();
+    // 3. Get geographic stats - query ALL data for accuracy
+    // Query countries - aggregate from full dataset
+    const { data: rawCountryData } = await supabase
+      .from('imported_orders')
+      .select('country, opt_in, total_price');
     
-    let countryResults: any[] = [];
-    if (!countryAggData) {
-      // Fallback: use raw SQL via direct query
-      const { data: rawCountryData } = await supabase
-        .from('imported_orders')
-        .select('country, opt_in, total_price');
-      
-      // Aggregate in memory but from FULL dataset (no limit)
-      const countryMap = new Map<string, { total: number; optIn: number; revenue: number }>();
-      rawCountryData?.forEach(order => {
-        const country = order.country;
-        if (isValidValue(country)) {
-          const data = countryMap.get(country!) || { total: 0, optIn: 0, revenue: 0 };
-          data.total++;
-          if (order.opt_in === true) data.optIn++;
-          data.revenue += parseFloat(order.total_price) || 0;
-          countryMap.set(country!, data);
-        }
-      });
-      
-      countryResults = Array.from(countryMap.entries()).map(([name, data]) => ({
-        name,
-        total: data.total,
-        optIn: data.optIn,
-        optInRate: data.total > 0 ? ((data.optIn / data.total) * 100).toFixed(2) : '0.00',
-        avgOrderValue: data.total > 0 ? (data.revenue / data.total).toFixed(2) : '0.00',
-      }));
-    } else {
-      countryResults = countryAggData;
-    }
+    // Aggregate in memory from FULL dataset (no limit)
+    const countryMap = new Map<string, { total: number; optIn: number; revenue: number }>();
+    rawCountryData?.forEach(order => {
+      const country = order.country;
+      if (isValidValue(country)) {
+        const data = countryMap.get(country!) || { total: 0, optIn: 0, revenue: 0 };
+        data.total++;
+        if (order.opt_in === true) data.optIn++;
+        data.revenue += parseFloat(order.total_price) || 0;
+        countryMap.set(country!, data);
+      }
+    });
+    
+    const countryResults = Array.from(countryMap.entries()).map(([name, data]) => ({
+      name,
+      total: data.total,
+      optIn: data.optIn,
+      optInRate: data.total > 0 ? ((data.optIn / data.total) * 100).toFixed(2) : '0.00',
+      avgOrderValue: data.total > 0 ? (data.revenue / data.total).toFixed(2) : '0.00',
+    }));
 
     const topCountries = countryResults
       .filter((c: any) => isValidValue(c.name))
