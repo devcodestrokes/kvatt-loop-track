@@ -117,16 +117,7 @@ serve(async (req) => {
       }))
       .sort((a, b) => b.total - a.total);
 
-    // 3. Get geographic stats - sample for memory efficiency
-    const { data: geoData } = await supabase
-      .from('imported_orders')
-      .select('city, province, country, opt_in, total_price')
-      .limit(50000);
-
-    const cityMap = new Map<string, { total: number; optIn: number; revenue: number }>();
-    const countryMap = new Map<string, { total: number; optIn: number; revenue: number }>();
-    const provinceMap = new Map<string, { total: number; optIn: number; revenue: number }>();
-
+    // Helper function to validate geographic values
     const isValidValue = (val: string | null): boolean => {
       if (!val) return false;
       const trimmed = val.trim();
@@ -139,35 +130,63 @@ serve(async (req) => {
       return true;
     };
 
-    geoData?.forEach(order => {
-      const city = order.city;
-      const country = order.country;
-      const province = order.province;
-      const isOptIn = order.opt_in === true;
-      const price = parseFloat(order.total_price) || 0;
+    // 3. Get geographic stats using SQL aggregation for accuracy
+    // Query countries - aggregate ALL data directly in SQL
+    const { data: countryAggData } = await supabase
+      .rpc('aggregate_by_field', { field_name: 'country' })
+      .throwOnError();
+    
+    let countryResults: any[] = [];
+    if (!countryAggData) {
+      // Fallback: use raw SQL via direct query
+      const { data: rawCountryData } = await supabase
+        .from('imported_orders')
+        .select('country, opt_in, total_price');
+      
+      // Aggregate in memory but from FULL dataset (no limit)
+      const countryMap = new Map<string, { total: number; optIn: number; revenue: number }>();
+      rawCountryData?.forEach(order => {
+        const country = order.country;
+        if (isValidValue(country)) {
+          const data = countryMap.get(country!) || { total: 0, optIn: 0, revenue: 0 };
+          data.total++;
+          if (order.opt_in === true) data.optIn++;
+          data.revenue += parseFloat(order.total_price) || 0;
+          countryMap.set(country!, data);
+        }
+      });
+      
+      countryResults = Array.from(countryMap.entries()).map(([name, data]) => ({
+        name,
+        total: data.total,
+        optIn: data.optIn,
+        optInRate: data.total > 0 ? ((data.optIn / data.total) * 100).toFixed(2) : '0.00',
+        avgOrderValue: data.total > 0 ? (data.revenue / data.total).toFixed(2) : '0.00',
+      }));
+    } else {
+      countryResults = countryAggData;
+    }
 
+    const topCountries = countryResults
+      .filter((c: any) => isValidValue(c.name))
+      .sort((a: any, b: any) => b.total - a.total);
+
+    console.log(`Found ${topCountries.length} valid countries:`, topCountries.map((c: any) => `${c.name}(${c.total})`));
+
+    // Query cities - also full aggregation
+    const { data: rawCityData } = await supabase
+      .from('imported_orders')
+      .select('city, opt_in, total_price');
+    
+    const cityMap = new Map<string, { total: number; optIn: number; revenue: number }>();
+    rawCityData?.forEach(order => {
+      const city = order.city;
       if (isValidValue(city)) {
         const data = cityMap.get(city!) || { total: 0, optIn: 0, revenue: 0 };
         data.total++;
-        if (isOptIn) data.optIn++;
-        data.revenue += price;
+        if (order.opt_in === true) data.optIn++;
+        data.revenue += parseFloat(order.total_price) || 0;
         cityMap.set(city!, data);
-      }
-
-      if (isValidValue(country)) {
-        const data = countryMap.get(country!) || { total: 0, optIn: 0, revenue: 0 };
-        data.total++;
-        if (isOptIn) data.optIn++;
-        data.revenue += price;
-        countryMap.set(country!, data);
-      }
-
-      if (isValidValue(province)) {
-        const data = provinceMap.get(province!) || { total: 0, optIn: 0, revenue: 0 };
-        data.total++;
-        if (isOptIn) data.optIn++;
-        data.revenue += price;
-        provinceMap.set(province!, data);
       }
     });
 
@@ -187,18 +206,22 @@ serve(async (req) => {
       .sort((a, b) => parseFloat(b.optInRate) - parseFloat(a.optInRate))
       .slice(0, 10);
 
-    // Get ALL valid countries (no minimum threshold)
-    const topCountries = Array.from(countryMap.entries())
-      .map(([name, data]) => ({
-        name,
-        total: data.total,
-        optIn: data.optIn,
-        optInRate: data.total > 0 ? ((data.optIn / data.total) * 100).toFixed(2) : '0.00',
-        avgOrderValue: data.total > 0 ? (data.revenue / data.total).toFixed(2) : '0.00',
-      }))
-      .sort((a, b) => b.total - a.total);
-
-    console.log(`Found ${topCountries.length} valid countries:`, topCountries.map(c => `${c.name}(${c.total})`));
+    // Query provinces - full aggregation
+    const { data: rawProvinceData } = await supabase
+      .from('imported_orders')
+      .select('province, opt_in, total_price');
+    
+    const provinceMap = new Map<string, { total: number; optIn: number; revenue: number }>();
+    rawProvinceData?.forEach(order => {
+      const province = order.province;
+      if (isValidValue(province)) {
+        const data = provinceMap.get(province!) || { total: 0, optIn: 0, revenue: 0 };
+        data.total++;
+        if (order.opt_in === true) data.optIn++;
+        data.revenue += parseFloat(order.total_price) || 0;
+        provinceMap.set(province!, data);
+      }
+    });
 
     const topProvinces = Array.from(provinceMap.entries())
       .map(([name, data]) => ({
