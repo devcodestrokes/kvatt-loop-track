@@ -12,11 +12,31 @@ serve(async (req) => {
   }
 
   try {
+    // Parse request body for selected stores filter
+    let selectedStores: string[] = [];
+    try {
+      const body = await req.json();
+      if (body.selectedStores && Array.isArray(body.selectedStores)) {
+        selectedStores = body.selectedStores;
+      }
+    } catch {
+      // No body or invalid JSON - analyze all stores
+    }
+
     console.log('Starting imported orders analysis with SQL aggregation...');
+    console.log('Selected stores filter:', selectedStores.length > 0 ? selectedStores : 'ALL');
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Helper to add store filter to queries
+    const addStoreFilter = (query: any) => {
+      if (selectedStores.length > 0) {
+        return query.in('store_id', selectedStores);
+      }
+      return query;
+    };
 
     // Use SQL aggregation instead of loading all orders into memory
     // This is much more efficient for large datasets
@@ -38,38 +58,43 @@ serve(async (req) => {
     if (summaryError) {
       console.log('RPC not available, using direct queries...');
       
-      // Total counts
-      const { count: totalOrders } = await supabase
+      // Total counts - with store filter
+      let totalOrdersQuery = supabase
         .from('imported_orders')
         .select('*', { count: 'exact', head: true });
+      const { count: totalOrders } = await addStoreFilter(totalOrdersQuery);
       
-      const { count: totalOptIns } = await supabase
+      let totalOptInsQuery = supabase
         .from('imported_orders')
         .select('*', { count: 'exact', head: true })
         .eq('opt_in', true);
+      const { count: totalOptIns } = await addStoreFilter(totalOptInsQuery);
       
-      const { count: totalOptOuts } = await supabase
+      let totalOptOutsQuery = supabase
         .from('imported_orders')
         .select('*', { count: 'exact', head: true })
         .eq('opt_in', false);
+      const { count: totalOptOuts } = await addStoreFilter(totalOptOutsQuery);
       
       // Get average order values using a limited sample for performance
-      const { data: optInPrices } = await supabase
+      let optInPricesQuery = supabase
         .from('imported_orders')
         .select('total_price')
         .eq('opt_in', true)
         .not('total_price', 'is', null)
         .limit(10000);
+      const { data: optInPrices } = await addStoreFilter(optInPricesQuery);
       
-      const { data: optOutPrices } = await supabase
+      let optOutPricesQuery = supabase
         .from('imported_orders')
         .select('total_price')
         .eq('opt_in', false)
         .not('total_price', 'is', null)
         .limit(10000);
+      const { data: optOutPrices } = await optOutPricesQuery;
       
-      const optInRevenue = optInPrices?.reduce((sum, o) => sum + (parseFloat(o.total_price) || 0), 0) || 0;
-      const optOutRevenue = optOutPrices?.reduce((sum, o) => sum + (parseFloat(o.total_price) || 0), 0) || 0;
+      const optInRevenue = optInPrices?.reduce((sum: number, o: any) => sum + (parseFloat(o.total_price) || 0), 0) || 0;
+      const optOutRevenue = optOutPrices?.reduce((sum: number, o: any) => sum + (parseFloat(o.total_price) || 0), 0) || 0;
       
       const avgOptInOrderValue = optInPrices?.length ? (optInRevenue / optInPrices.length).toFixed(2) : '0.00';
       const avgOptOutOrderValue = optOutPrices?.length ? (optOutRevenue / optOutPrices.length).toFixed(2) : '0.00';
@@ -90,14 +115,15 @@ serve(async (req) => {
     console.log(`Summary: ${summary.totalOrders} orders, ${summary.optInRate}% opt-in`);
 
     // 2. Get store stats - using direct query with aggregation
-    const { data: storeData } = await supabase
+    let storeQuery = supabase
       .from('imported_orders')
       .select('store_id, opt_in, total_price')
       .not('store_id', 'is', null)
       .limit(50000); // Sample for performance
+    const { data: storeData } = await addStoreFilter(storeQuery);
 
     const storeMap = new Map<string, { total: number; optIn: number; revenue: number }>();
-    storeData?.forEach(order => {
+    storeData?.forEach((order: any) => {
       const storeId = order.store_id || 'unknown';
       const data = storeMap.get(storeId) || { total: 0, optIn: 0, revenue: 0 };
       data.total++;
@@ -132,13 +158,14 @@ serve(async (req) => {
 
     // 3. Get geographic stats - query ALL data for accuracy
     // Query countries - aggregate from full dataset
-    const { data: rawCountryData } = await supabase
+    let countryQuery = supabase
       .from('imported_orders')
       .select('country, opt_in, total_price');
+    const { data: rawCountryData } = await addStoreFilter(countryQuery);
     
     // Aggregate in memory from FULL dataset (no limit)
     const countryMap = new Map<string, { total: number; optIn: number; revenue: number }>();
-    rawCountryData?.forEach(order => {
+    rawCountryData?.forEach((order: any) => {
       const country = order.country;
       if (isValidValue(country)) {
         const data = countryMap.get(country!) || { total: 0, optIn: 0, revenue: 0 };
@@ -164,12 +191,13 @@ serve(async (req) => {
     console.log(`Found ${topCountries.length} valid countries:`, topCountries.map((c: any) => `${c.name}(${c.total})`));
 
     // Query cities - also full aggregation
-    const { data: rawCityData } = await supabase
+    let cityQuery = supabase
       .from('imported_orders')
       .select('city, opt_in, total_price');
+    const { data: rawCityData } = await addStoreFilter(cityQuery);
     
     const cityMap = new Map<string, { total: number; optIn: number; revenue: number }>();
-    rawCityData?.forEach(order => {
+    rawCityData?.forEach((order: any) => {
       const city = order.city;
       if (isValidValue(city)) {
         const data = cityMap.get(city!) || { total: 0, optIn: 0, revenue: 0 };
@@ -197,12 +225,13 @@ serve(async (req) => {
       .slice(0, 10);
 
     // Query provinces - full aggregation
-    const { data: rawProvinceData } = await supabase
+    let provinceQuery = supabase
       .from('imported_orders')
       .select('province, opt_in, total_price');
+    const { data: rawProvinceData } = await addStoreFilter(provinceQuery);
     
     const provinceMap = new Map<string, { total: number; optIn: number; revenue: number }>();
-    rawProvinceData?.forEach(order => {
+    rawProvinceData?.forEach((order: any) => {
       const province = order.province;
       if (isValidValue(province)) {
         const data = provinceMap.get(province!) || { total: 0, optIn: 0, revenue: 0 };
@@ -224,16 +253,17 @@ serve(async (req) => {
       .slice(0, 10);
 
     // 4. Get temporal stats - using sampled data
-    const { data: temporalData } = await supabase
+    let temporalQuery = supabase
       .from('imported_orders')
       .select('shopify_created_at, opt_in')
       .not('shopify_created_at', 'is', null)
       .limit(50000);
+    const { data: temporalData } = await addStoreFilter(temporalQuery);
 
     const dayOfWeekMap = new Map<number, { total: number; optIn: number }>();
     const monthMap = new Map<string, { total: number; optIn: number }>();
 
-    temporalData?.forEach(order => {
+    temporalData?.forEach((order: any) => {
       if (order.shopify_created_at) {
         const date = new Date(order.shopify_created_at);
         const dayOfWeek = date.getDay();
@@ -273,11 +303,12 @@ serve(async (req) => {
       .sort((a, b) => a.month.localeCompare(b.month));
 
     // 5. Get order value analysis - sampled
-    const { data: valueData } = await supabase
+    let valueQuery = supabase
       .from('imported_orders')
       .select('total_price, opt_in')
       .not('total_price', 'is', null)
       .limit(50000);
+    const { data: valueData } = await addStoreFilter(valueQuery);
 
     const valueRanges = [
       { min: 0, max: 25, label: '$0-25' },
@@ -290,7 +321,7 @@ serve(async (req) => {
     const valueRangeMap = new Map<string, { total: number; optIn: number }>();
     valueRanges.forEach(r => valueRangeMap.set(r.label, { total: 0, optIn: 0 }));
 
-    valueData?.forEach(order => {
+    valueData?.forEach((order: any) => {
       const price = parseFloat(order.total_price) || 0;
       const isOptIn = order.opt_in === true;
 

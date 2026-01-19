@@ -258,6 +258,7 @@ const Insights = () => {
     toggleStore,
     selectAll,
     unselectAll,
+    isInitialized,
   } = useStoreFilter(availableStores);
 
   // Filter store analytics by selected stores
@@ -365,13 +366,16 @@ const Insights = () => {
   };
 
   // Analyze existing data from database (doesn't require external API)
-  const analyzeExistingData = async (showToast = false) => {
+  const analyzeExistingData = async (showToast = false, storesToAnalyze?: string[]) => {
     if (isFetchingData || isAutoRefreshing) return;
     
     setIsAutoRefreshing(true);
     try {
       // Analyze data already in the database - no external API call needed
-      const { data: analyticsData, error: analyticsError } = await supabase.functions.invoke('analyze-imported-orders');
+      // Pass selected stores to filter the analysis
+      const { data: analyticsData, error: analyticsError } = await supabase.functions.invoke('analyze-imported-orders', {
+        body: { selectedStores: storesToAnalyze }
+      });
       
       if (analyticsError) {
         console.error('Analysis error:', analyticsError);
@@ -405,19 +409,28 @@ const Insights = () => {
     fetchData();
     
     // Analyze existing data on mount (doesn't call external API)
-    analyzeExistingData(false);
+    // First load gets all data to populate store list
+    analyzeExistingData(false, []);
     
     // Update DB count on mount
     refreshDbCount();
     
     // Set up auto-refresh interval to re-analyze database data
     const intervalId = setInterval(() => {
-      analyzeExistingData(true);
+      // Auto-refresh uses current selected stores
+      analyzeExistingData(true, selectedStores.length > 0 ? selectedStores : []);
       refreshDbCount();
     }, AUTO_REFRESH_INTERVAL);
     
     return () => clearInterval(intervalId);
   }, []);
+
+  // Re-analyze when store selection changes
+  useEffect(() => {
+    if (isInitialized && selectedStores.length > 0) {
+      analyzeExistingData(false, selectedStores);
+    }
+  }, [selectedStores, isInitialized]);
 
   useEffect(() => {
     fetchData();
