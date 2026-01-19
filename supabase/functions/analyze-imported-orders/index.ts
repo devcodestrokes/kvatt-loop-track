@@ -18,13 +18,6 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Production store user_ids - excludes testing stores (DEV, USD, etc.)
-    // user_id 12 = TIRTIR UK (UKT prefix)
-    // user_id 7 = Store # (#24, #25, #26, etc.)
-    // user_id 17 = Spain Store (SP prefix)
-    // Excluded: user_id 6 (DEV), 9 (USD test), 20, 24, 26 (small test accounts)
-    const PRODUCTION_USER_IDS = [12, 7, 17];
-
     // Use SQL aggregation instead of loading all orders into memory
     // This is much more efficient for large datasets
 
@@ -45,29 +38,25 @@ serve(async (req) => {
     if (summaryError) {
       console.log('RPC not available, using direct queries...');
       
-      // Total counts - ONLY production stores
+      // Total counts
       const { count: totalOrders } = await supabase
         .from('imported_orders')
-        .select('*', { count: 'exact', head: true })
-        .in('user_id', PRODUCTION_USER_IDS);
+        .select('*', { count: 'exact', head: true });
       
       const { count: totalOptIns } = await supabase
         .from('imported_orders')
         .select('*', { count: 'exact', head: true })
-        .in('user_id', PRODUCTION_USER_IDS)
         .eq('opt_in', true);
       
       const { count: totalOptOuts } = await supabase
         .from('imported_orders')
         .select('*', { count: 'exact', head: true })
-        .in('user_id', PRODUCTION_USER_IDS)
         .eq('opt_in', false);
       
-      // Get average order values - ONLY production stores
+      // Get average order values using a limited sample for performance
       const { data: optInPrices } = await supabase
         .from('imported_orders')
         .select('total_price')
-        .in('user_id', PRODUCTION_USER_IDS)
         .eq('opt_in', true)
         .not('total_price', 'is', null)
         .limit(10000);
@@ -75,7 +64,6 @@ serve(async (req) => {
       const { data: optOutPrices } = await supabase
         .from('imported_orders')
         .select('total_price')
-        .in('user_id', PRODUCTION_USER_IDS)
         .eq('opt_in', false)
         .not('total_price', 'is', null)
         .limit(10000);
@@ -101,34 +89,26 @@ serve(async (req) => {
 
     console.log(`Summary: ${summary.totalOrders} orders, ${summary.optInRate}% opt-in`);
 
-    // 2. Get store stats - using user_id to identify stores (production only)
+    // 2. Get store stats - using direct query with aggregation
     const { data: storeData } = await supabase
       .from('imported_orders')
-      .select('user_id, opt_in, total_price')
-      .in('user_id', PRODUCTION_USER_IDS);
+      .select('store_id, opt_in, total_price')
+      .not('store_id', 'is', null)
+      .limit(50000); // Sample for performance
 
-    // Store name mapping
-    const STORE_NAMES: Record<number, string> = {
-      12: 'TIRTIR UK',
-      7: 'Store #',
-      17: 'Spain Store',
-    };
-
-    const storeMap = new Map<number, { total: number; optIn: number; revenue: number }>();
+    const storeMap = new Map<string, { total: number; optIn: number; revenue: number }>();
     storeData?.forEach(order => {
-      const userId = order.user_id as number;
-      if (!userId) return;
-      const data = storeMap.get(userId) || { total: 0, optIn: 0, revenue: 0 };
+      const storeId = order.store_id || 'unknown';
+      const data = storeMap.get(storeId) || { total: 0, optIn: 0, revenue: 0 };
       data.total++;
       if (order.opt_in === true) data.optIn++;
       data.revenue += parseFloat(order.total_price) || 0;
-      storeMap.set(userId, data);
+      storeMap.set(storeId, data);
     });
 
     const stores = Array.from(storeMap.entries())
-      .map(([userId, data]) => ({
-        storeId: STORE_NAMES[userId] || `Store ${userId}`,
-        userId,
+      .map(([storeId, data]) => ({
+        storeId,
         total: data.total,
         optIn: data.optIn,
         optInRate: data.total > 0 ? ((data.optIn / data.total) * 100).toFixed(2) : '0.00',
@@ -150,12 +130,11 @@ serve(async (req) => {
       return true;
     };
 
-    // 3. Get geographic stats - query production stores only for accuracy
-    // Query countries - aggregate from production stores
+    // 3. Get geographic stats - query ALL data for accuracy
+    // Query countries - aggregate from full dataset
     const { data: rawCountryData } = await supabase
       .from('imported_orders')
-      .select('country, opt_in, total_price')
-      .in('user_id', PRODUCTION_USER_IDS);
+      .select('country, opt_in, total_price');
     
     // Aggregate in memory from FULL dataset (no limit)
     const countryMap = new Map<string, { total: number; optIn: number; revenue: number }>();
@@ -184,11 +163,10 @@ serve(async (req) => {
 
     console.log(`Found ${topCountries.length} valid countries:`, topCountries.map((c: any) => `${c.name}(${c.total})`));
 
-    // Query cities - production stores only
+    // Query cities - also full aggregation
     const { data: rawCityData } = await supabase
       .from('imported_orders')
-      .select('city, opt_in, total_price')
-      .in('user_id', PRODUCTION_USER_IDS);
+      .select('city, opt_in, total_price');
     
     const cityMap = new Map<string, { total: number; optIn: number; revenue: number }>();
     rawCityData?.forEach(order => {
@@ -218,11 +196,10 @@ serve(async (req) => {
       .sort((a, b) => parseFloat(b.optInRate) - parseFloat(a.optInRate))
       .slice(0, 10);
 
-    // Query provinces - production stores only
+    // Query provinces - full aggregation
     const { data: rawProvinceData } = await supabase
       .from('imported_orders')
-      .select('province, opt_in, total_price')
-      .in('user_id', PRODUCTION_USER_IDS);
+      .select('province, opt_in, total_price');
     
     const provinceMap = new Map<string, { total: number; optIn: number; revenue: number }>();
     rawProvinceData?.forEach(order => {
@@ -246,12 +223,12 @@ serve(async (req) => {
       .sort((a, b) => b.total - a.total)
       .slice(0, 10);
 
-    // 4. Get temporal stats - production stores only
+    // 4. Get temporal stats - using sampled data
     const { data: temporalData } = await supabase
       .from('imported_orders')
       .select('shopify_created_at, opt_in')
-      .in('user_id', PRODUCTION_USER_IDS)
-      .not('shopify_created_at', 'is', null);
+      .not('shopify_created_at', 'is', null)
+      .limit(50000);
 
     const dayOfWeekMap = new Map<number, { total: number; optIn: number }>();
     const monthMap = new Map<string, { total: number; optIn: number }>();
@@ -295,12 +272,12 @@ serve(async (req) => {
       }))
       .sort((a, b) => a.month.localeCompare(b.month));
 
-    // 5. Get order value analysis - production stores only
+    // 5. Get order value analysis - sampled
     const { data: valueData } = await supabase
       .from('imported_orders')
       .select('total_price, opt_in')
-      .in('user_id', PRODUCTION_USER_IDS)
-      .not('total_price', 'is', null);
+      .not('total_price', 'is', null)
+      .limit(50000);
 
     const valueRanges = [
       { min: 0, max: 25, label: '$0-25' },
