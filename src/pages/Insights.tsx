@@ -27,6 +27,9 @@ import { useStoreFilter } from '@/hooks/useStoreFilter';
 import { useApiSync } from '@/hooks/useApiSync';
 import { Store as StoreType } from '@/types/analytics';
 
+const STORES_API_URL = "https://shopify.kvatt.com/api/get-stores";
+const AUTH_TOKEN = "Bearer %^75464tnfsdhndsfbgr54";
+
 interface Insight {
   id: string;
   merchant_id: string | null;
@@ -235,23 +238,39 @@ const Insights = () => {
     onSyncComplete: handleSyncComplete,
   });
 
-  // Derive stores from orderAnalytics for filtering
-  const availableStores = useMemo((): StoreType[] => {
-    if (!orderAnalytics?.stores) return [];
-    return orderAnalytics.stores.map(s => {
-      // Extract clean store name by removing .myshopify.com suffix
-      const cleanName = s.storeId.replace('.myshopify.com', '');
-      // Capitalize and format the store name nicely
-      const formattedName = cleanName
-        .split('-')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-      return {
-        id: s.storeId,
-        name: formattedName
-      };
-    });
-  }, [orderAnalytics?.stores]);
+  // Fetch stores from Shopify API (same as Analytics page)
+  const [availableStores, setAvailableStores] = useState<StoreType[]>([]);
+  const [isLoadingStores, setIsLoadingStores] = useState(true);
+
+  const fetchStores = useCallback(async () => {
+    setIsLoadingStores(true);
+    try {
+      const response = await fetch(STORES_API_URL, {
+        headers: {
+          "Authorization": AUTH_TOKEN,
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        }
+      });
+      
+      const result = await response.json();
+      
+      if (result.status === 200 && result.data?.length) {
+        const storesList: StoreType[] = result.data.map((storeDomain: string) => ({
+          id: storeDomain,
+          name: storeDomain.replace('.myshopify.com', '')
+        }));
+        setAvailableStores(storesList);
+      } else {
+        setAvailableStores([]);
+      }
+    } catch (err) {
+      console.error("Error fetching stores:", err);
+      setAvailableStores([]);
+    } finally {
+      setIsLoadingStores(false);
+    }
+  }, []);
 
   const {
     selectedStores,
@@ -407,6 +426,7 @@ const Insights = () => {
   // Initial data fetch and auto-refresh setup
   useEffect(() => {
     fetchData();
+    fetchStores(); // Fetch stores from Shopify API
     
     // Analyze existing data on mount (doesn't call external API)
     // First load gets all data to populate store list
@@ -450,7 +470,7 @@ const Insights = () => {
             Comprehensive CRO analytics and opt-in pattern analysis
           </p>
         </div>
-        {availableStores.length > 0 && (
+        {!isLoadingStores && availableStores.length > 0 && (
           <MultiStoreSelector
             stores={availableStores}
             selectedStores={selectedStores}
