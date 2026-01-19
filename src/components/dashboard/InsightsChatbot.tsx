@@ -13,6 +13,10 @@ interface Message {
   timestamp: Date;
 }
 
+interface InsightsChatbotProps {
+  selectedStores?: string[];
+}
+
 const EXAMPLE_QUESTIONS = [
   "What's the overall opt-in rate?",
   "Which store has the highest opt-in rate?",
@@ -20,7 +24,7 @@ const EXAMPLE_QUESTIONS = [
   "How many total orders do we have?",
 ];
 
-export function InsightsChatbot() {
+export function InsightsChatbot({ selectedStores }: InsightsChatbotProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -51,7 +55,7 @@ export function InsightsChatbot() {
 
     try {
       const { data, error } = await supabase.functions.invoke('insights-chat', {
-        body: { question: question.trim() }
+        body: { question: question.trim(), selectedStores }
       });
 
       if (error) throw error;

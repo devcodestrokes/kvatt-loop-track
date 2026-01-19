@@ -32,13 +32,19 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch aggregate metrics only - NO PII
-    console.log('Fetching aggregate metrics for chatbot...');
+    console.log('Fetching aggregate metrics for chatbot...', { selectedStores });
     
-    // Get store-level aggregates
-    const { data: orders, error: ordersError } = await supabase
+    // Build query with optional store filter
+    let query = supabase
       .from('imported_orders')
-      .select('store_id, opt_in, total_price, shopify_created_at, city, country, province')
-      .limit(5000);
+      .select('store_id, opt_in, total_price, shopify_created_at, city, country, province');
+    
+    // Apply store filter if selected stores are provided
+    if (selectedStores && Array.isArray(selectedStores) && selectedStores.length > 0) {
+      query = query.in('store_id', selectedStores);
+    }
+    
+    const { data: orders, error: ordersError } = await query.limit(5000);
 
     if (ordersError) {
       console.error('Error fetching orders:', ordersError);
