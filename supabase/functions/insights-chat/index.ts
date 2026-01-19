@@ -34,13 +34,22 @@ serve(async (req) => {
     // Fetch aggregate metrics only - NO PII
     console.log('Fetching aggregate metrics for chatbot...', { selectedStores });
     
-    // Build query with optional store filter
+    // Check if store_id data is available in the database
+    const { count: storeIdCount } = await supabase
+      .from('imported_orders')
+      .select('*', { count: 'exact', head: true })
+      .not('store_id', 'is', null);
+    
+    const hasStoreData = (storeIdCount || 0) > 0;
+    console.log(`Store ID data available: ${hasStoreData} (${storeIdCount} orders have store_id)`);
+    
+    // Build query with optional store filter (only if store data exists)
     let query = supabase
       .from('imported_orders')
       .select('store_id, opt_in, total_price, shopify_created_at, city, country, province');
     
-    // Apply store filter if selected stores are provided
-    if (selectedStores && Array.isArray(selectedStores) && selectedStores.length > 0) {
+    // Apply store filter only if store data exists and stores are selected
+    if (hasStoreData && selectedStores && Array.isArray(selectedStores) && selectedStores.length > 0) {
       query = query.in('store_id', selectedStores);
     }
     

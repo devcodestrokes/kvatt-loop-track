@@ -30,9 +30,18 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Helper to add store filter to queries
+    // Check if store_id data is available in the database
+    const { count: storeIdCount } = await supabase
+      .from('imported_orders')
+      .select('*', { count: 'exact', head: true })
+      .not('store_id', 'is', null);
+    
+    const hasStoreData = (storeIdCount || 0) > 0;
+    console.log(`Store ID data available: ${hasStoreData} (${storeIdCount} orders have store_id)`);
+
+    // Helper to add store filter to queries - only if store data exists in DB
     const addStoreFilter = (query: any) => {
-      if (selectedStores.length > 0) {
+      if (hasStoreData && selectedStores.length > 0) {
         return query.in('store_id', selectedStores);
       }
       return query;

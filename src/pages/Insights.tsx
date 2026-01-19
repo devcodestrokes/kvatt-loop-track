@@ -471,13 +471,18 @@ const Insights = () => {
           </p>
         </div>
         {!isLoadingStores && availableStores.length > 0 && (
-          <MultiStoreSelector
-            stores={availableStores}
-            selectedStores={selectedStores}
-            onToggleStore={toggleStore}
-            onSelectAll={selectAll}
-            onUnselectAll={unselectAll}
-          />
+          <div className="flex items-center gap-2">
+            <MultiStoreSelector
+              stores={availableStores}
+              selectedStores={selectedStores}
+              onToggleStore={toggleStore}
+              onSelectAll={selectAll}
+              onUnselectAll={unselectAll}
+            />
+            <span className="text-xs text-muted-foreground/60 hidden sm:inline">
+              (Store filtering coming soon)
+            </span>
+          </div>
         )}
       </div>
 
