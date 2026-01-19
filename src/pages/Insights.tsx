@@ -342,7 +342,7 @@ const Insights = () => {
     setIsAnalyzing(true);
     try {
       const { data, error } = await supabase.functions.invoke('analyze-cro-patterns', {
-        body: { analyticsData: orderAnalytics }
+        body: { analyticsData: orderAnalytics, selectedStores }
       });
       
       if (error) throw error;
@@ -1037,7 +1037,7 @@ const Insights = () => {
 
 
       {/* Read-only Metrics Chatbot */}
-      <InsightsChatbot />
+      <InsightsChatbot selectedStores={selectedStores} />
     </div>
   );
 };
