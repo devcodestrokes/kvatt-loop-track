@@ -34,23 +34,23 @@ serve(async (req) => {
     // Fetch aggregate metrics only - NO PII
     console.log('Fetching aggregate metrics for chatbot...', { selectedStores });
     
-    // Check if store_id data is available in the database
-    const { count: storeIdCount } = await supabase
+    // Check if user_id data (store identifier) is available in the database
+    const { count: userIdCount } = await supabase
       .from('imported_orders')
       .select('*', { count: 'exact', head: true })
-      .not('store_id', 'is', null);
+      .not('user_id', 'is', null);
     
-    const hasStoreData = (storeIdCount || 0) > 0;
-    console.log(`Store ID data available: ${hasStoreData} (${storeIdCount} orders have store_id)`);
+    const hasStoreData = (userIdCount || 0) > 0;
+    console.log(`Store data available via user_id: ${hasStoreData} (${userIdCount} orders have user_id)`);
     
-    // Build query with optional store filter (only if store data exists)
+    // Build query with optional store filter using user_id
     let query = supabase
       .from('imported_orders')
-      .select('store_id, opt_in, total_price, shopify_created_at, city, country, province');
+      .select('user_id, opt_in, total_price, shopify_created_at, city, country, province');
     
-    // Apply store filter only if store data exists and stores are selected
+    // Apply store filter using user_id field
     if (hasStoreData && selectedStores && Array.isArray(selectedStores) && selectedStores.length > 0) {
-      query = query.in('store_id', selectedStores);
+      query = query.in('user_id', selectedStores);
     }
     
     const { data: orders, error: ordersError } = await query.limit(5000);
@@ -80,8 +80,8 @@ serve(async (req) => {
       if (order.opt_in) totalOptIns++;
       totalRevenue += order.total_price || 0;
 
-      // Store metrics
-      const storeId = order.store_id || 'unknown';
+      // Store metrics (using user_id as store identifier)
+      const storeId = order.user_id || 'unknown';
       if (!storeMetrics[storeId]) {
         storeMetrics[storeId] = { total: 0, optIns: 0, totalRevenue: 0, avgOrderValue: 0 };
       }
