@@ -478,9 +478,10 @@ const Insights = () => {
               onToggleStore={toggleStore}
               onSelectAll={selectAll}
               onUnselectAll={unselectAll}
+              disabled={true}
             />
-            <span className="text-xs text-muted-foreground/60 hidden sm:inline">
-              (Store filtering coming soon)
+            <span className="text-xs text-muted-foreground hidden sm:inline">
+              Store filtering requires store data in orders
             </span>
           </div>
         )}
