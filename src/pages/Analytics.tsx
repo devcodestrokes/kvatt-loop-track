@@ -264,6 +264,7 @@ const Analytics = () => {
             fetchDailyData={fetchDailyData}
             selectedStores={selectedStores}
             isLoading={isLoading}
+            dateRange={dateRange || undefined}
           />
 
           {/* Data Table */}

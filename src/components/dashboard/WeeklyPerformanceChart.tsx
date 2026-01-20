@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { format, startOfWeek, addDays, getISOWeek } from 'date-fns';
+import { format, startOfWeek, addDays, getISOWeek, isAfter, isBefore, max, min } from 'date-fns';
 import { Calendar, ChevronLeft, ChevronRight, Download, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,6 +16,7 @@ import {
 } from 'recharts';
 import html2canvas from 'html2canvas';
 import { toast } from 'sonner';
+import { DateRange } from '@/types/analytics';
 
 interface DailyChartData {
   day: string;
@@ -29,14 +30,32 @@ interface WeeklyPerformanceChartProps {
   fetchDailyData: (date: Date) => Promise<{ checkouts: number; optIns: number; optOuts: number }>;
   selectedStores: string[];
   isLoading?: boolean;
+  dateRange?: DateRange;
 }
 
-export function WeeklyPerformanceChart({ fetchDailyData, selectedStores, isLoading: externalLoading }: WeeklyPerformanceChartProps) {
+export function WeeklyPerformanceChart({ fetchDailyData, selectedStores, isLoading: externalLoading, dateRange }: WeeklyPerformanceChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  
+  // Initialize week start based on dateRange if provided
+  const getInitialWeekStart = () => {
+    if (dateRange?.from) {
+      return startOfWeek(dateRange.from, { weekStartsOn: 1 });
+    }
+    return startOfWeek(new Date(), { weekStartsOn: 1 });
+  };
+  
+  const [weekStart, setWeekStart] = useState(getInitialWeekStart);
   const [chartData, setChartData] = useState<DailyChartData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+
+  // Update week start when dateRange changes
+  useEffect(() => {
+    if (dateRange?.from) {
+      const newWeekStart = startOfWeek(dateRange.from, { weekStartsOn: 1 });
+      setWeekStart(newWeekStart);
+    }
+  }, [dateRange?.from?.getTime()]);
 
   const weekNumber = getISOWeek(weekStart);
   const weekEnd = addDays(weekStart, 6);
@@ -50,7 +69,11 @@ export function WeeklyPerformanceChart({ fetchDailyData, selectedStores, isLoadi
         const date = addDays(weekStart, i);
         const dayName = format(date, 'EEE'); // Short day name
         
-        if (date <= new Date()) {
+        // Check if date is within the selected date range
+        const isWithinRange = (!dateRange?.from || date >= dateRange.from) && 
+                              (!dateRange?.to || date <= dateRange.to);
+        
+        if (date <= new Date() && isWithinRange) {
           try {
             const data = await fetchDailyData(date);
             const optInRate = data.checkouts > 0 
@@ -79,7 +102,7 @@ export function WeeklyPerformanceChart({ fetchDailyData, selectedStores, isLoadi
             date,
             totalOrders: 0,
             totalOptIns: 0,
-            optInRate: '-',
+            optInRate: date > new Date() ? '-' : (isWithinRange ? '0' : '-'),
           });
         }
       }
@@ -89,14 +112,34 @@ export function WeeklyPerformanceChart({ fetchDailyData, selectedStores, isLoadi
     };
 
     loadWeekData();
-  }, [weekStart, fetchDailyData, selectedStores]);
+  }, [weekStart, fetchDailyData, selectedStores, dateRange?.from?.getTime(), dateRange?.to?.getTime()]);
+
+  // Check if we can navigate to previous/next week based on date range
+  const canNavigatePrev = () => {
+    if (!dateRange?.from) return true;
+    const prevWeekEnd = addDays(weekStart, -1);
+    return prevWeekEnd >= dateRange.from;
+  };
+
+  const canNavigateNext = () => {
+    const nextWeekStart = addDays(weekStart, 7);
+    if (nextWeekStart > new Date()) return false;
+    if (!dateRange?.to) return true;
+    return nextWeekStart <= dateRange.to;
+  };
 
   const navigateWeek = (direction: 'prev' | 'next') => {
     setWeekStart(prev => addDays(prev, direction === 'prev' ? -7 : 7));
   };
 
   const goToCurrentWeek = () => {
-    setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
+    // Go to the latest valid week within the date range
+    const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+    if (dateRange?.to && currentWeekStart > dateRange.to) {
+      setWeekStart(startOfWeek(dateRange.to, { weekStartsOn: 1 }));
+    } else {
+      setWeekStart(currentWeekStart);
+    }
   };
 
   const exportAsImage = async () => {
@@ -186,6 +229,7 @@ export function WeeklyPerformanceChart({ fetchDailyData, selectedStores, isLoadi
             variant="outline"
             size="icon"
             onClick={() => navigateWeek('prev')}
+            disabled={!canNavigatePrev()}
             className="h-8 w-8"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -202,7 +246,7 @@ export function WeeklyPerformanceChart({ fetchDailyData, selectedStores, isLoadi
             variant="outline"
             size="icon"
             onClick={() => navigateWeek('next')}
-            disabled={isFutureWeek}
+            disabled={!canNavigateNext()}
             className="h-8 w-8"
           >
             <ChevronRight className="h-4 w-4" />
