@@ -245,32 +245,43 @@ const Insights = () => {
   const fetchStoresFromOrders = useCallback(async () => {
     setIsLoadingStores(true);
     try {
-      // Get unique user_ids (store identifiers) from imported_orders
-      const { data, error } = await supabase
-        .from('imported_orders')
-        .select('user_id')
-        .not('user_id', 'is', null);
+      // Use edge function to get store mapping with names
+      const { data, error } = await supabase.functions.invoke('get-store-mapping');
       
       if (error) throw error;
       
-      // Get unique store IDs and count orders per store
-      const storeCountMap = new Map<string, number>();
-      data?.forEach((order: any) => {
-        const storeId = order.user_id;
-        storeCountMap.set(storeId, (storeCountMap.get(storeId) || 0) + 1);
-      });
-      
-      // Convert to store list, sorted by order count
-      const storesList: StoreType[] = Array.from(storeCountMap.entries())
-        .sort((a, b) => b[1] - a[1])
-        .map(([storeId, count]) => ({
-          id: storeId,
-          name: `Store ${storeId} (${count.toLocaleString()} orders)`
+      if (data?.success && data?.stores?.length) {
+        const storesList: StoreType[] = data.stores.map((store: any) => ({
+          id: store.id,
+          name: `${store.name} (${store.orderCount.toLocaleString()} orders)`
         }));
-      
-      setAvailableStores(storesList);
+        setAvailableStores(storesList);
+      } else {
+        // Fallback to direct query if edge function fails
+        const { data: orderData, error: orderError } = await supabase
+          .from('imported_orders')
+          .select('user_id')
+          .not('user_id', 'is', null);
+        
+        if (orderError) throw orderError;
+        
+        const storeCountMap = new Map<string, number>();
+        orderData?.forEach((order: any) => {
+          const storeId = order.user_id?.toString();
+          if (storeId) storeCountMap.set(storeId, (storeCountMap.get(storeId) || 0) + 1);
+        });
+        
+        const storesList: StoreType[] = Array.from(storeCountMap.entries())
+          .sort((a, b) => b[1] - a[1])
+          .map(([storeId, count]) => ({
+            id: storeId,
+            name: `Store ${storeId} (${count.toLocaleString()} orders)`
+          }));
+        
+        setAvailableStores(storesList);
+      }
     } catch (err) {
-      console.error("Error fetching stores from orders:", err);
+      console.error("Error fetching stores:", err);
       setAvailableStores([]);
     } finally {
       setIsLoadingStores(false);

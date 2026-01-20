@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.delete-admin-user]
 verify_jwt = false
+
+[functions.get-store-mapping]
+verify_jwt = false
