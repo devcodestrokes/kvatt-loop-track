@@ -167,9 +167,11 @@ serve(async (req) => {
 
     // 3. Get geographic stats - query ALL data for accuracy
     // Query countries - aggregate from full dataset
+    // IMPORTANT: Supabase default limit is 1000, must set higher for full dataset
     let countryQuery = supabase
       .from('imported_orders')
-      .select('country, opt_in, total_price');
+      .select('country, opt_in, total_price')
+      .limit(150000);
     const { data: rawCountryData } = await addStoreFilter(countryQuery);
     
     // Aggregate in memory from FULL dataset (no limit)
@@ -199,10 +201,11 @@ serve(async (req) => {
 
     console.log(`Found ${topCountries.length} valid countries:`, topCountries.map((c: any) => `${c.name}(${c.total})`));
 
-    // Query cities - also full aggregation
+    // Query cities - also full aggregation (limit 150k to capture full dataset)
     let cityQuery = supabase
       .from('imported_orders')
-      .select('city, opt_in, total_price');
+      .select('city, opt_in, total_price')
+      .limit(150000);
     const { data: rawCityData } = await addStoreFilter(cityQuery);
     
     const cityMap = new Map<string, { total: number; optIn: number; revenue: number }>();
@@ -233,10 +236,11 @@ serve(async (req) => {
       .sort((a, b) => parseFloat(b.optInRate) - parseFloat(a.optInRate))
       .slice(0, 10);
 
-    // Query provinces - full aggregation
+    // Query provinces - full aggregation (limit 150k to capture full dataset)
     let provinceQuery = supabase
       .from('imported_orders')
-      .select('province, opt_in, total_price');
+      .select('province, opt_in, total_price')
+      .limit(150000);
     const { data: rawProvinceData } = await addStoreFilter(provinceQuery);
     
     const provinceMap = new Map<string, { total: number; optIn: number; revenue: number }>();
