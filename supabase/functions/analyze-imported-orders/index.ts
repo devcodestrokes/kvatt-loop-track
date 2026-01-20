@@ -213,41 +213,51 @@ serve(async (req) => {
     // Build country->city hierarchy map with proper nesting
     const hierarchyMap = new Map<string, Map<string, { total: number; optIn: number; provinces: Map<string, { total: number; optIn: number }> }>>();
     
+    // Helper to normalize names (title case) to avoid duplicates like "London" vs "LONDON"
+    const normalizeName = (name: string): string => {
+      return name.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+    };
+    
     rawCityData?.forEach((order: any) => {
-      const city = order.city;
-      const country = order.country;
-      const province = order.province;
+      const rawCity = order.city;
+      const rawCountry = order.country;
+      const rawProvince = order.province;
+      
+      // Normalize names to avoid duplicates
+      const city = isValidValue(rawCity) ? normalizeName(rawCity) : null;
+      const country = isValidValue(rawCountry) ? normalizeName(rawCountry) : null;
+      const province = isValidValue(rawProvince) ? normalizeName(rawProvince) : null;
       
       // For flat top cities list
-      if (isValidValue(city)) {
-        const data = cityMap.get(city!) || { total: 0, optIn: 0, revenue: 0 };
+      if (city) {
+        const data = cityMap.get(city) || { total: 0, optIn: 0, revenue: 0 };
         data.total++;
         if (order.opt_in === true) data.optIn++;
         data.revenue += parseFloat(order.total_price) || 0;
-        cityMap.set(city!, data);
+        cityMap.set(city, data);
       }
       
       // Build proper hierarchy: country -> city -> province
-      if (isValidValue(country)) {
-        if (!hierarchyMap.has(country!)) {
-          hierarchyMap.set(country!, new Map());
+      if (country) {
+        if (!hierarchyMap.has(country)) {
+          hierarchyMap.set(country, new Map());
         }
-        const countryData = hierarchyMap.get(country!)!;
+        const countryData = hierarchyMap.get(country)!;
         
-        if (isValidValue(city)) {
-          if (!countryData.has(city!)) {
-            countryData.set(city!, { total: 0, optIn: 0, provinces: new Map() });
+        if (city) {
+          if (!countryData.has(city)) {
+            countryData.set(city, { total: 0, optIn: 0, provinces: new Map() });
           }
-          const cityData = countryData.get(city!)!;
+          const cityData = countryData.get(city)!;
           cityData.total++;
           if (order.opt_in === true) cityData.optIn++;
           
           // Add province under city
-          if (isValidValue(province)) {
-            const provinceData = cityData.provinces.get(province!) || { total: 0, optIn: 0 };
+          if (province) {
+            const provinceData = cityData.provinces.get(province) || { total: 0, optIn: 0 };
             provinceData.total++;
             if (order.opt_in === true) provinceData.optIn++;
-            cityData.provinces.set(province!, provinceData);
+            cityData.provinces.set(province, provinceData);
           }
         }
       }
