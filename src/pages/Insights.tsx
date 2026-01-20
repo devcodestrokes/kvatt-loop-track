@@ -238,34 +238,39 @@ const Insights = () => {
     onSyncComplete: handleSyncComplete,
   });
 
-  // Fetch stores from Shopify API (same as Analytics page)
+  // Fetch stores from order data (using user_id as store identifier)
   const [availableStores, setAvailableStores] = useState<StoreType[]>([]);
   const [isLoadingStores, setIsLoadingStores] = useState(true);
 
-  const fetchStores = useCallback(async () => {
+  const fetchStoresFromOrders = useCallback(async () => {
     setIsLoadingStores(true);
     try {
-      const response = await fetch(STORES_API_URL, {
-        headers: {
-          "Authorization": AUTH_TOKEN,
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        }
+      // Get unique user_ids (store identifiers) from imported_orders
+      const { data, error } = await supabase
+        .from('imported_orders')
+        .select('user_id')
+        .not('user_id', 'is', null);
+      
+      if (error) throw error;
+      
+      // Get unique store IDs and count orders per store
+      const storeCountMap = new Map<string, number>();
+      data?.forEach((order: any) => {
+        const storeId = order.user_id;
+        storeCountMap.set(storeId, (storeCountMap.get(storeId) || 0) + 1);
       });
       
-      const result = await response.json();
-      
-      if (result.status === 200 && result.data?.length) {
-        const storesList: StoreType[] = result.data.map((storeDomain: string) => ({
-          id: storeDomain,
-          name: storeDomain.replace('.myshopify.com', '')
+      // Convert to store list, sorted by order count
+      const storesList: StoreType[] = Array.from(storeCountMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([storeId, count]) => ({
+          id: storeId,
+          name: `Store ${storeId} (${count.toLocaleString()} orders)`
         }));
-        setAvailableStores(storesList);
-      } else {
-        setAvailableStores([]);
-      }
+      
+      setAvailableStores(storesList);
     } catch (err) {
-      console.error("Error fetching stores:", err);
+      console.error("Error fetching stores from orders:", err);
       setAvailableStores([]);
     } finally {
       setIsLoadingStores(false);
@@ -426,7 +431,7 @@ const Insights = () => {
   // Initial data fetch and auto-refresh setup
   useEffect(() => {
     fetchData();
-    fetchStores(); // Fetch stores from Shopify API
+    fetchStoresFromOrders(); // Fetch stores from order data using user_id
     
     // Analyze existing data on mount (doesn't call external API)
     // First load gets all data to populate store list
@@ -478,11 +483,7 @@ const Insights = () => {
               onToggleStore={toggleStore}
               onSelectAll={selectAll}
               onUnselectAll={unselectAll}
-              disabled={true}
             />
-            <span className="text-xs text-muted-foreground hidden sm:inline">
-              Store filtering requires store data in orders
-            </span>
           </div>
         )}
       </div>

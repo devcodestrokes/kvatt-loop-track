@@ -30,19 +30,19 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Check if store_id data is available in the database
-    const { count: storeIdCount } = await supabase
+    // Use user_id as store identifier (user_id contains store IDs in this dataset)
+    const { count: userIdCount } = await supabase
       .from('imported_orders')
       .select('*', { count: 'exact', head: true })
-      .not('store_id', 'is', null);
+      .not('user_id', 'is', null);
     
-    const hasStoreData = (storeIdCount || 0) > 0;
-    console.log(`Store ID data available: ${hasStoreData} (${storeIdCount} orders have store_id)`);
+    const hasStoreData = (userIdCount || 0) > 0;
+    console.log(`Store data available via user_id: ${hasStoreData} (${userIdCount} orders have user_id)`);
 
-    // Helper to add store filter to queries - only if store data exists in DB
+    // Helper to add store filter to queries using user_id field
     const addStoreFilter = (query: any) => {
       if (hasStoreData && selectedStores.length > 0) {
-        return query.in('store_id', selectedStores);
+        return query.in('user_id', selectedStores);
       }
       return query;
     };
@@ -123,17 +123,17 @@ serve(async (req) => {
 
     console.log(`Summary: ${summary.totalOrders} orders, ${summary.optInRate}% opt-in`);
 
-    // 2. Get store stats - using direct query with aggregation
+    // 2. Get store stats - using user_id as store identifier
     let storeQuery = supabase
       .from('imported_orders')
-      .select('store_id, opt_in, total_price')
-      .not('store_id', 'is', null)
+      .select('user_id, opt_in, total_price')
+      .not('user_id', 'is', null)
       .limit(50000); // Sample for performance
     const { data: storeData } = await addStoreFilter(storeQuery);
 
     const storeMap = new Map<string, { total: number; optIn: number; revenue: number }>();
     storeData?.forEach((order: any) => {
-      const storeId = order.store_id || 'unknown';
+      const storeId = order.user_id || 'unknown';
       const data = storeMap.get(storeId) || { total: 0, optIn: 0, revenue: 0 };
       data.total++;
       if (order.opt_in === true) data.optIn++;
