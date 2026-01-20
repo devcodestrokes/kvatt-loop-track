@@ -201,22 +201,55 @@ serve(async (req) => {
 
     console.log(`Found ${topCountries.length} valid countries:`, topCountries.map((c: any) => `${c.name}(${c.total})`));
 
-    // Query cities - also full aggregation (limit 150k to capture full dataset)
+    // Query cities WITH country and province for proper hierarchy
     let cityQuery = supabase
       .from('imported_orders')
-      .select('city, opt_in, total_price')
+      .select('city, country, province, opt_in, total_price')
       .limit(150000);
     const { data: rawCityData } = await addStoreFilter(cityQuery);
     
+    // Build city map (for top cities display)
     const cityMap = new Map<string, { total: number; optIn: number; revenue: number }>();
+    // Build country->city hierarchy map with proper nesting
+    const hierarchyMap = new Map<string, Map<string, { total: number; optIn: number; provinces: Map<string, { total: number; optIn: number }> }>>();
+    
     rawCityData?.forEach((order: any) => {
       const city = order.city;
+      const country = order.country;
+      const province = order.province;
+      
+      // For flat top cities list
       if (isValidValue(city)) {
         const data = cityMap.get(city!) || { total: 0, optIn: 0, revenue: 0 };
         data.total++;
         if (order.opt_in === true) data.optIn++;
         data.revenue += parseFloat(order.total_price) || 0;
         cityMap.set(city!, data);
+      }
+      
+      // Build proper hierarchy: country -> city -> province
+      if (isValidValue(country)) {
+        if (!hierarchyMap.has(country!)) {
+          hierarchyMap.set(country!, new Map());
+        }
+        const countryData = hierarchyMap.get(country!)!;
+        
+        if (isValidValue(city)) {
+          if (!countryData.has(city!)) {
+            countryData.set(city!, { total: 0, optIn: 0, provinces: new Map() });
+          }
+          const cityData = countryData.get(city!)!;
+          cityData.total++;
+          if (order.opt_in === true) cityData.optIn++;
+          
+          // Add province under city
+          if (isValidValue(province)) {
+            const provinceData = cityData.provinces.get(province!) || { total: 0, optIn: 0 };
+            provinceData.total++;
+            if (order.opt_in === true) provinceData.optIn++;
+            cityData.provinces.set(province!, provinceData);
+          }
+        }
       }
     });
 
@@ -236,7 +269,7 @@ serve(async (req) => {
       .sort((a, b) => parseFloat(b.optInRate) - parseFloat(a.optInRate))
       .slice(0, 10);
 
-    // Query provinces - full aggregation (limit 150k to capture full dataset)
+    // Query provinces - for flat top provinces list
     let provinceQuery = supabase
       .from('imported_orders')
       .select('province, opt_in, total_price')
@@ -396,20 +429,44 @@ serve(async (req) => {
       });
     }
 
-    // Build simple hierarchy (not the full nested one to save memory)
-    const geographicHierarchy = topCountries.map(country => ({
-      name: country.name,
-      total: country.total,
-      optIn: country.optIn,
-      optInRate: country.optInRate,
-      cities: topCities.slice(0, 5).map(city => ({
-        name: city.name,
-        total: city.total,
-        optIn: city.optIn,
-        optInRate: city.optInRate,
-        regions: [],
-      })),
-    }));
+    // Build proper hierarchy using hierarchyMap (country -> city -> province)
+    const geographicHierarchy = topCountries.map(country => {
+      const countryCities = hierarchyMap.get(country.name);
+      let cities: any[] = [];
+      
+      if (countryCities) {
+        cities = Array.from(countryCities.entries())
+          .map(([cityName, cityData]) => {
+            const regions = Array.from(cityData.provinces.entries())
+              .map(([provinceName, provinceData]) => ({
+                name: provinceName,
+                total: provinceData.total,
+                optIn: provinceData.optIn,
+                optInRate: provinceData.total > 0 ? ((provinceData.optIn / provinceData.total) * 100).toFixed(2) : '0.00',
+              }))
+              .sort((a, b) => b.total - a.total)
+              .slice(0, 10);
+            
+            return {
+              name: cityName,
+              total: cityData.total,
+              optIn: cityData.optIn,
+              optInRate: cityData.total > 0 ? ((cityData.optIn / cityData.total) * 100).toFixed(2) : '0.00',
+              regions,
+            };
+          })
+          .sort((a, b) => b.total - a.total)
+          .slice(0, 15);
+      }
+      
+      return {
+        name: country.name,
+        total: country.total,
+        optIn: country.optIn,
+        optInRate: country.optInRate,
+        cities,
+      };
+    });
 
     const analytics = {
       summary,
