@@ -837,6 +837,73 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_city_stats: {
+        Args: { store_filter?: string[] }
+        Returns: {
+          city: string
+          country: string
+          opt_in_count: number
+          province: string
+          total_orders: number
+          total_revenue: number
+        }[]
+      }
+      get_complete_summary_stats: {
+        Args: { store_filter?: string[] }
+        Returns: {
+          avg_opt_in_value: number
+          avg_opt_out_value: number
+          opt_in_rate: number
+          total_opt_ins: number
+          total_opt_outs: number
+          total_orders: number
+          value_difference: number
+        }[]
+      }
+      get_country_stats: {
+        Args: { store_filter?: string[] }
+        Returns: {
+          country: string
+          opt_in_count: number
+          total_orders: number
+          total_revenue: number
+        }[]
+      }
+      get_order_value_stats: {
+        Args: { store_filter?: string[] }
+        Returns: {
+          opt_in_count: number
+          price_range: string
+          total_orders: number
+        }[]
+      }
+      get_province_stats: {
+        Args: { store_filter?: string[] }
+        Returns: {
+          opt_in_count: number
+          province: string
+          total_orders: number
+          total_revenue: number
+        }[]
+      }
+      get_store_stats: {
+        Args: { store_filter?: string[] }
+        Returns: {
+          opt_in_count: number
+          store_id: string
+          total_orders: number
+          total_revenue: number
+        }[]
+      }
+      get_temporal_stats: {
+        Args: { store_filter?: string[] }
+        Returns: {
+          day_of_week: number
+          month_year: string
+          opt_in_count: number
+          total_orders: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
