@@ -23,36 +23,22 @@ serve(async (req) => {
       // No body or invalid JSON - analyze all stores
     }
 
-    console.log('Starting imported orders analysis with SQL aggregation...');
+    console.log('Starting complete order analytics using SQL aggregation...');
     console.log('Selected stores filter:', selectedStores.length > 0 ? selectedStores : 'ALL');
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Use user_id as store identifier (user_id contains store IDs in this dataset)
-    const { count: userIdCount } = await supabase
-      .from('imported_orders')
-      .select('*', { count: 'exact', head: true })
-      .not('user_id', 'is', null);
-    
-    const hasStoreData = (userIdCount || 0) > 0;
-    console.log(`Store data available via user_id: ${hasStoreData} (${userIdCount} orders have user_id)`);
+    // Store filter for RPC calls (null means all stores)
+    const storeFilter = selectedStores.length > 0 ? selectedStores : null;
 
-    // Helper to add store filter to queries using user_id field
-    const addStoreFilter = (query: any) => {
-      if (hasStoreData && selectedStores.length > 0) {
-        return query.in('user_id', selectedStores);
-      }
-      return query;
-    };
+    // 1. Get complete summary statistics using SQL aggregation (NO LIMITS)
+    console.log('Fetching complete summary stats...');
+    const { data: summaryData, error: summaryError } = await supabase.rpc('get_complete_summary_stats', {
+      store_filter: storeFilter
+    });
 
-    // Use SQL aggregation instead of loading all orders into memory
-    // This is much more efficient for large datasets
-
-    // 1. Get overall summary stats
-    const { data: summaryData, error: summaryError } = await supabase.rpc('get_order_summary_stats');
-    
     let summary = {
       totalOrders: 0,
       totalOptIns: 0,
@@ -63,205 +49,111 @@ serve(async (req) => {
       valueDifference: '0.00',
     };
 
-    // Fallback: direct queries if RPC doesn't exist
     if (summaryError) {
-      console.log('RPC not available, using direct queries...');
-      
-      // Total counts - with store filter
-      let totalOrdersQuery = supabase
-        .from('imported_orders')
-        .select('*', { count: 'exact', head: true });
-      const { count: totalOrders } = await addStoreFilter(totalOrdersQuery);
-      
-      let totalOptInsQuery = supabase
-        .from('imported_orders')
-        .select('*', { count: 'exact', head: true })
-        .eq('opt_in', true);
-      const { count: totalOptIns } = await addStoreFilter(totalOptInsQuery);
-      
-      let totalOptOutsQuery = supabase
-        .from('imported_orders')
-        .select('*', { count: 'exact', head: true })
-        .eq('opt_in', false);
-      const { count: totalOptOuts } = await addStoreFilter(totalOptOutsQuery);
-      
-      // Get average order values using a limited sample for performance
-      let optInPricesQuery = supabase
-        .from('imported_orders')
-        .select('total_price')
-        .eq('opt_in', true)
-        .not('total_price', 'is', null)
-        .limit(10000);
-      const { data: optInPrices } = await addStoreFilter(optInPricesQuery);
-      
-      let optOutPricesQuery = supabase
-        .from('imported_orders')
-        .select('total_price')
-        .eq('opt_in', false)
-        .not('total_price', 'is', null)
-        .limit(10000);
-      const { data: optOutPrices } = await optOutPricesQuery;
-      
-      const optInRevenue = optInPrices?.reduce((sum: number, o: any) => sum + (parseFloat(o.total_price) || 0), 0) || 0;
-      const optOutRevenue = optOutPrices?.reduce((sum: number, o: any) => sum + (parseFloat(o.total_price) || 0), 0) || 0;
-      
-      const avgOptInOrderValue = optInPrices?.length ? (optInRevenue / optInPrices.length).toFixed(2) : '0.00';
-      const avgOptOutOrderValue = optOutPrices?.length ? (optOutRevenue / optOutPrices.length).toFixed(2) : '0.00';
-      
+      console.error('Summary stats error:', summaryError);
+    } else if (summaryData && summaryData.length > 0) {
+      const s = summaryData[0];
       summary = {
-        totalOrders: totalOrders || 0,
-        totalOptIns: totalOptIns || 0,
-        totalOptOuts: totalOptOuts || 0,
-        optInRate: totalOrders && totalOrders > 0 ? ((totalOptIns || 0) / totalOrders * 100).toFixed(2) : '0.00',
-        avgOptInOrderValue,
-        avgOptOutOrderValue,
-        valueDifference: (parseFloat(avgOptInOrderValue) - parseFloat(avgOptOutOrderValue)).toFixed(2),
+        totalOrders: Number(s.total_orders) || 0,
+        totalOptIns: Number(s.total_opt_ins) || 0,
+        totalOptOuts: Number(s.total_opt_outs) || 0,
+        optInRate: s.opt_in_rate?.toFixed(2) || '0.00',
+        avgOptInOrderValue: s.avg_opt_in_value?.toFixed(2) || '0.00',
+        avgOptOutOrderValue: s.avg_opt_out_value?.toFixed(2) || '0.00',
+        valueDifference: s.value_difference?.toFixed(2) || '0.00',
       };
-    } else if (summaryData) {
-      summary = summaryData;
     }
 
-    console.log(`Summary: ${summary.totalOrders} orders, ${summary.optInRate}% opt-in`);
+    console.log(`Complete summary: ${summary.totalOrders} total orders, ${summary.optInRate}% opt-in rate`);
 
-    // 2. Get store stats - using user_id as store identifier
-    let storeQuery = supabase
-      .from('imported_orders')
-      .select('user_id, opt_in, total_price')
-      .not('user_id', 'is', null)
-      .limit(50000); // Sample for performance
-    const { data: storeData } = await addStoreFilter(storeQuery);
-
-    const storeMap = new Map<string, { total: number; optIn: number; revenue: number }>();
-    storeData?.forEach((order: any) => {
-      const storeId = order.user_id || 'unknown';
-      const data = storeMap.get(storeId) || { total: 0, optIn: 0, revenue: 0 };
-      data.total++;
-      if (order.opt_in === true) data.optIn++;
-      data.revenue += parseFloat(order.total_price) || 0;
-      storeMap.set(storeId, data);
+    // 2. Get store statistics using SQL aggregation (NO LIMITS)
+    console.log('Fetching complete store stats...');
+    const { data: storeData, error: storeError } = await supabase.rpc('get_store_stats', {
+      store_filter: storeFilter
     });
 
-    const stores = Array.from(storeMap.entries())
-      .map(([storeId, data]) => ({
-        storeId,
-        total: data.total,
-        optIn: data.optIn,
-        optInRate: data.total > 0 ? ((data.optIn / data.total) * 100).toFixed(2) : '0.00',
-        avgOrderValue: data.total > 0 ? (data.revenue / data.total).toFixed(2) : '0.00',
-        totalRevenue: data.revenue.toFixed(2),
-      }))
-      .sort((a, b) => b.total - a.total);
-
-    // Helper function to validate geographic values
-    const isValidValue = (val: string | null): boolean => {
-      if (!val) return false;
-      const trimmed = val.trim();
-      if (trimmed.length === 0) return false;
-      if (trimmed === 'Unknown' || trimmed === 'null' || trimmed === 'undefined' || trimmed === 'N/A') return false;
-      if (trimmed.includes('{') || trimmed.includes('"') || trimmed.includes('\\') || trimmed.includes(':')) return false;
-      if (/^\d+/.test(trimmed)) return false; // Starts with number (address)
-      if (/^\+?\d{10,}$/.test(trimmed.replace(/\s/g, ''))) return false; // Phone number
-      if (trimmed.includes('Floor') || trimmed.includes('Street') || trimmed.includes('Road')) return false; // Address parts
-      return true;
-    };
-
-    // 3. Get geographic stats - query ALL data for accuracy
-    // Query countries - aggregate from full dataset
-    // IMPORTANT: Supabase default limit is 1000, must set higher for full dataset
-    let countryQuery = supabase
-      .from('imported_orders')
-      .select('country, opt_in, total_price')
-      .limit(150000);
-    const { data: rawCountryData } = await addStoreFilter(countryQuery);
-    
-    // Aggregate in memory from FULL dataset (no limit)
-    const countryMap = new Map<string, { total: number; optIn: number; revenue: number }>();
-    rawCountryData?.forEach((order: any) => {
-      const country = order.country;
-      if (isValidValue(country)) {
-        const data = countryMap.get(country!) || { total: 0, optIn: 0, revenue: 0 };
-        data.total++;
-        if (order.opt_in === true) data.optIn++;
-        data.revenue += parseFloat(order.total_price) || 0;
-        countryMap.set(country!, data);
-      }
-    });
-    
-    const countryResults = Array.from(countryMap.entries()).map(([name, data]) => ({
-      name,
-      total: data.total,
-      optIn: data.optIn,
-      optInRate: data.total > 0 ? ((data.optIn / data.total) * 100).toFixed(2) : '0.00',
-      avgOrderValue: data.total > 0 ? (data.revenue / data.total).toFixed(2) : '0.00',
+    const stores = (storeData || []).map((s: any) => ({
+      storeId: s.store_id,
+      total: Number(s.total_orders) || 0,
+      optIn: Number(s.opt_in_count) || 0,
+      optInRate: s.total_orders > 0 ? ((s.opt_in_count / s.total_orders) * 100).toFixed(2) : '0.00',
+      avgOrderValue: s.total_orders > 0 ? (Number(s.total_revenue) / s.total_orders).toFixed(2) : '0.00',
+      totalRevenue: Number(s.total_revenue).toFixed(2),
     }));
 
-    const topCountries = countryResults
-      .filter((c: any) => isValidValue(c.name))
-      .sort((a: any, b: any) => b.total - a.total);
+    if (storeError) console.error('Store stats error:', storeError);
+    console.log(`Found ${stores.length} stores`);
 
-    console.log(`Found ${topCountries.length} valid countries:`, topCountries.map((c: any) => `${c.name}(${c.total})`));
+    // 3. Get complete country statistics using SQL aggregation (NO LIMITS - analyzes ALL orders)
+    console.log('Fetching complete country stats...');
+    const { data: countryData, error: countryError } = await supabase.rpc('get_country_stats', {
+      store_filter: storeFilter
+    });
 
-    // Query cities WITH country and province for proper hierarchy
-    let cityQuery = supabase
-      .from('imported_orders')
-      .select('city, country, province, opt_in, total_price')
-      .limit(150000);
-    const { data: rawCityData } = await addStoreFilter(cityQuery);
-    
-    // Build city map (for top cities display)
+    const topCountries = (countryData || []).map((c: any) => ({
+      name: c.country,
+      total: Number(c.total_orders) || 0,
+      optIn: Number(c.opt_in_count) || 0,
+      optInRate: c.total_orders > 0 ? ((c.opt_in_count / c.total_orders) * 100).toFixed(2) : '0.00',
+      avgOrderValue: c.total_orders > 0 ? (Number(c.total_revenue) / c.total_orders).toFixed(2) : '0.00',
+    }));
+
+    if (countryError) console.error('Country stats error:', countryError);
+    console.log(`Found ${topCountries.length} countries from ALL orders`);
+
+    // 4. Get complete city statistics with country context using SQL aggregation (NO LIMITS)
+    console.log('Fetching complete city stats...');
+    const { data: cityData, error: cityError } = await supabase.rpc('get_city_stats', {
+      store_filter: storeFilter
+    });
+
+    // Build city map and hierarchy from complete data
     const cityMap = new Map<string, { total: number; optIn: number; revenue: number }>();
-    // Build country->city hierarchy map with proper nesting
     const hierarchyMap = new Map<string, Map<string, { total: number; optIn: number; provinces: Map<string, { total: number; optIn: number }> }>>();
-    
-    // Helper to normalize names (title case) to avoid duplicates like "London" vs "LONDON"
-    const normalizeName = (name: string): string => {
-      return name.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-    };
-    
-    rawCityData?.forEach((order: any) => {
-      const rawCity = order.city;
-      const rawCountry = order.country;
-      const rawProvince = order.province;
-      
-      // Normalize names to avoid duplicates
-      const city = isValidValue(rawCity) ? normalizeName(rawCity) : null;
-      const country = isValidValue(rawCountry) ? normalizeName(rawCountry) : null;
-      const province = isValidValue(rawProvince) ? normalizeName(rawProvince) : null;
-      
-      // For flat top cities list
+
+    (cityData || []).forEach((row: any) => {
+      const city = row.city;
+      const country = row.country;
+      const province = row.province;
+      const total = Number(row.total_orders) || 0;
+      const optIn = Number(row.opt_in_count) || 0;
+      const revenue = Number(row.total_revenue) || 0;
+
+      // Aggregate for flat city list
       if (city) {
-        const data = cityMap.get(city) || { total: 0, optIn: 0, revenue: 0 };
-        data.total++;
-        if (order.opt_in === true) data.optIn++;
-        data.revenue += parseFloat(order.total_price) || 0;
-        cityMap.set(city, data);
+        const existing = cityMap.get(city) || { total: 0, optIn: 0, revenue: 0 };
+        existing.total += total;
+        existing.optIn += optIn;
+        existing.revenue += revenue;
+        cityMap.set(city, existing);
       }
-      
-      // Build proper hierarchy: country -> city -> province
+
+      // Build hierarchy: country -> city -> province
       if (country) {
         if (!hierarchyMap.has(country)) {
           hierarchyMap.set(country, new Map());
         }
-        const countryData = hierarchyMap.get(country)!;
-        
+        const countryMap = hierarchyMap.get(country)!;
+
         if (city) {
-          if (!countryData.has(city)) {
-            countryData.set(city, { total: 0, optIn: 0, provinces: new Map() });
+          if (!countryMap.has(city)) {
+            countryMap.set(city, { total: 0, optIn: 0, provinces: new Map() });
           }
-          const cityData = countryData.get(city)!;
-          cityData.total++;
-          if (order.opt_in === true) cityData.optIn++;
-          
-          // Add province under city
+          const cityEntry = countryMap.get(city)!;
+          cityEntry.total += total;
+          cityEntry.optIn += optIn;
+
           if (province) {
-            const provinceData = cityData.provinces.get(province) || { total: 0, optIn: 0 };
-            provinceData.total++;
-            if (order.opt_in === true) provinceData.optIn++;
-            cityData.provinces.set(province, provinceData);
+            const provinceEntry = cityEntry.provinces.get(province) || { total: 0, optIn: 0 };
+            provinceEntry.total += total;
+            provinceEntry.optIn += optIn;
+            cityEntry.provinces.set(province, provinceEntry);
           }
         }
       }
     });
+
+    if (cityError) console.error('City stats error:', cityError);
 
     const topCities = Array.from(cityMap.entries())
       .map(([name, data]) => ({
@@ -279,64 +171,52 @@ serve(async (req) => {
       .sort((a, b) => parseFloat(b.optInRate) - parseFloat(a.optInRate))
       .slice(0, 10);
 
-    // Query provinces - for flat top provinces list
-    let provinceQuery = supabase
-      .from('imported_orders')
-      .select('province, opt_in, total_price')
-      .limit(150000);
-    const { data: rawProvinceData } = await addStoreFilter(provinceQuery);
-    
-    const provinceMap = new Map<string, { total: number; optIn: number; revenue: number }>();
-    rawProvinceData?.forEach((order: any) => {
-      const province = order.province;
-      if (isValidValue(province)) {
-        const data = provinceMap.get(province!) || { total: 0, optIn: 0, revenue: 0 };
-        data.total++;
-        if (order.opt_in === true) data.optIn++;
-        data.revenue += parseFloat(order.total_price) || 0;
-        provinceMap.set(province!, data);
-      }
+    console.log(`Processed ${cityMap.size} unique cities from ALL orders`);
+
+    // 5. Get complete province statistics using SQL aggregation (NO LIMITS)
+    console.log('Fetching complete province stats...');
+    const { data: provinceData, error: provinceError } = await supabase.rpc('get_province_stats', {
+      store_filter: storeFilter
     });
 
-    const topProvinces = Array.from(provinceMap.entries())
-      .map(([name, data]) => ({
-        name,
-        total: data.total,
-        optIn: data.optIn,
-        optInRate: data.total > 0 ? ((data.optIn / data.total) * 100).toFixed(2) : '0.00',
-      }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 10);
+    const topProvinces = (provinceData || []).slice(0, 10).map((p: any) => ({
+      name: p.province,
+      total: Number(p.total_orders) || 0,
+      optIn: Number(p.opt_in_count) || 0,
+      optInRate: p.total_orders > 0 ? ((p.opt_in_count / p.total_orders) * 100).toFixed(2) : '0.00',
+    }));
 
-    // 4. Get temporal stats - using sampled data
-    let temporalQuery = supabase
-      .from('imported_orders')
-      .select('shopify_created_at, opt_in')
-      .not('shopify_created_at', 'is', null)
-      .limit(50000);
-    const { data: temporalData } = await addStoreFilter(temporalQuery);
+    if (provinceError) console.error('Province stats error:', provinceError);
+
+    // 6. Get complete temporal statistics using SQL aggregation (NO LIMITS)
+    console.log('Fetching complete temporal stats...');
+    const { data: temporalData, error: temporalError } = await supabase.rpc('get_temporal_stats', {
+      store_filter: storeFilter
+    });
 
     const dayOfWeekMap = new Map<number, { total: number; optIn: number }>();
     const monthMap = new Map<string, { total: number; optIn: number }>();
 
-    temporalData?.forEach((order: any) => {
-      if (order.shopify_created_at) {
-        const date = new Date(order.shopify_created_at);
-        const dayOfWeek = date.getDay();
-        const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        const isOptIn = order.opt_in === true;
+    (temporalData || []).forEach((row: any) => {
+      const dayOfWeek = row.day_of_week;
+      const monthYear = row.month_year;
+      const total = Number(row.total_orders) || 0;
+      const optIn = Number(row.opt_in_count) || 0;
 
-        const dayData = dayOfWeekMap.get(dayOfWeek) || { total: 0, optIn: 0 };
-        dayData.total++;
-        if (isOptIn) dayData.optIn++;
-        dayOfWeekMap.set(dayOfWeek, dayData);
+      // Aggregate by day of week
+      const dayData = dayOfWeekMap.get(dayOfWeek) || { total: 0, optIn: 0 };
+      dayData.total += total;
+      dayData.optIn += optIn;
+      dayOfWeekMap.set(dayOfWeek, dayData);
 
-        const monthData = monthMap.get(month) || { total: 0, optIn: 0 };
-        monthData.total++;
-        if (isOptIn) monthData.optIn++;
-        monthMap.set(month, monthData);
-      }
+      // Aggregate by month
+      const monthData = monthMap.get(monthYear) || { total: 0, optIn: 0 };
+      monthData.total += total;
+      monthData.optIn += optIn;
+      monthMap.set(monthYear, monthData);
     });
+
+    if (temporalError) console.error('Temporal stats error:', temporalError);
 
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const byDayOfWeek = Array.from(dayOfWeekMap.entries())
@@ -358,48 +238,26 @@ serve(async (req) => {
       }))
       .sort((a, b) => a.month.localeCompare(b.month));
 
-    // 5. Get order value analysis - sampled
-    let valueQuery = supabase
-      .from('imported_orders')
-      .select('total_price, opt_in')
-      .not('total_price', 'is', null)
-      .limit(50000);
-    const { data: valueData } = await addStoreFilter(valueQuery);
-
-    const valueRanges = [
-      { min: 0, max: 25, label: '$0-25' },
-      { min: 25, max: 50, label: '$25-50' },
-      { min: 50, max: 100, label: '$50-100' },
-      { min: 100, max: 200, label: '$100-200' },
-      { min: 200, max: 500, label: '$200-500' },
-      { min: 500, max: Infinity, label: '$500+' },
-    ];
-    const valueRangeMap = new Map<string, { total: number; optIn: number }>();
-    valueRanges.forEach(r => valueRangeMap.set(r.label, { total: 0, optIn: 0 }));
-
-    valueData?.forEach((order: any) => {
-      const price = parseFloat(order.total_price) || 0;
-      const isOptIn = order.opt_in === true;
-
-      for (const range of valueRanges) {
-        if (price >= range.min && price < range.max) {
-          const rangeData = valueRangeMap.get(range.label)!;
-          rangeData.total++;
-          if (isOptIn) rangeData.optIn++;
-          break;
-        }
-      }
+    // 7. Get complete order value analysis using SQL aggregation (NO LIMITS)
+    console.log('Fetching complete order value stats...');
+    const { data: valueData, error: valueError } = await supabase.rpc('get_order_value_stats', {
+      store_filter: storeFilter
     });
 
-    const orderValueAnalysis = valueRanges.map(range => {
-      const data = valueRangeMap.get(range.label)!;
+    const valueRangeOrder = ['$0-25', '$25-50', '$50-100', '$100-200', '$200-500', '$500+'];
+    const orderValueAnalysis = valueRangeOrder.map(range => {
+      const match = (valueData || []).find((v: any) => v.price_range === range);
       return {
-        range: range.label,
-        total: data.total,
-        optIns: data.optIn,
-        optInRate: data.total > 0 ? ((data.optIn / data.total) * 100).toFixed(2) : '0.00',
+        range,
+        total: match ? Number(match.total_orders) : 0,
+        optIns: match ? Number(match.opt_in_count) : 0,
+        optInRate: match && match.total_orders > 0 
+          ? ((match.opt_in_count / match.total_orders) * 100).toFixed(2) 
+          : '0.00',
       };
     });
+
+    if (valueError) console.error('Value stats error:', valueError);
 
     // Generate insights
     const insights = [];
@@ -410,7 +268,7 @@ serve(async (req) => {
       insights.push({
         type: 'store',
         title: 'Top Performing Store',
-        description: `${bestStore.storeId.replace('.myshopify.com', '')} leads with ${bestStore.optInRate}% opt-in rate`,
+        description: `${String(bestStore.storeId).replace('.myshopify.com', '')} leads with ${bestStore.optInRate}% opt-in rate`,
         value: bestStore.optInRate,
         impact: 'high' as const,
       });
@@ -439,11 +297,11 @@ serve(async (req) => {
       });
     }
 
-    // Build proper hierarchy using hierarchyMap (country -> city -> province)
-    const geographicHierarchy = topCountries.map(country => {
+    // Build proper geographic hierarchy using hierarchyMap (country -> city -> province)
+    const geographicHierarchy = topCountries.map((country: any) => {
       const countryCities = hierarchyMap.get(country.name);
       let cities: any[] = [];
-      
+
       if (countryCities) {
         cities = Array.from(countryCities.entries())
           .map(([cityName, cityData]) => {
@@ -456,7 +314,7 @@ serve(async (req) => {
               }))
               .sort((a, b) => b.total - a.total)
               .slice(0, 10);
-            
+
             return {
               name: cityName,
               total: cityData.total,
@@ -468,7 +326,7 @@ serve(async (req) => {
           .sort((a, b) => b.total - a.total)
           .slice(0, 15);
       }
-      
+
       return {
         name: country.name,
         total: country.total,
@@ -494,9 +352,15 @@ serve(async (req) => {
         byMonth,
       },
       insights,
+      _meta: {
+        analyzedAt: new Date().toISOString(),
+        totalOrdersAnalyzed: summary.totalOrders,
+        usedSqlAggregation: true,
+        noRowLimits: true,
+      }
     };
 
-    console.log('Analysis complete with SQL aggregation');
+    console.log(`Complete analysis finished: ${summary.totalOrders} orders analyzed with NO row limits`);
 
     return new Response(
       JSON.stringify({ success: true, data: analytics }),
