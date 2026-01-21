@@ -240,6 +240,7 @@ const Insights = () => {
 
   // Fetch stores from order data (using user_id as store identifier)
   const [availableStores, setAvailableStores] = useState<StoreType[]>([]);
+  const [storeNameMapping, setStoreNameMapping] = useState<Map<string, string>>(new Map());
   const [isLoadingStores, setIsLoadingStores] = useState(true);
 
   const fetchStoresFromOrders = useCallback(async () => {
@@ -251,10 +252,21 @@ const Insights = () => {
       if (error) throw error;
       
       if (data?.success && data?.stores?.length) {
-        const storesList: StoreType[] = data.stores.map((store: any) => ({
-          id: store.id,
-          name: `${store.name} (${store.orderCount.toLocaleString()} orders)`
-        }));
+        // Build the name mapping (id -> name)
+        const mapping = new Map<string, string>();
+        data.stores.forEach((store: any, index: number) => {
+          mapping.set(store.id, store.name);
+        });
+        setStoreNameMapping(mapping);
+        
+        const storesList: StoreType[] = data.stores.map((store: any, index: number) => {
+          // Format: "Storename [Store NUMBER]" with proper capitalization
+          const displayName = formatStoreDisplayName(store.name, store.id);
+          return {
+            id: store.id,
+            name: `${displayName} (${store.orderCount.toLocaleString()} orders)`
+          };
+        });
         setAvailableStores(storesList);
       } else {
         // Fallback to direct query if edge function fails
@@ -287,6 +299,19 @@ const Insights = () => {
       setIsLoadingStores(false);
     }
   }, []);
+  
+  // Helper to format store name from API response
+  const formatStoreDisplayName = (apiName: string, storeId: string): string => {
+    // Remove .myshopify.com if present
+    let name = apiName.replace('.myshopify.com', '').replace(/-/g, ' ');
+    
+    // Convert to proper title case (first letter of each word capitalized)
+    name = name.split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+    
+    return `${name} [Store ${storeId}]`;
+  };
 
   const {
     selectedStores,
@@ -472,9 +497,22 @@ const Insights = () => {
     fetchData();
   }, [selectedMerchant]);
 
-  const formatStoreName = (storeId: string) => {
+  const formatStoreName = useCallback((storeId: string) => {
+    const apiName = storeNameMapping.get(storeId);
+    if (apiName) {
+      // Remove .myshopify.com if present and format properly
+      let name = apiName.replace('.myshopify.com', '').replace(/-/g, ' ');
+      
+      // Convert to proper title case (first letter of each word capitalized)
+      name = name.split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+      
+      return `${name} [Store ${storeId}]`;
+    }
+    // Fallback if no mapping found
     return `Store ${storeId}`;
-  };
+  }, [storeNameMapping]);
 
   return (
     <div className="space-y-6">
