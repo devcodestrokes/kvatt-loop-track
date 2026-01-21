@@ -39,6 +39,7 @@ const processAndUpsertOrders = async (supabase: any, orders: any[]) => {
         name: order.name || null,
         shopify_order_id: order.shopify_order_id?.toString() || null,
         customer_id: order.customer_id?.toString() || null,
+        // Handle opt_in as 1/0 from new API
         opt_in: order.opt_in === true || order.opt_in === 'true' || order.opt_in === 1 || order.opt_in === '1',
         total_price: parseFloat(order.total_price) || 0,
         destination,
@@ -76,22 +77,17 @@ serve(async (req) => {
   }
 
   try {
-    const API_KEY = Deno.env.get('SHOPIFY_EXTRACTOR_API_KEY');
-    if (!API_KEY) {
-      throw new Error('SHOPIFY_EXTRACTOR_API_KEY is not configured');
-    }
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    let triggerRefresh = false;
     let forceFull = false;
+    let pagesLimit = 0; // 0 = fetch all, otherwise limit pages for quick sync
     
     try {
       const body = await req.json();
-      triggerRefresh = body.refresh === true;
       forceFull = body.forceFull === true;
+      pagesLimit = body.pagesLimit || 0; // For optimization: fetch only first N pages
     } catch {
       // No body or invalid JSON
     }
@@ -103,30 +99,32 @@ serve(async (req) => {
 
     console.log(`Current DB count: ${currentDbCount}`);
 
-    // New API base URL
-    const baseUrl = 'https://shopify-phpmyadmin-extractor-api.onrender.com/api/data';
+    // New API base URL - https://shopify.kvatt.com/api/get-orders
+    const baseUrl = 'https://shopify.kvatt.com/api/get-orders';
 
-    // First, get metadata to check total count
-    console.log('Fetching metadata...');
-    const metadataResponse = await fetch(
-      'https://shopify-phpmyadmin-extractor-api.onrender.com/api/metadata',
-      {
-        method: 'GET',
-        headers: { 'X-API-Key': API_KEY },
-      }
-    );
+    // Fetch first page to get pagination info
+    console.log('Fetching first page to get total count...');
+    const firstPageResponse = await fetch(`${baseUrl}?page=1`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    });
 
-    if (!metadataResponse.ok) {
-      const errorText = await metadataResponse.text();
-      console.error('Metadata API error:', metadataResponse.status, errorText);
-      throw new Error(`Metadata API failed: ${metadataResponse.status}`);
+    if (!firstPageResponse.ok) {
+      const errorText = await firstPageResponse.text();
+      console.error('API error:', firstPageResponse.status, errorText);
+      throw new Error(`API request failed: ${firstPageResponse.status}`);
     }
 
-    const metadata = await metadataResponse.json();
-    const apiTotalCount = metadata.total_count || 0;
-    console.log(`API total count: ${apiTotalCount}, DB count: ${currentDbCount}`);
+    const firstPageData = await firstPageResponse.json();
+    const apiTotalCount = firstPageData.total || 0;
+    const lastPage = firstPageData.last_page || 1;
+    const perPage = firstPageData.per_page || 100;
 
-    // If DB is up to date, no need to fetch
+    console.log(`API total: ${apiTotalCount}, pages: ${lastPage}, per_page: ${perPage}`);
+
+    // If DB is up to date and not forcing full sync, just return
     if (!forceFull && currentDbCount && currentDbCount >= apiTotalCount) {
       console.log('Database is up to date');
       return new Response(
@@ -143,76 +141,46 @@ serve(async (req) => {
       );
     }
 
-    // Calculate which rows to fetch
-    const startRow = forceFull ? 1 : (currentDbCount || 0) + 1;
-    const batchSize = 5000;
-    
-    let allOrders: any[] = [];
-    let currentStart = startRow;
-    let hasMoreData = true;
+    // Collect all orders - start with first page data
+    let allOrders: any[] = firstPageData.data || [];
+    console.log(`Page 1: received ${allOrders.length} orders`);
 
-    console.log(`Fetching orders starting from row ${startRow}...`);
+    // Determine how many pages to fetch
+    // For optimization: if pagesLimit > 0, only fetch that many pages (latest data first)
+    const maxPages = pagesLimit > 0 ? Math.min(pagesLimit, lastPage) : lastPage;
 
-    while (hasMoreData && currentStart <= apiTotalCount) {
-      const endRow = Math.min(currentStart + batchSize - 1, apiTotalCount);
+    // Fetch remaining pages (if needed)
+    for (let page = 2; page <= maxPages; page++) {
+      console.log(`Fetching page ${page}/${maxPages}...`);
       
-      const apiUrl = `${baseUrl}?start_row=${currentStart}&end_row=${endRow}&refresh=${triggerRefresh}`;
-      console.log(`Fetching rows ${currentStart}-${endRow}...`);
-
-      const response = await fetch(apiUrl, {
+      const response = await fetch(`${baseUrl}?page=${page}`, {
         method: 'GET',
         headers: {
-          'X-API-Key': API_KEY,
           'Accept': 'application/json',
         },
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API error:', response.status, errorText);
-        
-        if (response.status === 401) {
-          throw new Error('API authentication failed - check API key');
-        }
-        
-        if (response.status === 503 || response.status >= 500) {
-          if (allOrders.length > 0) {
-            console.log('API temporarily unavailable, processing partial data...');
-            break;
-          }
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: 'External API temporarily unavailable.',
-              retryable: true,
-              apiStatus: response.status,
-              dbCount: currentDbCount
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-          );
-        }
-        
-        throw new Error(`API request failed: ${response.status} - ${errorText}`);
+        console.error(`Page ${page} failed:`, response.status);
+        // Continue with what we have
+        break;
       }
 
-      const data = await response.json();
-      console.log(`Received ${data.returned_count || 0} orders, source: ${data.source}`);
-
-      const orders = data.data || [];
+      const pageData = await response.json();
+      const orders = pageData.data || [];
+      
       if (orders.length === 0) {
-        hasMoreData = false;
-      } else {
-        allOrders = allOrders.concat(orders);
-        currentStart = endRow + 1;
-        
-        if (orders.length < batchSize) {
-          hasMoreData = false;
-        }
+        console.log(`Page ${page}: no more data`);
+        break;
       }
 
-      if (allOrders.length >= 50000) {
-        console.log('Reached 50k order limit for single sync');
-        hasMoreData = false;
+      allOrders = allOrders.concat(orders);
+      console.log(`Page ${page}: received ${orders.length} orders, total: ${allOrders.length}`);
+
+      // Safety limit
+      if (allOrders.length >= 150000) {
+        console.log('Reached 150k order limit for single sync');
+        break;
       }
     }
 
@@ -226,7 +194,7 @@ serve(async (req) => {
           errors: 0,
           total: currentDbCount,
           apiRecordCount: apiTotalCount,
-          message: 'No new orders to process',
+          message: 'No orders to process',
           timestamp: new Date().toISOString()
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
@@ -249,7 +217,7 @@ serve(async (req) => {
         errors,
         total: finalDbCount,
         apiRecordCount: apiTotalCount,
-        refreshTriggered: triggerRefresh,
+        pagesFetched: Math.min(maxPages, lastPage),
         timestamp: new Date().toISOString()
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }

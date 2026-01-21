@@ -133,9 +133,8 @@ export const useApiSync = (options: UseApiSyncOptions = {}) => {
 
       const { data, error } = await supabase.functions.invoke('fetch-orders-api', {
         body: { 
-          refresh: triggerRefresh,
-          incremental: !forceFull, // Use incremental sync by default
-          forceFull: forceFull
+          forceFull: forceFull,
+          pagesLimit: forceFull ? 0 : 5 // Fetch only first 5 pages for quick sync (latest data)
         }
       });
 
