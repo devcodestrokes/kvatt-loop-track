@@ -6,6 +6,49 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Base64url encode function
+const base64UrlEncode = (data: Uint8Array): string => {
+  const base64 = btoa(String.fromCharCode(...data));
+  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+
+// Generate JWT token for kvatt API authentication
+const generateJWT = async (secret: string): Promise<string> => {
+  const header = { alg: "HS256", typ: "JWT" };
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    sub: "1",
+    iat: now,
+    exp: now + 3600 // 1 hour expiry
+  };
+
+  const encoder = new TextEncoder();
+  
+  const encodedHeader = base64UrlEncode(encoder.encode(JSON.stringify(header)));
+  const encodedPayload = base64UrlEncode(encoder.encode(JSON.stringify(payload)));
+  
+  const signatureBase = `${encodedHeader}.${encodedPayload}`;
+  
+  // Create HMAC-SHA256 signature
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(signatureBase)
+  );
+  
+  const encodedSignature = base64UrlEncode(new Uint8Array(signature));
+  
+  return `${signatureBase}.${encodedSignature}`;
+};
+
 const processAndUpsertOrders = async (supabase: any, orders: any[]) => {
   let inserted = 0;
   let errors = 0;
@@ -77,6 +120,12 @@ serve(async (req) => {
   }
 
   try {
+    // Get JWT secret for API authentication
+    const jwtSecret = Deno.env.get('KVATT_API_JWT_SECRET');
+    if (!jwtSecret) {
+      throw new Error('KVATT_API_JWT_SECRET is not configured');
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -91,6 +140,10 @@ serve(async (req) => {
     } catch {
       // No body or invalid JSON
     }
+
+    // Generate JWT token for API authentication
+    const authToken = await generateJWT(jwtSecret);
+    console.log('Generated JWT token for API authentication');
 
     // Get current DB count
     const { count: currentDbCount } = await supabase
@@ -108,6 +161,7 @@ serve(async (req) => {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
+        'Authorization': `Bearer ${authToken}`,
       },
     });
 
@@ -157,6 +211,7 @@ serve(async (req) => {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
         },
       });
 
