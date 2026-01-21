@@ -209,20 +209,23 @@
 
   /* Data table with refined styling */
   .data-table {
-    @apply rounded-2xl border border-border/50 overflow-hidden bg-card/90 backdrop-blur-sm;
-    box-shadow: var(--shadow-card);
+    @apply w-full border-collapse;
   }
 
   .data-table th {
-    @apply bg-secondary/50 text-xs font-semibold uppercase tracking-wider text-muted-foreground;
+    @apply bg-secondary/30 text-xs font-semibold uppercase tracking-wider text-muted-foreground px-4 py-3 text-left;
   }
 
-  .data-table tr {
+  .data-table td {
+    @apply px-4 py-3 border-t border-border/30;
+  }
+
+  .data-table tbody tr {
     @apply transition-colors duration-150;
   }
 
   .data-table tbody tr:hover {
-    @apply bg-secondary/30;
+    @apply bg-primary/5;
   }
 
   /* Filter bar with glass effect */
