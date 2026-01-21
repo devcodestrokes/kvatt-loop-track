@@ -538,13 +538,13 @@ const Insights = () => {
       </div>
 
       <div className="space-y-6">
-          {/* API Sync Status Indicator - Backend auto-syncs every 30 min */}
+          {/* API Sync Status Indicator - Backend auto-syncs every 5 min */}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <ApiSyncStatus syncStatus={syncStatus} />
             
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <span className="text-xs text-muted-foreground/60">
-                • Auto-sync: every 30 min (backend)
+                • Auto-sync: every 5 min (backend)
               </span>
             </div>
           </div>
