@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   Lightbulb, TrendingUp, TrendingDown, Minus, Package, Users, Recycle, Target, 
-  RefreshCw, Brain, MapPin, Clock, ShoppingCart, Store, Zap,
-  Database, Calendar, Smartphone, Monitor, ShoppingBag,
+  Brain, MapPin, Clock, ShoppingCart, Store, Zap, Database,
+  Calendar, Smartphone, Monitor, ShoppingBag,
   Layers
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -229,8 +229,8 @@ const Insights = () => {
     }
   }, []);
 
-  // Use API sync hook with retry logic
-  const { syncStatus, syncOrders, refreshDbCount, isLoading: isSyncing } = useApiSync({
+  // Use API sync hook - sync is now handled by backend cron job (every 30 min)
+  const { syncStatus, refreshDbCount } = useApiSync({
     maxRetries: 5,
     baseDelayMs: 2000,
     maxDelayMs: 60000,
@@ -538,33 +538,19 @@ const Insights = () => {
       </div>
 
       <div className="space-y-6">
-          {/* API Sync Status Indicator */}
+          {/* API Sync Status Indicator - Backend auto-syncs every 30 min */}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <ApiSyncStatus syncStatus={syncStatus} />
             
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {isAutoRefreshing && (
-                <span className="flex items-center gap-1 text-primary">
-                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                  Auto-syncing...
-                </span>
-              )}
               <span className="text-xs text-muted-foreground/60">
-                • Auto-refresh: 1 min
+                • Auto-sync: every 30 min (backend)
               </span>
             </div>
           </div>
 
           {/* Action Bar */}
           <div className="flex flex-wrap items-center gap-3">
-            <Button 
-              variant="outline"
-              disabled={isSyncing || isFetchingData || isAutoRefreshing}
-              onClick={() => syncOrders(true)}
-            >
-              <Database className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-              {isSyncing ? 'Syncing...' : 'Sync Orders'}
-            </Button>
             <Button 
               onClick={runCROAnalysis} 
               disabled={!orderAnalytics || isAnalyzing}
