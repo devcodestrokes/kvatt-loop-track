@@ -3,7 +3,7 @@ import {
   Lightbulb, TrendingUp, TrendingDown, Minus, Package, Users, Recycle, Target, 
   Brain, MapPin, Clock, ShoppingCart, Store, Zap, Database,
   Calendar, Smartphone, Monitor, ShoppingBag,
-  Layers
+  Layers, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,10 +22,11 @@ import { InsightsChatbot } from '@/components/dashboard/InsightsChatbot';
 import { ApiSyncStatus } from '@/components/dashboard/ApiSyncStatus';
 import { GeographicHeatmap } from '@/components/dashboard/GeographicHeatmap';
 import { CollapsibleHierarchy } from '@/components/dashboard/CollapsibleHierarchy';
+import { DateRangePicker } from '@/components/dashboard/DateRangePicker';
 
 import { useStoreFilter } from '@/hooks/useStoreFilter';
 import { useApiSync } from '@/hooks/useApiSync';
-import { Store as StoreType } from '@/types/analytics';
+import { Store as StoreType, DateRange } from '@/types/analytics';
 
 const STORES_API_URL = "https://shopify.kvatt.com/api/get-stores";
 const AUTH_TOKEN = "Bearer %^75464tnfsdhndsfbgr54";
@@ -193,6 +194,8 @@ const Insights = () => {
   const [selectedMerchant, setSelectedMerchant] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
   
+  // Date range filter state
+  const [dateRange, setDateRange] = useState<DateRange>({ from: undefined, to: undefined });
   
   // CRO Analysis state - load from storage initially
   const [orderAnalytics, setOrderAnalytics] = useState<OrderAnalytics | null>(() => 
@@ -426,15 +429,28 @@ const Insights = () => {
   };
 
   // Analyze existing data from database (doesn't require external API)
-  const analyzeExistingData = async (showToast = false, storesToAnalyze?: string[]) => {
+  const analyzeExistingData = async (showToast = false, storesToAnalyze?: string[], dateRangeFilter?: DateRange) => {
     if (isFetchingData || isAutoRefreshing) return;
     
     setIsAutoRefreshing(true);
     try {
+      // Build request body with filters
+      const body: any = { selectedStores: storesToAnalyze };
+      
+      // Add date range if provided
+      if (dateRangeFilter?.from) {
+        body.dateFrom = dateRangeFilter.from.toISOString();
+      }
+      if (dateRangeFilter?.to) {
+        // Set to end of day for the 'to' date
+        const toDate = new Date(dateRangeFilter.to);
+        toDate.setHours(23, 59, 59, 999);
+        body.dateTo = toDate.toISOString();
+      }
+      
       // Analyze data already in the database - no external API call needed
-      // Pass selected stores to filter the analysis
       const { data: analyticsData, error: analyticsError } = await supabase.functions.invoke('analyze-imported-orders', {
-        body: { selectedStores: storesToAnalyze }
+        body
       });
       
       if (analyticsError) {
@@ -471,15 +487,15 @@ const Insights = () => {
     
     // Analyze existing data on mount (doesn't call external API)
     // First load gets all data to populate store list
-    analyzeExistingData(false, []);
+    analyzeExistingData(false, [], dateRange);
     
     // Update DB count on mount
     refreshDbCount();
     
     // Set up auto-refresh interval to re-analyze database data
     const intervalId = setInterval(() => {
-      // Auto-refresh uses current selected stores
-      analyzeExistingData(true, selectedStores.length > 0 ? selectedStores : []);
+      // Auto-refresh uses current selected stores and date range
+      analyzeExistingData(true, selectedStores.length > 0 ? selectedStores : [], dateRange);
       refreshDbCount();
     }, AUTO_REFRESH_INTERVAL);
     
@@ -489,13 +505,25 @@ const Insights = () => {
   // Re-analyze when store selection changes
   useEffect(() => {
     if (isInitialized && selectedStores.length > 0) {
-      analyzeExistingData(false, selectedStores);
+      analyzeExistingData(false, selectedStores, dateRange);
     }
   }, [selectedStores, isInitialized]);
+
+  // Re-analyze when date range changes
+  useEffect(() => {
+    if (isInitialized) {
+      analyzeExistingData(false, selectedStores.length > 0 ? selectedStores : [], dateRange);
+    }
+  }, [dateRange]);
 
   useEffect(() => {
     fetchData();
   }, [selectedMerchant]);
+
+  // Clear date range filter
+  const clearDateRange = useCallback(() => {
+    setDateRange({ from: undefined, to: undefined });
+  }, []);
 
   const formatStoreName = useCallback((storeId: string) => {
     const apiName = storeNameMapping.get(storeId);
@@ -534,6 +562,34 @@ const Insights = () => {
               onUnselectAll={unselectAll}
             />
           </div>
+        )}
+      </div>
+
+      {/* Filters Row */}
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2">
+          <DateRangePicker
+            dateRange={dateRange}
+            onDateRangeChange={setDateRange}
+            disabled={isAutoRefreshing}
+          />
+          {(dateRange.from || dateRange.to) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearDateRange}
+              className="h-9 px-2"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Clear date filter</span>
+            </Button>
+          )}
+        </div>
+        
+        {(dateRange.from || dateRange.to) && (
+          <span className="text-sm text-muted-foreground">
+            Filtering by date range
+          </span>
         )}
       </div>
 

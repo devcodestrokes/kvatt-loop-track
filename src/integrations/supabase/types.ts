@@ -838,7 +838,7 @@ export type Database = {
     }
     Functions: {
       get_city_stats: {
-        Args: { store_filter?: string[] }
+        Args: { date_from?: string; date_to?: string; store_filter?: string[] }
         Returns: {
           city: string
           country: string
@@ -849,7 +849,7 @@ export type Database = {
         }[]
       }
       get_complete_summary_stats: {
-        Args: { store_filter?: string[] }
+        Args: { date_from?: string; date_to?: string; store_filter?: string[] }
         Returns: {
           avg_opt_in_value: number
           avg_opt_out_value: number
@@ -861,7 +861,7 @@ export type Database = {
         }[]
       }
       get_country_stats: {
-        Args: { store_filter?: string[] }
+        Args: { date_from?: string; date_to?: string; store_filter?: string[] }
         Returns: {
           country: string
           opt_in_count: number
@@ -870,7 +870,7 @@ export type Database = {
         }[]
       }
       get_order_value_stats: {
-        Args: { store_filter?: string[] }
+        Args: { date_from?: string; date_to?: string; store_filter?: string[] }
         Returns: {
           opt_in_count: number
           price_range: string
@@ -878,7 +878,7 @@ export type Database = {
         }[]
       }
       get_province_stats: {
-        Args: { store_filter?: string[] }
+        Args: { date_from?: string; date_to?: string; store_filter?: string[] }
         Returns: {
           opt_in_count: number
           province: string
@@ -887,7 +887,7 @@ export type Database = {
         }[]
       }
       get_store_stats: {
-        Args: { store_filter?: string[] }
+        Args: { date_from?: string; date_to?: string; store_filter?: string[] }
         Returns: {
           opt_in_count: number
           store_id: string
@@ -896,7 +896,7 @@ export type Database = {
         }[]
       }
       get_temporal_stats: {
-        Args: { store_filter?: string[] }
+        Args: { date_from?: string; date_to?: string; store_filter?: string[] }
         Returns: {
           day_of_week: number
           month_year: string
