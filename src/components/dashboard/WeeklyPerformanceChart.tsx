@@ -24,6 +24,7 @@ interface DailyChartData {
   totalOrders: number;
   totalOptIns: number;
   optInRate: string;
+  isInSelectedRange: boolean;
 }
 
 interface WeeklyPerformanceChartProps {
@@ -69,11 +70,12 @@ export function WeeklyPerformanceChart({ fetchDailyData, selectedStores, isLoadi
         const date = addDays(weekStart, i);
         const dayName = format(date, 'EEE'); // Short day name
         
-        // Check if date is within the selected date range
-        const isWithinRange = (!dateRange?.from || date >= dateRange.from) && 
-                              (!dateRange?.to || date <= dateRange.to);
+        // Check if date is within the selected date range (for highlighting)
+        const isInSelectedRange = (!dateRange?.from || date >= dateRange.from) && 
+                                  (!dateRange?.to || date <= dateRange.to);
         
-        if (date <= new Date() && isWithinRange) {
+        // Always fetch data for past/current days (regardless of date range filter)
+        if (date <= new Date()) {
           try {
             const data = await fetchDailyData(date);
             const optInRate = data.checkouts > 0 
@@ -86,6 +88,7 @@ export function WeeklyPerformanceChart({ fetchDailyData, selectedStores, isLoadi
               totalOrders: data.checkouts,
               totalOptIns: data.optIns,
               optInRate,
+              isInSelectedRange,
             });
           } catch {
             days.push({
@@ -94,15 +97,18 @@ export function WeeklyPerformanceChart({ fetchDailyData, selectedStores, isLoadi
               totalOrders: 0,
               totalOptIns: 0,
               optInRate: '0',
+              isInSelectedRange,
             });
           }
         } else {
+          // Future days
           days.push({
             day: dayName,
             date,
             totalOrders: 0,
             totalOptIns: 0,
-            optInRate: date > new Date() ? '-' : (isWithinRange ? '0' : '-'),
+            optInRate: '-',
+            isInSelectedRange,
           });
         }
       }
@@ -182,19 +188,36 @@ export function WeeklyPerformanceChart({ fetchDailyData, selectedStores, isLoadi
     ? ((totals.totalOptIns / totals.totalOrders) * 100).toFixed(2)
     : '0.00';
 
+  // Check if a date filter is active
+  const hasDateFilter = dateRange?.from && dateRange?.to;
+
   // Custom tick for X axis showing day and opt-in rate
   const CustomXAxisTick = ({ x, y, payload }: any) => {
     const dataItem = chartData.find(d => d.day === payload.value);
     const rate = dataItem?.optInRate || '0';
+    const isHighlighted = hasDateFilter && dataItem?.isInSelectedRange;
     
     return (
       <g transform={`translate(${x},${y})`}>
+        {/* Highlight background for selected range */}
+        {isHighlighted && (
+          <rect
+            x={-25}
+            y={-5}
+            width={50}
+            height={45}
+            rx={4}
+            fill="hsl(var(--primary) / 0.08)"
+          />
+        )}
         <text 
           x={0} 
           y={0} 
           dy={16} 
           textAnchor="middle" 
-          className="text-xs fill-muted-foreground"
+          className="text-xs"
+          fill={isHighlighted ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))'}
+          fontWeight={isHighlighted ? 600 : 400}
         >
           {payload.value}
         </text>
@@ -336,12 +359,19 @@ export function WeeklyPerformanceChart({ fetchDailyData, selectedStores, isLoadi
                     radius={[4, 4, 0, 0]}
                     name="totalOrders"
                   >
-                    {chartData.map((entry, index) => (
-                      <Cell 
-                        key={`orders-${index}`} 
-                        fill={entry.date > new Date() ? 'hsl(var(--muted))' : 'hsl(220, 10%, 75%)'}
-                      />
-                    ))}
+                    {chartData.map((entry, index) => {
+                      const isFuture = entry.date > new Date();
+                      const isHighlighted = hasDateFilter && entry.isInSelectedRange;
+                      const isDimmed = hasDateFilter && !entry.isInSelectedRange && !isFuture;
+                      
+                      return (
+                        <Cell 
+                          key={`orders-${index}`} 
+                          fill={isFuture ? 'hsl(var(--muted))' : isDimmed ? 'hsl(220, 10%, 85%)' : 'hsl(220, 10%, 75%)'}
+                          opacity={isDimmed ? 0.5 : 1}
+                        />
+                      );
+                    })}
                   </Bar>
                   <Bar 
                     dataKey="totalOptIns" 
@@ -349,12 +379,19 @@ export function WeeklyPerformanceChart({ fetchDailyData, selectedStores, isLoadi
                     radius={[4, 4, 0, 0]}
                     name="totalOptIns"
                   >
-                    {chartData.map((entry, index) => (
-                      <Cell 
-                        key={`optins-${index}`} 
-                        fill={entry.date > new Date() ? 'hsl(var(--muted))' : 'hsl(var(--primary))'}
-                      />
-                    ))}
+                    {chartData.map((entry, index) => {
+                      const isFuture = entry.date > new Date();
+                      const isHighlighted = hasDateFilter && entry.isInSelectedRange;
+                      const isDimmed = hasDateFilter && !entry.isInSelectedRange && !isFuture;
+                      
+                      return (
+                        <Cell 
+                          key={`optins-${index}`} 
+                          fill={isFuture ? 'hsl(var(--muted))' : 'hsl(var(--primary))'}
+                          opacity={isDimmed ? 0.5 : 1}
+                        />
+                      );
+                    })}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>

@@ -19,6 +19,7 @@ interface DailyData {
   optIns: number;
   optOuts: number;
   optInRate: string;
+  isInSelectedRange: boolean;
 }
 
 interface WeeklyBreakdownProps {
@@ -70,13 +71,13 @@ export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: ext
         const date = addDays(weekStart, i);
         const dayName = format(date, 'EEEE');
         
-        // Check if date is within the selected date range
-        const isInRange = dateRange?.from && dateRange?.to
+        // Check if date is within the selected date range (for highlighting)
+        const isInSelectedRange = dateRange?.from && dateRange?.to
           ? isWithinInterval(date, { start: dateRange.from, end: dateRange.to })
-          : true;
+          : true; // If no range selected, all days are "in range"
         
-        // Only fetch data for past/current days that are in range
-        if (date <= new Date() && isInRange) {
+        // Always fetch data for past/current days (regardless of date range filter)
+        if (date <= new Date()) {
           try {
             const data = await fetchDailyData(date);
             const optInRate = data.checkouts > 0 
@@ -90,6 +91,7 @@ export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: ext
               optIns: data.optIns,
               optOuts: data.optOuts,
               optInRate,
+              isInSelectedRange,
             });
           } catch {
             days.push({
@@ -99,9 +101,11 @@ export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: ext
               optIns: 0,
               optOuts: 0,
               optInRate: '0.00',
+              isInSelectedRange,
             });
           }
         } else {
+          // Future days
           days.push({
             date,
             dayName,
@@ -109,8 +113,8 @@ export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: ext
             optIns: 0,
             optOuts: 0,
             optInRate: '-',
-            isOutOfRange: !isInRange,
-          } as DailyData & { isOutOfRange?: boolean });
+            isInSelectedRange,
+          });
         }
       }
 
@@ -267,15 +271,23 @@ export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: ext
                 {dailyData.map((day, index) => {
                   const isToday = format(day.date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
                   const isFuture = day.date > new Date();
+                  const hasDateFilter = dateRange?.from && dateRange?.to;
+                  const isHighlighted = hasDateFilter && day.isInSelectedRange;
+                  const isDimmed = hasDateFilter && !day.isInSelectedRange && !isFuture;
                   
                   return (
                     <TableRow 
                       key={index} 
-                      className={`border-border ${isToday ? 'bg-primary/5' : ''} ${isFuture ? 'opacity-50' : ''}`}
+                      className={`border-border transition-colors ${
+                        isToday ? 'bg-primary/5' : ''
+                      } ${isFuture ? 'opacity-50' : ''} ${
+                        isHighlighted ? 'bg-primary/8 border-l-2 border-l-primary' : ''
+                      } ${isDimmed ? 'opacity-60' : ''}`}
                     >
                       <TableCell className="font-medium text-foreground">
                         {day.dayName}
                         {isToday && <span className="ml-2 text-xs text-primary">(Today)</span>}
+                        {isHighlighted && !isToday && <span className="ml-2 text-xs text-primary/70">●</span>}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {format(day.date, 'MMM d')}
@@ -283,7 +295,7 @@ export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: ext
                       <TableCell className="text-right font-mono text-foreground">
                         {isFuture ? '-' : day.checkouts.toLocaleString()}
                       </TableCell>
-                      <TableCell className="text-right font-mono text-primary">
+                      <TableCell className={`text-right font-mono ${isHighlighted ? 'text-primary font-semibold' : 'text-primary'}`}>
                         {isFuture ? '-' : day.optIns.toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right font-mono text-muted-foreground">
@@ -300,7 +312,7 @@ export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: ext
                                 : parseFloat(day.optInRate) >= 25
                                 ? 'bg-chart-total/10 text-chart-total'
                                 : 'bg-muted text-muted-foreground'
-                            }`}
+                            } ${isHighlighted ? 'ring-1 ring-primary/30' : ''}`}
                           >
                             {day.optInRate}%
                           </span>
