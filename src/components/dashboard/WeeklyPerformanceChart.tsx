@@ -64,55 +64,54 @@ export function WeeklyPerformanceChart({ fetchDailyData, selectedStores, isLoadi
   useEffect(() => {
     const loadWeekData = async () => {
       setIsLoading(true);
-      const days: DailyChartData[] = [];
-
-      for (let i = 0; i < 7; i++) {
+      
+      // Create all promises at once for parallel fetching
+      const dayPromises = Array.from({ length: 7 }, async (_, i) => {
         const date = addDays(weekStart, i);
-        const dayName = format(date, 'EEE'); // Short day name
-        
-        // Check if date is within the selected date range (for highlighting)
+        const dayName = format(date, 'EEE');
+        const isFuture = date > new Date();
         const isInSelectedRange = (!dateRange?.from || date >= dateRange.from) && 
                                   (!dateRange?.to || date <= dateRange.to);
         
-        // Always fetch data for past/current days (regardless of date range filter)
-        if (date <= new Date()) {
-          try {
-            const data = await fetchDailyData(date);
-            const optInRate = data.checkouts > 0 
-              ? ((data.optIns / data.checkouts) * 100).toFixed(2)
-              : '0';
-            
-            days.push({
-              day: dayName,
-              date,
-              totalOrders: data.checkouts,
-              totalOptIns: data.optIns,
-              optInRate,
-              isInSelectedRange,
-            });
-          } catch {
-            days.push({
-              day: dayName,
-              date,
-              totalOrders: 0,
-              totalOptIns: 0,
-              optInRate: '0',
-              isInSelectedRange,
-            });
-          }
-        } else {
-          // Future days
-          days.push({
+        if (isFuture) {
+          return {
             day: dayName,
             date,
             totalOrders: 0,
             totalOptIns: 0,
             optInRate: '-',
             isInSelectedRange,
-          });
+          };
         }
-      }
+        
+        try {
+          const data = await fetchDailyData(date);
+          const optInRate = data.checkouts > 0 
+            ? ((data.optIns / data.checkouts) * 100).toFixed(2)
+            : '0';
+          
+          return {
+            day: dayName,
+            date,
+            totalOrders: data.checkouts,
+            totalOptIns: data.optIns,
+            optInRate,
+            isInSelectedRange,
+          };
+        } catch {
+          return {
+            day: dayName,
+            date,
+            totalOrders: 0,
+            totalOptIns: 0,
+            optInRate: '0',
+            isInSelectedRange,
+          };
+        }
+      });
 
+      // Wait for all days in parallel
+      const days = await Promise.all(dayPromises);
       setChartData(days);
       setIsLoading(false);
     };

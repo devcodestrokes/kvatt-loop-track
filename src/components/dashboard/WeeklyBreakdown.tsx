@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { format, startOfWeek, endOfWeek, addDays, getISOWeek, isWithinInterval, isBefore, isAfter, max, min } from 'date-fns';
+import { format, startOfWeek, endOfWeek, addDays, getISOWeek, isBefore } from 'date-fns';
 import { Calendar, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -65,65 +65,61 @@ export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: ext
   useEffect(() => {
     const loadWeekData = async () => {
       setIsLoading(true);
-      const days: DailyData[] = [];
-
-      for (let i = 0; i < 7; i++) {
+      
+      // Create all promises at once for parallel fetching
+      const dayPromises = Array.from({ length: 7 }, async (_, i) => {
         const date = addDays(weekStart, i);
         const dayName = format(date, 'EEEE');
+        const isFuture = date > new Date();
         
-        // Check if date is within the selected date range (for highlighting)
-        const isInSelectedRange = dateRange?.from && dateRange?.to
-          ? isWithinInterval(date, { start: dateRange.from, end: dateRange.to })
-          : true; // If no range selected, all days are "in range"
-        
-        // Always fetch data for past/current days (regardless of date range filter)
-        if (date <= new Date()) {
-          try {
-            const data = await fetchDailyData(date);
-            const optInRate = data.checkouts > 0 
-              ? ((data.optIns / data.checkouts) * 100).toFixed(2)
-              : '0.00';
-            
-            days.push({
-              date,
-              dayName,
-              checkouts: data.checkouts,
-              optIns: data.optIns,
-              optOuts: data.optOuts,
-              optInRate,
-              isInSelectedRange,
-            });
-          } catch {
-            days.push({
-              date,
-              dayName,
-              checkouts: 0,
-              optIns: 0,
-              optOuts: 0,
-              optInRate: '0.00',
-              isInSelectedRange,
-            });
-          }
-        } else {
-          // Future days
-          days.push({
+        if (isFuture) {
+          return {
             date,
             dayName,
             checkouts: 0,
             optIns: 0,
             optOuts: 0,
             optInRate: '-',
-            isInSelectedRange,
-          });
+            isInSelectedRange: false,
+          };
         }
-      }
+        
+        try {
+          const data = await fetchDailyData(date);
+          const optInRate = data.checkouts > 0 
+            ? ((data.optIns / data.checkouts) * 100).toFixed(2)
+            : '0.00';
+          
+          return {
+            date,
+            dayName,
+            checkouts: data.checkouts,
+            optIns: data.optIns,
+            optOuts: data.optOuts,
+            optInRate,
+            isInSelectedRange: true,
+          };
+        } catch {
+          return {
+            date,
+            dayName,
+            checkouts: 0,
+            optIns: 0,
+            optOuts: 0,
+            optInRate: '0.00',
+            isInSelectedRange: true,
+          };
+        }
+      });
 
+      // Wait for all days in parallel
+      const days = await Promise.all(dayPromises);
       setDailyData(days);
       setIsLoading(false);
     };
 
     loadWeekData();
-  }, [weekStart, fetchDailyData, selectedStores, dateRange]);
+  }, [weekStart, fetchDailyData, selectedStores]);
 
   const navigateWeek = (direction: 'prev' | 'next') => {
     if (direction === 'prev' && currentWeekIndex > 0) {
