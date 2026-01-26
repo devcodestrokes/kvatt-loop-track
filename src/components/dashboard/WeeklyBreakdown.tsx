@@ -271,23 +271,17 @@ export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: ext
                 {dailyData.map((day, index) => {
                   const isToday = format(day.date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
                   const isFuture = day.date > new Date();
-                  const hasDateFilter = dateRange?.from && dateRange?.to;
-                  const isHighlighted = hasDateFilter && day.isInSelectedRange;
-                  const isDimmed = hasDateFilter && !day.isInSelectedRange && !isFuture;
                   
                   return (
                     <TableRow 
                       key={index} 
                       className={`border-border transition-colors ${
                         isToday ? 'bg-primary/5' : ''
-                      } ${isFuture ? 'opacity-50' : ''} ${
-                        isHighlighted ? 'bg-primary/8 border-l-2 border-l-primary' : ''
-                      } ${isDimmed ? 'opacity-60' : ''}`}
+                      } ${isFuture ? 'opacity-50' : ''}`}
                     >
                       <TableCell className="font-medium text-foreground">
                         {day.dayName}
                         {isToday && <span className="ml-2 text-xs text-primary">(Today)</span>}
-                        {isHighlighted && !isToday && <span className="ml-2 text-xs text-primary/70">●</span>}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {format(day.date, 'MMM d')}
@@ -295,7 +289,7 @@ export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: ext
                       <TableCell className="text-right font-mono text-foreground">
                         {isFuture ? '-' : day.checkouts.toLocaleString()}
                       </TableCell>
-                      <TableCell className={`text-right font-mono ${isHighlighted ? 'text-primary font-semibold' : 'text-primary'}`}>
+                      <TableCell className="text-right font-mono text-primary">
                         {isFuture ? '-' : day.optIns.toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right font-mono text-muted-foreground">
@@ -312,7 +306,7 @@ export function WeeklyBreakdown({ fetchDailyData, selectedStores, isLoading: ext
                                 : parseFloat(day.optInRate) >= 25
                                 ? 'bg-chart-total/10 text-chart-total'
                                 : 'bg-muted text-muted-foreground'
-                            } ${isHighlighted ? 'ring-1 ring-primary/30' : ''}`}
+                            }`}
                           >
                             {day.optInRate}%
                           </span>
