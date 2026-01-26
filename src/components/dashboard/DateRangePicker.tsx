@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { CalendarIcon } from 'lucide-react';
 import { format, subDays, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -60,6 +61,28 @@ export function DateRangePicker({
   onDateRangeChange,
   disabled,
 }: DateRangePickerProps) {
+  const [tempRange, setTempRange] = useState<DateRange>(dateRange);
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleApply = () => {
+    if (tempRange.from && tempRange.to) {
+      onDateRangeChange(tempRange);
+      setIsOpen(false);
+    }
+  };
+
+  const handlePresetSelect = (range: DateRange) => {
+    onDateRangeChange(range);
+    setTempRange(range);
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      setTempRange(dateRange);
+    }
+    setIsOpen(open);
+  };
+
   return (
     <div className="flex items-center gap-2">
       <DropdownMenu>
@@ -72,7 +95,7 @@ export function DateRangePicker({
           {presets.map((preset) => (
             <DropdownMenuItem
               key={preset.label}
-              onClick={() => onDateRangeChange(preset.getValue())}
+              onClick={() => handlePresetSelect(preset.getValue())}
             >
               {preset.label}
             </DropdownMenuItem>
@@ -80,7 +103,7 @@ export function DateRangePicker({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Popover>
+      <Popover open={isOpen} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
@@ -109,13 +132,29 @@ export function DateRangePicker({
           <Calendar
             initialFocus
             mode="range"
-            defaultMonth={dateRange.from}
-            selected={{ from: dateRange.from, to: dateRange.to }}
+            defaultMonth={tempRange.from}
+            selected={{ from: tempRange.from, to: tempRange.to }}
             onSelect={(range) =>
-              onDateRangeChange({ from: range?.from, to: range?.to })
+              setTempRange({ from: range?.from, to: range?.to })
             }
             numberOfMonths={2}
           />
+          <div className="flex items-center justify-end gap-2 p-3 border-t">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleApply}
+              disabled={!tempRange.from || !tempRange.to}
+            >
+              Apply
+            </Button>
+          </div>
         </PopoverContent>
       </Popover>
     </div>
