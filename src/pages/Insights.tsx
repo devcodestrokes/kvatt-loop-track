@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { 
   Lightbulb, TrendingUp, TrendingDown, Minus, Package, Users, Recycle, Target, 
   Brain, MapPin, Clock, ShoppingCart, Store, Zap, Database,
@@ -186,7 +186,7 @@ const saveToStorage = (key: string, data: any) => {
   }
 };
 
-const AUTO_REFRESH_INTERVAL = 60000; // 1 minute auto-refresh
+const AUTO_REFRESH_INTERVAL = 300000; // 5 minutes auto-refresh (was 1 minute)
 
 const Insights = () => {
   const [insights, setInsights] = useState<Insight[]>([]);
@@ -480,45 +480,50 @@ const Insights = () => {
     }
   };
 
-  // Initial data fetch and auto-refresh setup
+  // Initial data fetch - runs once on mount
   useEffect(() => {
-    fetchData();
-    fetchStoresFromOrders(); // Fetch stores from order data using user_id
+    const initializeData = async () => {
+      await Promise.all([
+        fetchData(),
+        fetchStoresFromOrders(),
+        analyzeExistingData(false, [], dateRange),
+        refreshDbCount()
+      ]);
+    };
     
-    // Analyze existing data on mount (doesn't call external API)
-    // First load gets all data to populate store list
-    analyzeExistingData(false, [], dateRange);
+    initializeData();
     
-    // Update DB count on mount
-    refreshDbCount();
-    
-    // Set up auto-refresh interval to re-analyze database data
+    // Set up auto-refresh interval (5 min instead of 1 min)
     const intervalId = setInterval(() => {
-      // Auto-refresh uses current selected stores and date range
       analyzeExistingData(true, selectedStores.length > 0 ? selectedStores : [], dateRange);
       refreshDbCount();
     }, AUTO_REFRESH_INTERVAL);
     
     return () => clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-analyze when store selection changes
+  // Re-analyze when store selection or date range changes - debounced
+  const analysisTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   useEffect(() => {
-    if (isInitialized && selectedStores.length > 0) {
-      analyzeExistingData(false, selectedStores, dateRange);
+    if (!isInitialized) return;
+    
+    // Debounce analysis calls to prevent multiple rapid fires
+    if (analysisTimeoutRef.current) {
+      clearTimeout(analysisTimeoutRef.current);
     }
-  }, [selectedStores, isInitialized]);
-
-  // Re-analyze when date range changes
-  useEffect(() => {
-    if (isInitialized) {
+    
+    analysisTimeoutRef.current = setTimeout(() => {
       analyzeExistingData(false, selectedStores.length > 0 ? selectedStores : [], dateRange);
-    }
-  }, [dateRange]);
-
-  useEffect(() => {
-    fetchData();
-  }, [selectedMerchant]);
+    }, 300); // 300ms debounce
+    
+    return () => {
+      if (analysisTimeoutRef.current) {
+        clearTimeout(analysisTimeoutRef.current);
+      }
+    };
+  }, [selectedStores.join(','), dateRange?.from?.getTime(), dateRange?.to?.getTime(), isInitialized]);
 
   // Clear date range filter
   const clearDateRange = useCallback(() => {

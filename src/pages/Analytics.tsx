@@ -1,9 +1,9 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
-import { format } from 'date-fns';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { ShoppingCart, CheckCircle, XCircle, TrendingUp, Sparkles, RefreshCw } from 'lucide-react';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useStoreFilter } from '@/hooks/useStoreFilter';
 import { useUserDefaults } from '@/hooks/useUserDefaults';
+import { useBatchDailyData } from '@/hooks/useBatchDailyData';
 import { DateRange } from '@/types/analytics';
 import { MetricCard } from '@/components/dashboard/MetricCard';
 import { MultiStoreSelector } from '@/components/dashboard/MultiStoreSelector';
@@ -16,9 +16,6 @@ import { OptInsDetailView } from '@/components/dashboard/OptInsDetailView';
 import { LoadingSkeleton } from '@/components/dashboard/LoadingSkeleton';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-
-const ANALYTICS_API_URL = "https://shopify.kvatt.com/api/get-alaytics";
-const AUTH_TOKEN = "Bearer %^75464tnfsdhndsfbgr54";
 
 const Analytics = () => {
   const {
@@ -43,6 +40,11 @@ const Analytics = () => {
   const [dateRange, setDateRange] = useState<DateRange | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>();
   const [optInsDetailOpen, setOptInsDetailOpen] = useState(false);
+  const initialLoadRef = useRef(false);
+
+  // Use batch daily data hook for efficient weekly data fetching
+  const storeIds = useMemo(() => stores.map(s => s.id), [stores]);
+  const { fetchDailyData, clearCache } = useBatchDailyData(selectedStores, storeIds);
 
   // Initialize date range from user defaults
   useEffect(() => {
@@ -77,51 +79,18 @@ const Analytics = () => {
     return ((totals.totalOptIns / totals.totalCheckouts) * 100).toFixed(2);
   }, [totals]);
 
-  // Function to fetch daily data for WeeklyBreakdown
-  const fetchDailyData = useCallback(async (date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    try {
-      const url = `${ANALYTICS_API_URL}?store=all&start_date=${dateStr}&end_date=${dateStr}`;
-      const response = await fetch(url, {
-        headers: {
-          "Authorization": AUTH_TOKEN,
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        }
-      });
-      const result = await response.json();
-      
-      if (result.status === 200 && result.data?.length) {
-        // Filter by selected stores if needed
-        const filtered = selectedStores.length > 0 && selectedStores.length !== stores.length
-          ? result.data.filter((item: any) => selectedStores.includes(item.store))
-          : result.data;
-        
-        return filtered.reduce(
-          (acc: any, item: any) => ({
-            checkouts: acc.checkouts + (item.total_checkouts || 0),
-            optIns: acc.optIns + (item.opt_ins || 0),
-            optOuts: acc.optOuts + (item.opt_outs || 0),
-          }),
-          { checkouts: 0, optIns: 0, optOuts: 0 }
-        );
-      }
-      return { checkouts: 0, optIns: 0, optOuts: 0 };
-    } catch {
-      return { checkouts: 0, optIns: 0, optOuts: 0 };
-    }
-  }, [selectedStores, stores.length]);
-
+  // Initial load effect - only runs once
   useEffect(() => {
-    if (!dateRange) return;
+    if (!dateRange || initialLoadRef.current) return;
+    initialLoadRef.current = true;
+    
     const loadInitialData = async () => {
       await fetchStores();
       await fetchAnalytics(dateRange, 'all');
       setLastUpdated(new Date());
     };
     loadInitialData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateRange]);
+  }, [dateRange, fetchStores, fetchAnalytics]);
 
   useEffect(() => {
     if (error) {
@@ -133,6 +102,7 @@ const Analytics = () => {
 
   const handleRefresh = async () => {
     if (!dateRange) return;
+    clearCache(); // Clear cache on manual refresh
     await fetchAnalytics(dateRange, 'all');
     setLastUpdated(new Date());
     toast.success('Data refreshed');
@@ -140,7 +110,7 @@ const Analytics = () => {
 
   const handleDateRangeChange = async (range: DateRange) => {
     setDateRange(range);
-    if (range.from && range.to && dateRange) {
+    if (range.from && range.to) {
       await fetchAnalytics(range, 'all');
       setLastUpdated(new Date());
     }
