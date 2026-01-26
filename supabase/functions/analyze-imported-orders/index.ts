@@ -12,31 +12,43 @@ serve(async (req) => {
   }
 
   try {
-    // Parse request body for selected stores filter
+    // Parse request body for filters
     let selectedStores: string[] = [];
+    let dateFrom: string | null = null;
+    let dateTo: string | null = null;
+    
     try {
       const body = await req.json();
       if (body.selectedStores && Array.isArray(body.selectedStores)) {
         selectedStores = body.selectedStores;
       }
+      if (body.dateFrom) {
+        dateFrom = body.dateFrom;
+      }
+      if (body.dateTo) {
+        dateTo = body.dateTo;
+      }
     } catch {
-      // No body or invalid JSON - analyze all stores
+      // No body or invalid JSON - analyze all data
     }
 
     console.log('Starting complete order analytics using SQL aggregation...');
     console.log('Selected stores filter:', selectedStores.length > 0 ? selectedStores : 'ALL');
+    console.log('Date range:', dateFrom ? `${dateFrom} to ${dateTo}` : 'ALL TIME');
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Store filter for RPC calls (null means all stores)
+    // Filters for RPC calls (null means all)
     const storeFilter = selectedStores.length > 0 ? selectedStores : null;
 
     // 1. Get complete summary statistics using SQL aggregation (NO LIMITS)
     console.log('Fetching complete summary stats...');
     const { data: summaryData, error: summaryError } = await supabase.rpc('get_complete_summary_stats', {
-      store_filter: storeFilter
+      store_filter: storeFilter,
+      date_from: dateFrom,
+      date_to: dateTo
     });
 
     let summary = {
@@ -69,7 +81,9 @@ serve(async (req) => {
     // 2. Get store statistics using SQL aggregation (NO LIMITS)
     console.log('Fetching complete store stats...');
     const { data: storeData, error: storeError } = await supabase.rpc('get_store_stats', {
-      store_filter: storeFilter
+      store_filter: storeFilter,
+      date_from: dateFrom,
+      date_to: dateTo
     });
 
     const stores = (storeData || []).map((s: any) => ({
@@ -87,7 +101,9 @@ serve(async (req) => {
     // 3. Get complete country statistics using SQL aggregation (NO LIMITS - analyzes ALL orders)
     console.log('Fetching complete country stats...');
     const { data: countryData, error: countryError } = await supabase.rpc('get_country_stats', {
-      store_filter: storeFilter
+      store_filter: storeFilter,
+      date_from: dateFrom,
+      date_to: dateTo
     });
 
     const topCountries = (countryData || []).map((c: any) => ({
@@ -104,7 +120,9 @@ serve(async (req) => {
     // 4. Get complete city statistics with country context using SQL aggregation (NO LIMITS)
     console.log('Fetching complete city stats...');
     const { data: cityData, error: cityError } = await supabase.rpc('get_city_stats', {
-      store_filter: storeFilter
+      store_filter: storeFilter,
+      date_from: dateFrom,
+      date_to: dateTo
     });
 
     // Build city map and hierarchy from complete data
@@ -176,7 +194,9 @@ serve(async (req) => {
     // 5. Get complete province statistics using SQL aggregation (NO LIMITS)
     console.log('Fetching complete province stats...');
     const { data: provinceData, error: provinceError } = await supabase.rpc('get_province_stats', {
-      store_filter: storeFilter
+      store_filter: storeFilter,
+      date_from: dateFrom,
+      date_to: dateTo
     });
 
     const topProvinces = (provinceData || []).slice(0, 10).map((p: any) => ({
@@ -191,7 +211,9 @@ serve(async (req) => {
     // 6. Get complete temporal statistics using SQL aggregation (NO LIMITS)
     console.log('Fetching complete temporal stats...');
     const { data: temporalData, error: temporalError } = await supabase.rpc('get_temporal_stats', {
-      store_filter: storeFilter
+      store_filter: storeFilter,
+      date_from: dateFrom,
+      date_to: dateTo
     });
 
     const dayOfWeekMap = new Map<number, { total: number; optIn: number }>();
@@ -241,7 +263,9 @@ serve(async (req) => {
     // 7. Get complete order value analysis using SQL aggregation (NO LIMITS)
     console.log('Fetching complete order value stats...');
     const { data: valueData, error: valueError } = await supabase.rpc('get_order_value_stats', {
-      store_filter: storeFilter
+      store_filter: storeFilter,
+      date_from: dateFrom,
+      date_to: dateTo
     });
 
     const valueRangeOrder = ['$0-25', '$25-50', '$50-100', '$100-200', '$200-500', '$500+'];
@@ -357,6 +381,7 @@ serve(async (req) => {
         totalOrdersAnalyzed: summary.totalOrders,
         usedSqlAggregation: true,
         noRowLimits: true,
+        dateRange: dateFrom ? { from: dateFrom, to: dateTo } : null,
       }
     };
 
