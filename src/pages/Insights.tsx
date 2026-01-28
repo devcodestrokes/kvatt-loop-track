@@ -556,9 +556,36 @@ const Insights = () => {
     }
     
     analysisTimeoutRef.current = setTimeout(() => {
-      // Pass the current selected stores (not empty array)
-      const storesToAnalyze = selectedStores.length > 0 ? selectedStores : [];
-      analyzeExistingData(false, storesToAnalyze, dateRange);
+      // If no stores selected, show empty data instead of fetching
+      if (selectedStores.length === 0) {
+        setOrderAnalytics({
+          summary: {
+            totalOrders: 0,
+            totalOptIns: 0,
+            totalOptOuts: 0,
+            optInRate: '0.00',
+            avgOptInOrderValue: '0.00',
+            avgOptOutOrderValue: '0.00',
+            valueDifference: '0.00',
+          },
+          orderValueAnalysis: [],
+          geographic: {
+            topCities: [],
+            bestCitiesByOptIn: [],
+            topCountries: [],
+            topProvinces: [],
+            hierarchy: [],
+          },
+          stores: [],
+          temporal: {
+            byDayOfWeek: [],
+            byMonth: [],
+          },
+          insights: [],
+        });
+        return;
+      }
+      analyzeExistingData(false, selectedStores, dateRange);
     }, 300); // 300ms debounce
     
     return () => {
