@@ -7,6 +7,30 @@ const STORES_API_URL = "https://shopify.kvatt.com/api/get-stores";
 const ANALYTICS_API_URL = "https://shopify.kvatt.com/api/get-alaytics";
 const AUTH_TOKEN = "Bearer %^75464tnfsdhndsfbgr54";
 
+// Domain mapping from CSV - maps Shopify myshopify.com domain to actual display domain
+const DOMAIN_MAPPING: Record<string, string> = {
+  'kvatt-green-package-demo.myshopify.com': 'kvatt-green-package-demo.myshopify.com',
+  'toast-dev.myshopify.com': 'dev.toa.st',
+  'universalworks.myshopify.com': 'universalworks.com',
+  'toast-newdev.myshopify.com': 'toast-newdev.myshopify.com',
+  'toast-newdev-us.myshopify.com': 'toast-newdev-us.myshopify.com',
+  'toast-dev-us.myshopify.com': 'toast-dev-us.myshopify.com',
+  'kvatt-dev.myshopify.com': 'kvatt-dev.myshopify.com',
+  'toast-uk.myshopify.com': 'www.toa.st',
+  'sirplus.myshopify.com': 'sirplus.co.uk',
+  'smitg-kvatt-demo.myshopify.com': 'smitg-kvatt-demo.myshopify.com',
+  'smit-v2.myshopify.com': 'smit-v2.myshopify.com',
+  'kvatt-test-gb.myshopify.com': 'kvatt-test-gb.myshopify.com',
+  'leming-kvatt-demo.myshopify.com': 'leming-kvatt-demo.myshopify.com',
+  'kapil-kvatt-checkout.myshopify.com': 'kapil-kvatt-checkout.myshopify.com',
+  '6a86bd.myshopify.com': '6a86bd.myshopify.com',
+};
+
+// Get display domain from store domain
+export const getDisplayDomain = (storeDomain: string): string => {
+  return DOMAIN_MAPPING[storeDomain] || storeDomain.replace('.myshopify.com', '');
+};
+
 export function useAnalytics() {
   const [data, setData] = useState<AnalyticsData[]>([]);
   const [stores, setStores] = useState<Store[]>([]);
@@ -49,10 +73,10 @@ export function useAnalytics() {
       const result = await response.json();
       
       if (result.status === 200 && result.data?.length) {
-        // Don't include "all" option - multi-select handles this
+        // Use display domain from mapping
         const storesList: Store[] = result.data.map((storeDomain: string) => ({
           id: storeDomain,
-          name: storeDomain.replace('.myshopify.com', '')
+          name: getDisplayDomain(storeDomain)
         }));
         setStores(storesList);
         return storesList;
