@@ -23,7 +23,7 @@ import { ApiSyncStatus } from '@/components/dashboard/ApiSyncStatus';
 import { GeographicHeatmap } from '@/components/dashboard/GeographicHeatmap';
 import { CollapsibleHierarchy } from '@/components/dashboard/CollapsibleHierarchy';
 import { DateRangePicker } from '@/components/dashboard/DateRangePicker';
-import { FilterLoadingOverlay } from '@/components/dashboard/FilterLoadingOverlay';
+import { useGlobalLoading } from '@/components/layout/DashboardLayout';
 
 import { useStoreFilter } from '@/hooks/useStoreFilter';
 import { useApiSync } from '@/hooks/useApiSync';
@@ -190,6 +190,7 @@ const saveToStorage = (key: string, data: any) => {
 const AUTO_REFRESH_INTERVAL = 300000; // 5 minutes auto-refresh (was 1 minute)
 
 const Insights = () => {
+  const { setLoading } = useGlobalLoading();
   const [insights, setInsights] = useState<Insight[]>([]);
   const [merchants, setMerchants] = useState<{ id: string; name: string }[]>([]);
   const [selectedMerchant, setSelectedMerchant] = useState('all');
@@ -211,6 +212,11 @@ const Insights = () => {
   const [isFetchingData, setIsFetchingData] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isAutoRefreshing, setIsAutoRefreshing] = useState(false);
+
+  // Sync local loading state with global loading bar
+  useEffect(() => {
+    setLoading(isAutoRefreshing);
+  }, [isAutoRefreshing, setLoading]);
 
   // Handle new orders detected - refresh analytics
   const handleNewOrdersDetected = useCallback((newCount: number) => {
@@ -726,13 +732,9 @@ const Insights = () => {
     toast.success('CRO analysis exported to CSV');
   }, [croAnalysis, orderAnalytics, formatStoreName]);
 
+
   return (
     <div className="space-y-6">
-      {/* Loading Overlay for filter changes */}
-      <FilterLoadingOverlay 
-        isLoading={isAutoRefreshing} 
-        message="Applying filters..."
-      />
       
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
