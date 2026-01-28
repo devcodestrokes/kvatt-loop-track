@@ -3,7 +3,7 @@ import {
   Lightbulb, TrendingUp, TrendingDown, Minus, Package, Users, Recycle, Target, 
   Brain, MapPin, Clock, ShoppingCart, Store, Zap, Database,
   Calendar, Smartphone, Monitor, ShoppingBag,
-  Layers, X
+  Layers, X, Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -404,8 +404,24 @@ const Insights = () => {
 
     setIsAnalyzing(true);
     try {
+      // Build body with current filters applied
+      const body: any = { 
+        analyticsData: orderAnalytics, 
+        selectedStores: selectedStores.length > 0 ? selectedStores : []
+      };
+      
+      // Add date range if provided
+      if (dateRange?.from) {
+        body.dateFrom = dateRange.from.toISOString();
+      }
+      if (dateRange?.to) {
+        const toDate = new Date(dateRange.to);
+        toDate.setHours(23, 59, 59, 999);
+        body.dateTo = toDate.toISOString();
+      }
+      
       const { data, error } = await supabase.functions.invoke('analyze-cro-patterns', {
-        body: { analyticsData: orderAnalytics, selectedStores }
+        body
       });
       
       if (error) throw error;
@@ -505,9 +521,33 @@ const Insights = () => {
 
   // Re-analyze when store selection or date range changes - debounced
   const analysisTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Track previous filter values to detect actual changes
+  const prevFiltersRef = useRef<{ stores: string; dateFrom: number | undefined; dateTo: number | undefined }>({
+    stores: '',
+    dateFrom: undefined,
+    dateTo: undefined,
+  });
   
   useEffect(() => {
     if (!isInitialized) return;
+    
+    // Build current filter state
+    const currentFilters = {
+      stores: selectedStores.slice().sort().join(','),
+      dateFrom: dateRange?.from?.getTime(),
+      dateTo: dateRange?.to?.getTime(),
+    };
+    
+    // Check if filters actually changed
+    const filtersChanged = 
+      currentFilters.stores !== prevFiltersRef.current.stores ||
+      currentFilters.dateFrom !== prevFiltersRef.current.dateFrom ||
+      currentFilters.dateTo !== prevFiltersRef.current.dateTo;
+    
+    if (!filtersChanged) return;
+    
+    // Update previous filters
+    prevFiltersRef.current = currentFilters;
     
     // Debounce analysis calls to prevent multiple rapid fires
     if (analysisTimeoutRef.current) {
@@ -515,7 +555,9 @@ const Insights = () => {
     }
     
     analysisTimeoutRef.current = setTimeout(() => {
-      analyzeExistingData(false, selectedStores.length > 0 ? selectedStores : [], dateRange);
+      // Pass the current selected stores (not empty array)
+      const storesToAnalyze = selectedStores.length > 0 ? selectedStores : [];
+      analyzeExistingData(false, storesToAnalyze, dateRange);
     }, 300); // 300ms debounce
     
     return () => {
@@ -523,7 +565,7 @@ const Insights = () => {
         clearTimeout(analysisTimeoutRef.current);
       }
     };
-  }, [selectedStores.join(','), dateRange?.from?.getTime(), dateRange?.to?.getTime(), isInitialized]);
+  }, [selectedStores, dateRange, isInitialized]);
 
   // Clear date range filter
   const clearDateRange = useCallback(() => {
@@ -546,6 +588,154 @@ const Insights = () => {
     // Fallback if no mapping found
     return `Store ${storeId}`;
   }, [storeNameMapping]);
+
+  // Export full CRO analysis to CSV
+  const exportCROAnalysisToCSV = useCallback(() => {
+    if (!croAnalysis && !orderAnalytics) {
+      toast.error('No analysis data to export');
+      return;
+    }
+    
+    const rows: string[] = [];
+    
+    // Summary section
+    rows.push('=== SUMMARY ===');
+    rows.push('Metric,Value');
+    if (orderAnalytics?.summary) {
+      rows.push(`Total Orders,${orderAnalytics.summary.totalOrders}`);
+      rows.push(`Total Opt-Ins,${orderAnalytics.summary.totalOptIns}`);
+      rows.push(`Total Opt-Outs,${orderAnalytics.summary.totalOptOuts}`);
+      rows.push(`Opt-In Rate,${orderAnalytics.summary.optInRate}%`);
+      rows.push(`Avg Opt-In Order Value,£${orderAnalytics.summary.avgOptInOrderValue}`);
+      rows.push(`Avg Opt-Out Order Value,£${orderAnalytics.summary.avgOptOutOrderValue}`);
+      rows.push(`Value Difference,£${orderAnalytics.summary.valueDifference}`);
+    }
+    rows.push('');
+    
+    // Store Performance section
+    rows.push('=== STORE PERFORMANCE ===');
+    rows.push('Store,Orders,Opt-Ins,Opt-In Rate,Avg Order Value,Total Revenue');
+    if (orderAnalytics?.stores) {
+      orderAnalytics.stores.forEach(store => {
+        rows.push(`"${formatStoreName(store.storeId)}",${store.total},${store.optIn},${store.optInRate}%,£${store.avgOrderValue},£${store.totalRevenue}`);
+      });
+    }
+    rows.push('');
+    
+    // Geographic section
+    rows.push('=== TOP COUNTRIES ===');
+    rows.push('Country,Orders,Opt-Ins,Opt-In Rate,Avg Order Value');
+    if (orderAnalytics?.geographic?.topCountries) {
+      orderAnalytics.geographic.topCountries.forEach(country => {
+        rows.push(`"${country.name}",${country.total},${country.optIn},${country.optInRate}%,£${country.avgOrderValue}`);
+      });
+    }
+    rows.push('');
+    
+    rows.push('=== TOP CITIES ===');
+    rows.push('City,Orders,Opt-Ins,Opt-In Rate,Avg Order Value');
+    if (orderAnalytics?.geographic?.topCities) {
+      orderAnalytics.geographic.topCities.forEach(city => {
+        rows.push(`"${city.name}",${city.total},${city.optIn},${city.optInRate}%,£${city.avgOrderValue}`);
+      });
+    }
+    rows.push('');
+    
+    // Order Value Analysis section
+    rows.push('=== ORDER VALUE ANALYSIS ===');
+    rows.push('Price Range,Orders,Opt-Ins,Opt-In Rate');
+    if (orderAnalytics?.orderValueAnalysis) {
+      orderAnalytics.orderValueAnalysis.forEach(range => {
+        rows.push(`"${range.range}",${range.total},${range.optIns},${range.optInRate}%`);
+      });
+    }
+    rows.push('');
+    
+    // Temporal Analysis section
+    rows.push('=== DAILY OPT-IN PATTERN ===');
+    rows.push('Day,Orders,Opt-Ins,Opt-In Rate');
+    if (orderAnalytics?.temporal?.byDayOfWeek) {
+      orderAnalytics.temporal.byDayOfWeek.forEach(day => {
+        rows.push(`"${day.day}",${day.total},${day.optIn},${day.optInRate}%`);
+      });
+    }
+    rows.push('');
+    
+    rows.push('=== MONTHLY OPT-IN TREND ===');
+    rows.push('Month,Orders,Opt-Ins,Opt-In Rate');
+    if (orderAnalytics?.temporal?.byMonth) {
+      orderAnalytics.temporal.byMonth.forEach(month => {
+        rows.push(`"${month.month}",${month.total},${month.optIn},${month.optInRate}%`);
+      });
+    }
+    rows.push('');
+    
+    // AI CRO Analysis section (if available)
+    if (croAnalysis) {
+      rows.push('=== AI CRO ANALYSIS ===');
+      rows.push('');
+      
+      if (croAnalysis.keyFindings && croAnalysis.keyFindings.length > 0) {
+        rows.push('KEY FINDINGS');
+        rows.push('Title,Description,Impact,Data Point');
+        croAnalysis.keyFindings.forEach(finding => {
+          rows.push(`"${finding.title}","${finding.description}","${finding.impact}","${finding.dataPoint}"`);
+        });
+        rows.push('');
+      }
+      
+      if (croAnalysis.demographicPatterns) {
+        rows.push('DEMOGRAPHIC PATTERNS');
+        rows.push(`Summary,"${croAnalysis.demographicPatterns.summary}"`);
+        rows.push(`Top Locations,"${croAnalysis.demographicPatterns.topLocations?.join('; ') || ''}"`);
+        rows.push(`Recommendation,"${croAnalysis.demographicPatterns.recommendation}"`);
+        rows.push('');
+      }
+      
+      if (croAnalysis.behavioralPatterns) {
+        rows.push('BEHAVIORAL PATTERNS');
+        rows.push(`Order Value Insight,"${croAnalysis.behavioralPatterns.orderValueInsight}"`);
+        rows.push(`Product Preferences,"${croAnalysis.behavioralPatterns.productPreferences}"`);
+        rows.push(`Timing Insights,"${croAnalysis.behavioralPatterns.timingInsights}"`);
+        rows.push('');
+      }
+      
+      if (croAnalysis.storeAnalysis) {
+        rows.push('STORE ANALYSIS');
+        rows.push(`Top Performers,"${croAnalysis.storeAnalysis.topPerformers?.join('; ') || ''}"`);
+        rows.push(`Underperformers,"${croAnalysis.storeAnalysis.underperformers?.join('; ') || ''}"`);
+        rows.push(`Recommendation,"${croAnalysis.storeAnalysis.recommendation}"`);
+        rows.push('');
+      }
+      
+      if (croAnalysis.actionableRecommendations && croAnalysis.actionableRecommendations.length > 0) {
+        rows.push('ACTIONABLE RECOMMENDATIONS');
+        rows.push('Priority,Action,Expected Impact,Implementation');
+        croAnalysis.actionableRecommendations.forEach(rec => {
+          rows.push(`${rec.priority},"${rec.action}","${rec.expectedImpact}","${rec.implementation}"`);
+        });
+        rows.push('');
+      }
+      
+      if (croAnalysis.predictedOptInIncrease) {
+        rows.push(`Predicted Opt-In Increase,"${croAnalysis.predictedOptInIncrease}"`);
+      }
+    }
+    
+    // Create and download the CSV
+    const csvContent = rows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `kvatt-cro-analysis-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success('CRO analysis exported to CSV');
+  }, [croAnalysis, orderAnalytics, formatStoreName]);
 
   return (
     <div className="space-y-6">
@@ -618,6 +808,14 @@ const Insights = () => {
             >
               <Brain className={`h-4 w-4 mr-2 ${isAnalyzing ? 'animate-pulse' : ''}`} />
               {isAnalyzing ? 'Analyzing...' : 'Run AI CRO Analysis'}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={exportCROAnalysisToCSV}
+              disabled={!orderAnalytics && !croAnalysis}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export Full Analysis
             </Button>
             {lastAnalyzed && !isAutoRefreshing && (
               <span className="flex items-center gap-1 text-sm text-muted-foreground">
