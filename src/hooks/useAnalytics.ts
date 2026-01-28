@@ -7,28 +7,28 @@ const STORES_API_URL = "https://shopify.kvatt.com/api/get-stores";
 const ANALYTICS_API_URL = "https://shopify.kvatt.com/api/get-alaytics";
 const AUTH_TOKEN = "Bearer %^75464tnfsdhndsfbgr54";
 
-// Domain mapping from CSV - maps Shopify myshopify.com domain to actual display domain
-const DOMAIN_MAPPING: Record<string, string> = {
-  'kvatt-green-package-demo.myshopify.com': 'kvatt-green-package-demo.myshopify.com',
-  'toast-dev.myshopify.com': 'dev.toa.st',
-  'universalworks.myshopify.com': 'universalworks.com',
-  'toast-newdev.myshopify.com': 'toast-newdev.myshopify.com',
-  'toast-newdev-us.myshopify.com': 'toast-newdev-us.myshopify.com',
-  'toast-dev-us.myshopify.com': 'toast-dev-us.myshopify.com',
-  'kvatt-dev.myshopify.com': 'kvatt-dev.myshopify.com',
-  'toast-uk.myshopify.com': 'www.toa.st',
-  'sirplus.myshopify.com': 'sirplus.co.uk',
-  'smitg-kvatt-demo.myshopify.com': 'smitg-kvatt-demo.myshopify.com',
-  'smit-v2.myshopify.com': 'smit-v2.myshopify.com',
-  'kvatt-test-gb.myshopify.com': 'kvatt-test-gb.myshopify.com',
-  'leming-kvatt-demo.myshopify.com': 'leming-kvatt-demo.myshopify.com',
-  'kapil-kvatt-checkout.myshopify.com': 'kapil-kvatt-checkout.myshopify.com',
-  '6a86bd.myshopify.com': '6a86bd.myshopify.com',
+// Store name mapping from CSV - maps Shopify domain to friendly store name
+const STORE_NAME_MAPPING: Record<string, string> = {
+  'kvatt-green-package-demo.myshopify.com': 'Kvatt Green Package Demo',
+  'toast-dev.myshopify.com': 'TOAST DEV',
+  'universalworks.myshopify.com': 'Universal Works',
+  'toast-newdev.myshopify.com': 'TOAST NEW DEV',
+  'toast-newdev-us.myshopify.com': 'TOAST NEW DEV USD',
+  'toast-dev-us.myshopify.com': 'TOAST DEV USD',
+  'kvatt-dev.myshopify.com': 'KVATT DEV',
+  'toast-uk.myshopify.com': 'TOAST',
+  'sirplus.myshopify.com': 'SIRPLUS',
+  'smitg-kvatt-demo.myshopify.com': 'Kvatt - Demo Store',
+  'smit-v2.myshopify.com': 'smit-v2',
+  'kvatt-test-gb.myshopify.com': 'Kvatt Test GB',
+  'leming-kvatt-demo.myshopify.com': 'leming-kvatt-demo',
+  'kapil-kvatt-checkout.myshopify.com': 'Kapil Kvatt Checkout',
+  '6a86bd.myshopify.com': '6a86bd',
 };
 
-// Get display domain from store domain
-export const getDisplayDomain = (storeDomain: string): string => {
-  return DOMAIN_MAPPING[storeDomain] || storeDomain.replace('.myshopify.com', '');
+// Get display store name from store domain
+export const getDisplayStoreName = (storeDomain: string): string => {
+  return STORE_NAME_MAPPING[storeDomain] || storeDomain.replace('.myshopify.com', '');
 };
 
 export function useAnalytics() {
@@ -73,10 +73,10 @@ export function useAnalytics() {
       const result = await response.json();
       
       if (result.status === 200 && result.data?.length) {
-        // Use display domain from mapping
+        // Use store name from mapping
         const storesList: Store[] = result.data.map((storeDomain: string) => ({
           id: storeDomain,
-          name: getDisplayDomain(storeDomain)
+          name: getDisplayStoreName(storeDomain)
         }));
         setStores(storesList);
         return storesList;

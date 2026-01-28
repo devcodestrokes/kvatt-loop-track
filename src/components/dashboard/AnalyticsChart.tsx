@@ -12,7 +12,7 @@ import {
   Cell,
 } from 'recharts';
 import { AnalyticsData } from '@/types/analytics';
-import { getDisplayDomain } from '@/hooks/useAnalytics';
+import { getDisplayStoreName } from '@/hooks/useAnalytics';
 
 interface AnalyticsChartProps {
   data: AnalyticsData[];
@@ -45,7 +45,7 @@ const generateStoreColors = (count: number) => {
 
 export function AnalyticsChart({ data, type = 'bar', onPieClick }: AnalyticsChartProps) {
   const chartData = data.map((item) => ({
-    name: getDisplayDomain(item.store),
+    name: getDisplayStoreName(item.store),
     'Opt-ins': item.opt_ins || 0,
     'Opt-outs': item.opt_outs || 0,
     'Total Checkouts': item.total_checkouts || 0,
@@ -55,7 +55,7 @@ export function AnalyticsChart({ data, type = 'bar', onPieClick }: AnalyticsChar
   const pieData = data
     .filter(item => (item.opt_ins || 0) > 0)
     .map((item) => ({
-      name: getDisplayDomain(item.store),
+      name: getDisplayStoreName(item.store),
       value: item.opt_ins || 0,
     }));
 
