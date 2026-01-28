@@ -6,8 +6,34 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const STORES_API_URL = "https://shopify.kvatt.com/api/get-stores";
-const AUTH_TOKEN = "Bearer %^75464tnfsdhndsfbgr54";
+// Complete store mapping from CSV data
+// CSV id column maps to user_id in imported_orders table
+// Format: user_id -> { name: store_name, domain: domain, currency: currency }
+const STORE_MAPPINGS: Record<string, { name: string; domain: string; currency: string }> = {
+  '1': { name: 'kvatt-green-package-demo', domain: 'kvatt-green-package-demo.myshopify.com', currency: 'GBP' },
+  '5': { name: 'Quickstart (ba771359)', domain: 'quickstart-ba771359.myshopify.com', currency: 'GBP' },
+  '6': { name: 'TOAST DEV', domain: 'dev.toa.st', currency: 'GBP' },
+  '7': { name: 'Universal Works', domain: 'universalworks.com', currency: 'GBP' },
+  '8': { name: 'TOAST NEW DEV', domain: 'toast-newdev.myshopify.com', currency: 'GBP' },
+  '9': { name: 'TOAST NEW DEV USD', domain: 'toast-newdev-us.myshopify.com', currency: 'USD' },
+  '10': { name: 'TOAST DEV USD', domain: 'toast-dev-us.myshopify.com', currency: 'USD' },
+  '11': { name: 'KVATT DEV', domain: 'kvatt-dev.myshopify.com', currency: 'GBP' },
+  '12': { name: 'TOAST', domain: 'www.toa.st', currency: 'GBP' },
+  '13': { name: 'Zapply EU', domain: 'zapply.eu', currency: 'EUR' },
+  '14': { name: 'Cocopup™ Wipes', domain: 'cocopupwipes.com', currency: 'USD' },
+  '15': { name: 'Anerkennen Fashion', domain: 'anerkennen.com', currency: 'INR' },
+  '16': { name: 'SPARTAGIFTSHOP USA', domain: 'auibrn-ad.myshopify.com', currency: 'USD' },
+  '17': { name: 'SIRPLUS', domain: 'sirplus.co.uk', currency: 'GBP' },
+  '20': { name: 'Kvatt - Demo Store', domain: 'smitg-kvatt-demo.myshopify.com', currency: 'GBP' },
+  '23': { name: 'smit-v2', domain: 'smit-v2.myshopify.com', currency: 'INR' },
+  '24': { name: 'partht-kvatt-demo', domain: 'partht-kvatt-demo.myshopify.com', currency: 'GBP' },
+  '25': { name: 'vrutankt.devesha', domain: 'vrutankt-devesha.myshopify.com', currency: 'INR' },
+  '26': { name: 'Plus Test Store 1', domain: 'bdnee0-s0.myshopify.com', currency: 'USD' },
+  '27': { name: 'Kvatt | One Tap Returns', domain: 'kvatt.com', currency: 'GBP' },
+  '28': { name: 'leming-kvatt-demo', domain: 'leming-kvatt-demo.myshopify.com', currency: 'GBP' },
+  '29': { name: 'Kapil Kvatt Checkout', domain: 'kapil-kvatt-checkout.myshopify.com', currency: 'USD' },
+  '30': { name: 'SCALES SwimSkins', domain: 'shop.scales-swimskins.com', currency: 'CHF' },
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -19,10 +45,9 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('Fetching store mapping...');
+    console.log('Fetching store mapping using static CSV data...');
 
-    // 1. Get all unique user_ids with their order counts using SQL aggregation
-    // This avoids row limits and is more efficient
+    // Get all unique user_ids with their order counts using SQL aggregation
     const { data: storeStats, error: statsError } = await supabase.rpc('get_store_stats', {
       store_filter: null,
       date_from: null,
@@ -34,109 +59,31 @@ serve(async (req) => {
       throw new Error('Failed to fetch store statistics');
     }
 
-    // Build store count map from the RPC result
-    const storeCountMap = new Map<string, number>();
-    (storeStats || []).forEach((store: any) => {
-      if (store.store_id) {
-        storeCountMap.set(store.store_id, Number(store.total_orders) || 0);
-      }
-    });
-
-    console.log(`Found ${storeCountMap.size} unique stores in orders`);
-
-    // 2. Fetch store names from external API
-    let externalStores: Array<{ id: string; name: string }> = [];
-    try {
-      const response = await fetch(STORES_API_URL, {
-        headers: {
-          "Authorization": AUTH_TOKEN,
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        }
-      });
-      
-      const result = await response.json();
-      console.log('External API response:', JSON.stringify(result).slice(0, 500));
-      
-      if (result.status === 200 && result.data?.length) {
-        // The API returns an array of store domain names
-        // We need to map these to user_ids based on the order they appear
-        // The API returns stores in a specific order that correlates with user_id
-        
-        // Known mapping based on observation:
-        // The API returns stores sorted, and we need to match them to user_ids
-        // Let's fetch the mapping more accurately
-        
-        // Parse the store names from the API
-        externalStores = result.data.map((storeName: string, index: number) => {
-          // Clean up the store name
-          const cleanName = storeName.replace('.myshopify.com', '').replace(/-/g, ' ');
-          return {
-            id: storeName, // Keep original for reference
-            name: cleanName
-          };
-        });
-        
-        console.log(`Fetched ${externalStores.length} store names from API`);
-      }
-    } catch (err) {
-      console.error('Error fetching store names:', err);
-    }
-
-    // 3. Create a smart mapping between user_id and store names
-    // Based on the data pattern, we need to correlate user_ids with store names
-    // The user_id appears to be a numeric ID that corresponds to store order in some way
-    
-    // Get sorted store IDs by order count (descending)
-    const sortedStoreIds = Array.from(storeCountMap.entries())
-      .sort((a, b) => b[1] - a[1])
-      .map(([id]) => id);
-
-    // Known user_id to store name mappings (based on observed data patterns)
-    // These mappings are derived from analyzing the data
-    const knownMappings: Record<string, string> = {
-      '12': 'kvatt-green-package-demo',
-      '7': 'toast-dev',
-      '17': 'universalworks',
-      '6': 'toast-newdev',
-      '24': 'toast-newdev-us',
-      '20': 'toast-dev-us',
-      '9': 'kvatt-dev',
-      '26': 'toast-uk',
-    };
-
-    // Build final store list with proper name mapping
-    const stores = sortedStoreIds.map((storeId) => {
-      const orderCount = storeCountMap.get(storeId) || 0;
-      
-      // Try to get name from known mappings first
-      let storeName = knownMappings[storeId];
-      
-      if (!storeName) {
-        // Try to find a match in external stores
-        // Look for any store that might match this ID pattern
-        const matchingStore = externalStores.find(s => 
-          s.name.toLowerCase().includes(storeId) || 
-          s.id.includes(storeId)
-        );
-        storeName = matchingStore?.name || `Store ${storeId}`;
-      }
+    // Build store list from RPC results with proper name mapping from CSV
+    const stores = (storeStats || []).map((store: any) => {
+      const storeId = store.store_id?.toString() || '';
+      const mapping = STORE_MAPPINGS[storeId];
       
       return {
         id: storeId,
-        name: storeName,
-        orderCount,
+        name: mapping?.name || `Store ${storeId}`,
+        domain: mapping?.domain || `unknown-${storeId}`,
+        currency: mapping?.currency || 'GBP',
+        orderCount: Number(store.total_orders) || 0,
       };
     });
 
-    console.log('Store mapping complete:', stores.map(s => `${s.id}=${s.name} (${s.orderCount})`).join(', '));
+    // Sort by order count descending
+    stores.sort((a: any, b: any) => b.orderCount - a.orderCount);
+
+    console.log('Store mapping complete (CSV-based):', stores.map((s: any) => `${s.id}=${s.name} (${s.orderCount})`).join(', '));
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         stores,
         totalStores: stores.length,
-        externalStoreCount: externalStores.length,
+        mappingSource: 'csv_static',
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
