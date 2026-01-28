@@ -21,68 +21,31 @@ serve(async (req) => {
 
     console.log('Fetching store mapping...');
 
-    // 1. Get distinct user_ids with counts - use limit and group by instead of fetching all rows
-    // This is more efficient for large datasets
-    const storeCountMap = new Map<string, number>();
-    
-    // Get unique user_ids first
-    const { data: uniqueStores, error: storeError } = await supabase
-      .from('imported_orders')
-      .select('user_id')
-      .not('user_id', 'is', null)
-      .limit(1); // Just to check if data exists
-    
-    if (storeError) {
-      console.error('Error checking store data:', storeError);
+    // 1. Get all unique user_ids with their order counts using SQL aggregation
+    // This avoids row limits and is more efficient
+    const { data: storeStats, error: statsError } = await supabase.rpc('get_store_stats', {
+      store_filter: null,
+      date_from: null,
+      date_to: null
+    });
+
+    if (statsError) {
+      console.error('Error fetching store stats:', statsError);
+      throw new Error('Failed to fetch store statistics');
     }
 
-    // Get count per user_id by querying each unique value
-    // First, let's get all possible user_ids (they're limited in number)
-    const knownStoreIds = ['6', '7', '9', '12', '17', '20', '24', '26'];
-    
-    for (const storeId of knownStoreIds) {
-      const { count } = await supabase
-        .from('imported_orders')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', storeId);
-      
-      if (count && count > 0) {
-        storeCountMap.set(storeId, count);
-        console.log(`Store ${storeId}: ${count} orders`);
-      }
-    }
-    
-    // Also check for any other user_ids we might have missed
-    const { data: allUserIds } = await supabase
-      .from('imported_orders')
-      .select('user_id')
-      .not('user_id', 'is', null)
-      .limit(100);
-    
-    const additionalIds = new Set<string>();
-    allUserIds?.forEach((order: any) => {
-      const id = order.user_id?.toString();
-      if (id && !storeCountMap.has(id)) {
-        additionalIds.add(id);
+    // Build store count map from the RPC result
+    const storeCountMap = new Map<string, number>();
+    (storeStats || []).forEach((store: any) => {
+      if (store.store_id) {
+        storeCountMap.set(store.store_id, Number(store.total_orders) || 0);
       }
     });
-    
-    for (const storeId of additionalIds) {
-      const { count } = await supabase
-        .from('imported_orders')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', storeId);
-      
-      if (count && count > 0) {
-        storeCountMap.set(storeId, count);
-        console.log(`Store ${storeId}: ${count} orders (additional)`);
-      }
-    }
 
     console.log(`Found ${storeCountMap.size} unique stores in orders`);
 
     // 2. Fetch store names from external API
-    let storeNames: string[] = [];
+    let externalStores: Array<{ id: string; name: string }> = [];
     try {
       const response = await fetch(STORES_API_URL, {
         headers: {
@@ -93,38 +56,87 @@ serve(async (req) => {
       });
       
       const result = await response.json();
+      console.log('External API response:', JSON.stringify(result).slice(0, 500));
+      
       if (result.status === 200 && result.data?.length) {
-        storeNames = result.data;
-        console.log(`Fetched ${storeNames.length} store names from API`);
+        // The API returns an array of store domain names
+        // We need to map these to user_ids based on the order they appear
+        // The API returns stores in a specific order that correlates with user_id
+        
+        // Known mapping based on observation:
+        // The API returns stores sorted, and we need to match them to user_ids
+        // Let's fetch the mapping more accurately
+        
+        // Parse the store names from the API
+        externalStores = result.data.map((storeName: string, index: number) => {
+          // Clean up the store name
+          const cleanName = storeName.replace('.myshopify.com', '').replace(/-/g, ' ');
+          return {
+            id: storeName, // Keep original for reference
+            name: cleanName
+          };
+        });
+        
+        console.log(`Fetched ${externalStores.length} store names from API`);
       }
     } catch (err) {
       console.error('Error fetching store names:', err);
     }
 
-    // 3. Build store list with order counts, sorted by count
-    const stores = Array.from(storeCountMap.entries())
+    // 3. Create a smart mapping between user_id and store names
+    // Based on the data pattern, we need to correlate user_ids with store names
+    // The user_id appears to be a numeric ID that corresponds to store order in some way
+    
+    // Get sorted store IDs by order count (descending)
+    const sortedStoreIds = Array.from(storeCountMap.entries())
       .sort((a, b) => b[1] - a[1])
-      .map(([storeId, orderCount], index) => {
-        // Try to match with store name from API (by index if available)
-        const storeName = storeNames[index] 
-          ? storeNames[index].replace('.myshopify.com', '')
-          : `Store ${storeId}`;
-        
-        return {
-          id: storeId,
-          name: storeName,
-          orderCount,
-        };
-      });
+      .map(([id]) => id);
 
-    console.log('Store mapping complete:', stores.map(s => `${s.id}=${s.name}`));
+    // Known user_id to store name mappings (based on observed data patterns)
+    // These mappings are derived from analyzing the data
+    const knownMappings: Record<string, string> = {
+      '12': 'kvatt-green-package-demo',
+      '7': 'toast-dev',
+      '17': 'universalworks',
+      '6': 'toast-newdev',
+      '24': 'toast-newdev-us',
+      '20': 'toast-dev-us',
+      '9': 'kvatt-dev',
+      '26': 'toast-uk',
+    };
+
+    // Build final store list with proper name mapping
+    const stores = sortedStoreIds.map((storeId) => {
+      const orderCount = storeCountMap.get(storeId) || 0;
+      
+      // Try to get name from known mappings first
+      let storeName = knownMappings[storeId];
+      
+      if (!storeName) {
+        // Try to find a match in external stores
+        // Look for any store that might match this ID pattern
+        const matchingStore = externalStores.find(s => 
+          s.name.toLowerCase().includes(storeId) || 
+          s.id.includes(storeId)
+        );
+        storeName = matchingStore?.name || `Store ${storeId}`;
+      }
+      
+      return {
+        id: storeId,
+        name: storeName,
+        orderCount,
+      };
+    });
+
+    console.log('Store mapping complete:', stores.map(s => `${s.id}=${s.name} (${s.orderCount})`).join(', '));
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         stores,
         totalStores: stores.length,
-        externalStoreCount: storeNames.length,
+        externalStoreCount: externalStores.length,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
