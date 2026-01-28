@@ -304,17 +304,11 @@ const Insights = () => {
     }
   }, []);
   
-  // Helper to format store name from API response
+  // Helper to format store name from API response - now uses the name directly from CSV mapping
   const formatStoreDisplayName = (apiName: string, storeId: string): string => {
-    // Remove .myshopify.com if present
-    let name = apiName.replace('.myshopify.com', '').replace(/-/g, ' ');
-    
-    // Convert to proper title case (first letter of each word capitalized)
-    name = name.split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ');
-    
-    return `${name} [Store ${storeId}]`;
+    // The edge function now returns accurate names from the CSV mapping
+    // Just return the name directly
+    return apiName;
   };
 
   const {
@@ -576,15 +570,9 @@ const Insights = () => {
   const formatStoreName = useCallback((storeId: string) => {
     const apiName = storeNameMapping.get(storeId);
     if (apiName) {
-      // Remove .myshopify.com if present and format properly
-      let name = apiName.replace('.myshopify.com', '').replace(/-/g, ' ');
-      
-      // Convert to proper title case (first letter of each word capitalized)
-      name = name.split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
-      
-      return `${name} [Store ${storeId}]`;
+      // Use the store name directly from the CSV mapping - it's already properly formatted
+      // The edge function now returns accurate names like "TOAST", "Universal Works", "SIRPLUS"
+      return apiName;
     }
     // Fallback if no mapping found
     return `Store ${storeId}`;
