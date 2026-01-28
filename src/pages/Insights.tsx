@@ -23,6 +23,7 @@ import { ApiSyncStatus } from '@/components/dashboard/ApiSyncStatus';
 import { GeographicHeatmap } from '@/components/dashboard/GeographicHeatmap';
 import { CollapsibleHierarchy } from '@/components/dashboard/CollapsibleHierarchy';
 import { DateRangePicker } from '@/components/dashboard/DateRangePicker';
+import { FilterLoadingOverlay } from '@/components/dashboard/FilterLoadingOverlay';
 
 import { useStoreFilter } from '@/hooks/useStoreFilter';
 import { useApiSync } from '@/hooks/useApiSync';
@@ -739,6 +740,12 @@ const Insights = () => {
 
   return (
     <div className="space-y-6">
+      {/* Loading Overlay for filter changes */}
+      <FilterLoadingOverlay 
+        isLoading={isAutoRefreshing} 
+        message="Applying filters..."
+      />
+      
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
