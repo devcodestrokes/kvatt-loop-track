@@ -19,6 +19,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { getWidgetLabel, getWidgetConfig } from '@/config/widgetConfig';
+import { getDisplayDomain } from '@/hooks/useAnalytics';
 
 interface DataTableProps {
   data: AnalyticsData[];
@@ -72,7 +73,7 @@ export function DataTable({ data, dateRange, showWidgetStatus = true }: DataTabl
       const widgetLabel = getWidgetLabel(item.store);
       
       return [
-        item.store.replace('.myshopify.com', ''),
+        getDisplayDomain(item.store),
         dateRange?.from && dateRange?.to 
           ? `${format(dateRange.from, 'yyyy-MM-dd')} to ${format(dateRange.to, 'yyyy-MM-dd')}`
           : format(today, 'yyyy-MM-dd'),
@@ -167,7 +168,7 @@ export function DataTable({ data, dateRange, showWidgetStatus = true }: DataTabl
                 return (
                   <TableRow key={index} className="border-border hover:bg-secondary/50">
                     <TableCell className="font-medium text-foreground">
-                      {item.store.replace('.myshopify.com', '')}
+                      {getDisplayDomain(item.store)}
                     </TableCell>
                     <TableCell className="text-right font-mono text-foreground">
                       {item.total_checkouts.toLocaleString()}
