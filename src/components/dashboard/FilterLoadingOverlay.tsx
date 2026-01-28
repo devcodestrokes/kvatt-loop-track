@@ -1,5 +1,3 @@
-import { Loader2 } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
 import { useEffect, useState } from 'react';
 
 interface FilterLoadingOverlayProps {
@@ -7,7 +5,7 @@ interface FilterLoadingOverlayProps {
   message?: string;
 }
 
-export function FilterLoadingOverlay({ isLoading, message = "Updating dashboard..." }: FilterLoadingOverlayProps) {
+export function FilterLoadingOverlay({ isLoading }: FilterLoadingOverlayProps) {
   const [progress, setProgress] = useState(0);
   const [visible, setVisible] = useState(false);
 
@@ -16,7 +14,7 @@ export function FilterLoadingOverlay({ isLoading, message = "Updating dashboard.
       setVisible(true);
       setProgress(0);
       
-      // Animate progress from 0 to 90 over ~2 seconds
+      // Animate progress like YouTube - fast start, then slows down
       const interval = setInterval(() => {
         setProgress(prev => {
           if (prev >= 90) {
@@ -24,55 +22,46 @@ export function FilterLoadingOverlay({ isLoading, message = "Updating dashboard.
             return 90;
           }
           // Fast start, slow down as it approaches 90
-          const increment = Math.max(1, (90 - prev) / 10);
+          const increment = Math.max(0.5, (90 - prev) / 8);
           return Math.min(90, prev + increment);
         });
-      }, 100);
+      }, 50);
 
       return () => clearInterval(interval);
-    } else {
-      // Complete the progress bar then fade out
+    } else if (visible) {
+      // Complete the progress bar quickly then fade out
       setProgress(100);
       const timeout = setTimeout(() => {
         setVisible(false);
         setProgress(0);
-      }, 300);
+      }, 400);
       return () => clearTimeout(timeout);
     }
-  }, [isLoading]);
+  }, [isLoading, visible]);
 
   if (!visible) return null;
 
   return (
-    <div 
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm transition-opacity duration-300 ${
-        isLoading ? 'opacity-100' : 'opacity-0'
-      }`}
-    >
-      <div className="flex flex-col items-center gap-4 rounded-lg bg-card p-8 shadow-lg border border-border animate-scale-in">
-        <div className="relative">
-          <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          <div className="absolute inset-0 h-10 w-10 animate-ping opacity-20 rounded-full bg-primary" />
-        </div>
-        
-        <div className="text-center space-y-2">
-          <p className="text-sm font-medium text-foreground">{message}</p>
-          <p className="text-xs text-muted-foreground">Applying filters and refreshing data</p>
-        </div>
-        
-        <div className="w-48">
-          <Progress value={progress} className="h-2" />
-        </div>
-        
-        <div className="flex gap-1">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="h-2 w-2 rounded-full bg-primary animate-pulse"
-              style={{ animationDelay: `${i * 200}ms` }}
-            />
-          ))}
-        </div>
+    <div className="fixed top-0 left-0 right-0 z-[100] h-1">
+      {/* Background track */}
+      <div className="absolute inset-0 bg-primary/10" />
+      
+      {/* Progress bar with YouTube-style gradient and glow */}
+      <div 
+        className="absolute top-0 left-0 h-full bg-primary transition-all duration-150 ease-out"
+        style={{ 
+          width: `${progress}%`,
+          boxShadow: '0 0 10px hsl(var(--primary)), 0 0 5px hsl(var(--primary))'
+        }}
+      >
+        {/* Shimmer effect on the leading edge */}
+        <div 
+          className="absolute right-0 top-0 h-full w-24 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"
+          style={{ 
+            opacity: isLoading ? 1 : 0,
+            transition: 'opacity 200ms'
+          }}
+        />
       </div>
     </div>
   );
