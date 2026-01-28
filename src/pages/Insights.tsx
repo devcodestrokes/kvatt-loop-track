@@ -826,8 +826,8 @@ const Insights = () => {
           </div>
           {/* Summary Cards */}
           {orderAnalytics && (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="metric-card">
+            <div key={`summary-${orderAnalytics.summary.totalOrders}`} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 animate-fade-in">
+              <div className="metric-card transition-all duration-300 hover:scale-[1.02] hover:shadow-md">
                 <div className="flex items-center gap-3 mb-2">
                   <ShoppingCart className="h-5 w-5 text-primary" />
                   <span className="text-sm text-muted-foreground">Total Orders</span>
@@ -837,24 +837,24 @@ const Insights = () => {
                   {orderAnalytics.summary.totalOptIns.toLocaleString()} opt-ins
                 </p>
               </div>
-              <div className="metric-card">
+              <div className="metric-card transition-all duration-300 hover:scale-[1.02] hover:shadow-md">
                 <div className="flex items-center gap-3 mb-2">
                   <Target className="h-5 w-5 text-primary" />
                   <span className="text-sm text-muted-foreground">Opt-In Rate</span>
                 </div>
                 <p className="text-3xl font-bold text-primary">{orderAnalytics.summary.optInRate}%</p>
                 <div className="mt-2">
-                  <Progress value={parseFloat(orderAnalytics.summary.optInRate)} className="h-2" />
+                  <Progress value={parseFloat(orderAnalytics.summary.optInRate)} className="h-2 transition-all duration-500" />
                 </div>
               </div>
-              <div className="metric-card">
+              <div className="metric-card transition-all duration-300 hover:scale-[1.02] hover:shadow-md">
                 <div className="flex items-center gap-3 mb-2">
                   <TrendingUp className="h-5 w-5 text-primary" />
                   <span className="text-sm text-muted-foreground">Avg Opt-In Order</span>
                 </div>
                 <p className="text-3xl font-bold">£{orderAnalytics.summary.avgOptInOrderValue}</p>
               </div>
-              <div className="metric-card">
+              <div className="metric-card transition-all duration-300 hover:scale-[1.02] hover:shadow-md">
                 <div className="flex items-center gap-3 mb-2">
                   <TrendingDown className="h-5 w-5 text-muted-foreground" />
                   <span className="text-sm text-muted-foreground">Avg Opt-Out Order</span>
@@ -869,14 +869,18 @@ const Insights = () => {
 
           {/* Key Insights from Data */}
           {orderAnalytics && orderAnalytics.insights.length > 0 && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-fade-in">
               <h2 className="text-xl font-semibold flex items-center gap-2">
                 <Zap className="h-5 w-5 text-primary" />
                 Key Insights
               </h2>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {orderAnalytics.insights.map((insight, i) => (
-                  <div key={i} className="metric-card">
+                  <div 
+                    key={i} 
+                    className="metric-card transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
+                    style={{ animationDelay: `${i * 100}ms` }}
+                  >
                     <div className="flex items-start justify-between mb-3">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${impactColors[insight.impact]}`}>
                         {insight.impact.toUpperCase()} IMPACT
@@ -899,7 +903,7 @@ const Insights = () => {
                 Available Data
               </span>
             </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 animate-fade-in">
               {/* Temporal Patterns */}
               <div className="metric-card">
                 <div className="flex items-center gap-3 mb-4">
@@ -1076,7 +1080,7 @@ const Insights = () => {
 
           {/* Order Value Analysis */}
           {orderAnalytics && orderAnalytics.orderValueAnalysis.length > 0 && (
-            <div className="metric-card">
+            <div className="metric-card animate-fade-in transition-all duration-300 hover:shadow-md">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5 text-primary" />
                 Opt-In Rate by Order Value
@@ -1093,7 +1097,7 @@ const Insights = () => {
                   </thead>
                   <tbody>
                     {orderAnalytics.orderValueAnalysis.map((range, i) => (
-                      <tr key={i}>
+                      <tr key={i} className="transition-colors duration-200">
                         <td className="font-medium">{range.range}</td>
                         <td className="text-right text-muted-foreground">{range.total.toLocaleString()}</td>
                         <td className="text-right text-primary">{range.optIns.toLocaleString()}</td>
@@ -1112,7 +1116,7 @@ const Insights = () => {
 
           {/* Store Performance */}
           {filteredStoreAnalytics.length > 0 && (
-            <div className="metric-card">
+            <div key={`stores-${filteredStoreAnalytics.length}-${filteredStoreAnalytics[0]?.storeId}`} className="metric-card animate-fade-in transition-all duration-300 hover:shadow-md">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <Store className="h-5 w-5 text-primary" />
                 Store Performance
@@ -1130,7 +1134,7 @@ const Insights = () => {
                   </thead>
                   <tbody>
                     {filteredStoreAnalytics.slice(0, 15).map((store, i) => (
-                      <tr key={i}>
+                      <tr key={i} className="transition-colors duration-200">
                         <td className="font-medium">{formatStoreName(store.storeId)}</td>
                         <td className="text-right text-muted-foreground">{store.total.toLocaleString()}</td>
                         <td className="text-right text-primary">{store.optIn.toLocaleString()}</td>
@@ -1151,7 +1155,7 @@ const Insights = () => {
           {/* Geographic Analysis - Top 5 per category */}
           {orderAnalytics && (
             <>
-              <div className="grid gap-6 lg:grid-cols-3">
+              <div className="grid gap-6 lg:grid-cols-3 animate-fade-in">
                 {/* Top 5 Cities */}
                 <div className="metric-card">
                   <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -1311,7 +1315,7 @@ const Insights = () => {
 
           {/* AI CRO Analysis Results */}
           {croAnalysis && (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-scale-in">
               {croAnalysis.keyFindings && croAnalysis.keyFindings.length > 0 && (
                 <div className="space-y-4">
                   <h2 className="text-xl font-semibold flex items-center gap-2">
@@ -1320,7 +1324,11 @@ const Insights = () => {
                   </h2>
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {croAnalysis.keyFindings.map((finding, i) => (
-                      <div key={i} className="metric-card">
+                      <div 
+                        key={i} 
+                        className="metric-card animate-fade-in transition-all duration-300 hover:scale-[1.02] hover:shadow-md"
+                        style={{ animationDelay: `${i * 100}ms` }}
+                      >
                         <div className="flex items-start justify-between mb-3">
                           <span className={`px-2 py-1 rounded text-xs font-medium ${impactColors[finding.impact]}`}>
                             {finding.impact.toUpperCase()} IMPACT
@@ -1336,7 +1344,7 @@ const Insights = () => {
               )}
 
               {croAnalysis.rawAnalysis && !croAnalysis.keyFindings && (
-                <div className="metric-card">
+                <div className="metric-card animate-fade-in">
                   <h2 className="text-lg font-semibold mb-4">AI Analysis</h2>
                   <p className="text-muted-foreground whitespace-pre-wrap">{croAnalysis.rawAnalysis}</p>
                 </div>
