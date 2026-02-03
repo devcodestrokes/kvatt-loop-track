@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Download, Printer, QrCode } from "lucide-react";
@@ -18,7 +19,31 @@ interface GeneratedLabel {
   labelId: string;
   qrDataUrl: string;
   barcodeDataUrl: string;
+  packagingType: string;
+  manufacturer: string;
+  labelStyle: string;
 }
+
+const PACKAGING_TYPES = [
+  { value: "mailer-bag", label: "Mailer Bag" },
+  { value: "box", label: "Box" },
+  { value: "pouch", label: "Pouch" },
+  { value: "envelope", label: "Envelope" },
+  { value: "tote", label: "Tote Bag" },
+];
+
+const MANUFACTURERS = [
+  { value: "kvatt-uk", label: "Kvatt UK" },
+  { value: "kvatt-eu", label: "Kvatt EU" },
+  { value: "partner-a", label: "Partner A" },
+  { value: "partner-b", label: "Partner B" },
+];
+
+const LABEL_STYLES = [
+  { value: "standard", label: "Standard (QR + Barcode)" },
+  { value: "compact", label: "Compact (QR only)" },
+  { value: "detailed", label: "Detailed (QR + Barcode + Info)" },
+];
 
 const generateUniqueLabelId = () => {
   const timestamp = Date.now().toString(36).toUpperCase();
@@ -28,6 +53,9 @@ const generateUniqueLabelId = () => {
 
 export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps) {
   const [quantity, setQuantity] = useState(10);
+  const [packagingType, setPackagingType] = useState("");
+  const [manufacturer, setManufacturer] = useState("");
+  const [labelStyle, setLabelStyle] = useState("standard");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedLabels, setGeneratedLabels] = useState<GeneratedLabel[]>([]);
   const [progress, setProgress] = useState(0);
@@ -65,6 +93,24 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       return;
     }
 
+    if (!packagingType) {
+      toast({
+        title: "Packaging type required",
+        description: "Please select a packaging type",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!manufacturer) {
+      toast({
+        title: "Manufacturer required",
+        description: "Please select a manufacturer",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsGenerating(true);
     setProgress(0);
     setGeneratedLabels([]);
@@ -83,6 +129,9 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
           labelId,
           qrDataUrl,
           barcodeDataUrl,
+          packagingType,
+          manufacturer,
+          labelStyle,
         });
 
         if ((i + 1) % 10 === 0 || i === quantity - 1) {
@@ -287,10 +336,10 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
             Both encode the same unique pack ID.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-end gap-4">
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="quantity">Number of Labels</Label>
+              <Label htmlFor="quantity">Number of Packagings</Label>
               <Input
                 id="quantity"
                 type="number"
@@ -298,21 +347,70 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                 max={5000}
                 value={quantity}
                 onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
-                className="w-40"
+                placeholder="Number of packagings"
                 disabled={isGenerating}
               />
             </div>
-            <Button onClick={handleGenerate} disabled={isGenerating}>
-              {isGenerating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating... {progress}%
-                </>
-              ) : (
-                "Generate Labels"
-              )}
-            </Button>
+
+            <div className="space-y-2">
+              <Label htmlFor="packagingType">Packaging Type</Label>
+              <Select value={packagingType} onValueChange={setPackagingType} disabled={isGenerating}>
+                <SelectTrigger id="packagingType">
+                  <SelectValue placeholder="Select packaging type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PACKAGING_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="manufacturer">Manufacturer</Label>
+              <Select value={manufacturer} onValueChange={setManufacturer} disabled={isGenerating}>
+                <SelectTrigger id="manufacturer">
+                  <SelectValue placeholder="Select manufacturer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MANUFACTURERS.map((mfr) => (
+                    <SelectItem key={mfr.value} value={mfr.value}>
+                      {mfr.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="labelStyle">Label Style</Label>
+              <Select value={labelStyle} onValueChange={setLabelStyle} disabled={isGenerating}>
+                <SelectTrigger id="labelStyle">
+                  <SelectValue placeholder="Select label style" />
+                </SelectTrigger>
+                <SelectContent>
+                  {LABEL_STYLES.map((style) => (
+                    <SelectItem key={style.value} value={style.value}>
+                      {style.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+
+          <Button onClick={handleGenerate} disabled={isGenerating} className="w-full md:w-auto">
+            {isGenerating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating... {progress}%
+              </>
+            ) : (
+              "Create packs and generate labels"
+            )}
+          </Button>
 
           {generatedLabels.length > 0 && (
             <div className="flex gap-2 pt-4 border-t">
