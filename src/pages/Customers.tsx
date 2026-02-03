@@ -54,6 +54,7 @@ const Customers = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [expandedCustomers, setExpandedCustomers] = useState<Set<string>>(new Set());
+  const [loadingOrders, setLoadingOrders] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const pageSize = 50;
   
@@ -144,7 +145,7 @@ const Customers = () => {
     }
   };
 
-  // Fetch customers from Supabase with their orders
+  // Fetch customers from Supabase with aggregated order stats (server-side)
   const fetchCustomers = useCallback(async (page: number = 1) => {
     if (!isInitialized) return;
     
@@ -186,46 +187,31 @@ const Customers = () => {
         .map(c => c.external_id)
         .filter(Boolean);
 
-      let ordersMap = new Map<string, Order[]>();
+      // Fetch aggregated order stats using RPC function (much faster than fetching all orders)
+      let statsMap = new Map<string, { orderCount: number; totalSpent: number }>();
       
       if (customerExternalIds.length > 0) {
-        const { data: ordersData, error: ordersError } = await supabase
-          .from('imported_orders')
-          .select('id, external_id, name, total_price, opt_in, payment_status, shopify_created_at, city, country, customer_id')
-          .in('customer_id', customerExternalIds)
-          .order('shopify_created_at', { ascending: false });
+        const { data: statsData, error: statsError } = await supabase
+          .rpc('get_customer_order_stats', { customer_ids: customerExternalIds });
 
-        if (!ordersError && ordersData) {
-          ordersData.forEach(order => {
-            const customerId = (order as any).customer_id;
-            if (!ordersMap.has(customerId)) {
-              ordersMap.set(customerId, []);
-            }
-            ordersMap.get(customerId)!.push({
-              id: order.id,
-              external_id: order.external_id,
-              name: order.name,
-              total_price: order.total_price,
-              opt_in: order.opt_in,
-              payment_status: order.payment_status,
-              shopify_created_at: order.shopify_created_at,
-              city: order.city,
-              country: order.country,
+        if (!statsError && statsData) {
+          statsData.forEach((stat: any) => {
+            statsMap.set(stat.customer_id, {
+              orderCount: Number(stat.order_count) || 0,
+              totalSpent: Number(stat.total_spent) || 0,
             });
           });
         }
       }
 
       const customersWithOrders: CustomerWithOrders[] = customersData.map(customer => {
-        // Match orders using external_id (orders.customer_id = customers.external_id)
-        const customerOrders = ordersMap.get(customer.external_id || '') || [];
-        const totalSpent = customerOrders.reduce((sum, order) => sum + (order.total_price || 0), 0);
+        const stats = statsMap.get(customer.external_id || '') || { orderCount: 0, totalSpent: 0 };
         
         return {
           ...customer,
-          orders: customerOrders,
-          orderCount: customerOrders.length,
-          totalSpent,
+          orders: [], // Orders loaded on-demand when expanded
+          orderCount: stats.orderCount,
+          totalSpent: stats.totalSpent,
         };
       });
 
@@ -262,7 +248,9 @@ const Customers = () => {
     }
   };
 
-  const toggleCustomerExpand = (customerId: string) => {
+  const toggleCustomerExpand = async (customerId: string, externalId: string) => {
+    const isCurrentlyExpanded = expandedCustomers.has(customerId);
+    
     setExpandedCustomers(prev => {
       const newSet = new Set(prev);
       if (newSet.has(customerId)) {
@@ -272,6 +260,53 @@ const Customers = () => {
       }
       return newSet;
     });
+
+    // Load orders on-demand when expanding (if not already loaded)
+    if (!isCurrentlyExpanded) {
+      const customer = customers.find(c => c.id === customerId);
+      if (customer && customer.orders.length === 0 && customer.orderCount > 0) {
+        setLoadingOrders(prev => new Set(prev).add(customerId));
+        
+        try {
+          const { data: ordersData, error } = await supabase
+            .from('imported_orders')
+            .select('id, external_id, name, total_price, opt_in, payment_status, shopify_created_at, city, country, customer_id')
+            .eq('customer_id', externalId)
+            .order('shopify_created_at', { ascending: false })
+            .limit(50); // Limit orders per customer for performance
+
+          if (!error && ordersData) {
+            setCustomers(prev => prev.map(c => {
+              if (c.id === customerId) {
+                return {
+                  ...c,
+                  orders: ordersData.map(order => ({
+                    id: order.id,
+                    external_id: order.external_id,
+                    name: order.name,
+                    total_price: order.total_price,
+                    opt_in: order.opt_in,
+                    payment_status: order.payment_status,
+                    shopify_created_at: order.shopify_created_at,
+                    city: order.city,
+                    country: order.country,
+                  })),
+                };
+              }
+              return c;
+            }));
+          }
+        } catch (error) {
+          console.error('Error loading orders:', error);
+        } finally {
+          setLoadingOrders(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(customerId);
+            return newSet;
+          });
+        }
+      }
+    }
   };
 
   const formatDate = (dateString: string | null) => {
@@ -430,7 +465,7 @@ const Customers = () => {
                     {/* Customer Row */}
                     <div 
                       className="flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 transition-colors"
-                      onClick={() => toggleCustomerExpand(customer.id)}
+                      onClick={() => toggleCustomerExpand(customer.id, customer.external_id)}
                     >
                       {/* Expand Button */}
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0">
@@ -502,9 +537,19 @@ const Customers = () => {
                           Order History ({customer.orderCount} orders)
                         </h4>
                         
-                        {customer.orders.length === 0 ? (
+                        {loadingOrders.has(customer.id) ? (
+                          <div className="space-y-2">
+                            {Array.from({ length: 3 }).map((_, i) => (
+                              <Skeleton key={i} className="h-10 w-full" />
+                            ))}
+                          </div>
+                        ) : customer.orders.length === 0 && customer.orderCount === 0 ? (
                           <p className="text-sm text-muted-foreground py-4 text-center">
                             No orders found for this customer
+                          </p>
+                        ) : customer.orders.length === 0 ? (
+                          <p className="text-sm text-muted-foreground py-4 text-center">
+                            Loading orders...
                           </p>
                         ) : (
                           <div className="rounded-md border bg-background overflow-hidden">

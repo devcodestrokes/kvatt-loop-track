@@ -908,6 +908,14 @@ export type Database = {
           total_revenue: number
         }[]
       }
+      get_customer_order_stats: {
+        Args: { customer_ids: string[] }
+        Returns: {
+          customer_id: string
+          order_count: number
+          total_spent: number
+        }[]
+      }
       get_order_value_stats: {
         Args: { date_from?: string; date_to?: string; store_filter?: string[] }
         Returns: {
