@@ -14,7 +14,8 @@ import {
   LogOut,
   ChevronRight,
   Users,
-  Search
+  Search,
+  Boxes
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import kvattLogo from '@/assets/kvatt-logo.jpeg';
@@ -43,6 +44,7 @@ const overviewItems = [
 
 const packagingItems = [
   { title: 'Label Generation', url: '/labels', icon: Tag },
+  { title: 'Packaging System', url: '/packaging-labels', icon: Boxes },
   { title: 'QR Tracking', url: '/qr-tracking', icon: QrCode },
   { title: 'Stock Management', url: '/stock', icon: Package },
 ];

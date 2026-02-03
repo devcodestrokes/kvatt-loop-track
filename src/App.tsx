@@ -18,6 +18,7 @@ import LandingPages from "./pages/LandingPages";
 import Insights from "./pages/Insights";
 import Customers from "./pages/Customers";
 import SearchOrders from "./pages/SearchOrders";
+import PackagingLabels from "./pages/PackagingLabels";
 import Settings from "./pages/Settings";
 import Help from "./pages/Help";
 import Auth from "./pages/Auth";
@@ -52,6 +53,7 @@ const App = () => (
                       <Route path="/insights" element={<Insights />} />
                       <Route path="/customers" element={<Customers />} />
                       <Route path="/search-orders" element={<SearchOrders />} />
+                      <Route path="/packaging-labels" element={<PackagingLabels />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/help" element={<Help />} />
                       <Route path="*" element={<NotFound />} />
