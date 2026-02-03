@@ -1,11 +1,43 @@
-import { useState } from "react";
-import { Search, Mail, Package, Calendar, DollarSign, MapPin, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Mail, Package, Calendar, DollarSign, MapPin, Loader2, Store } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+
+// Store mapping from CSV data
+const STORE_MAPPINGS: Record<string, string> = {
+  '1': 'kvatt-green-package-demo',
+  '5': 'Quickstart',
+  '6': 'TOAST DEV',
+  '7': 'Universal Works',
+  '8': 'TOAST NEW DEV',
+  '9': 'TOAST NEW DEV USD',
+  '10': 'TOAST DEV USD',
+  '11': 'KVATT DEV',
+  '12': 'TOAST',
+  '13': 'Zapply EU',
+  '14': 'Cocopup™ Wipes',
+  '15': 'Anerkennen Fashion',
+  '16': 'SPARTAGIFTSHOP USA',
+  '17': 'SIRPLUS',
+  '20': 'Kvatt - Demo Store',
+  '23': 'smit-v2',
+  '24': 'partht-kvatt-demo',
+  '25': 'vrutankt.devesha',
+  '26': 'Plus Test Store 1',
+  '27': 'Kvatt | One Tap Returns',
+  '28': 'leming-kvatt-demo',
+  '29': 'Kapil Kvatt Checkout',
+  '30': 'SCALES SwimSkins',
+};
+
+const getStoreName = (userId: string | null): string => {
+  if (!userId) return "N/A";
+  return STORE_MAPPINGS[userId] || `Store ${userId}`;
+};
 
 interface OrderResult {
   id: string;
@@ -250,8 +282,9 @@ export default function SearchOrders() {
                               .join(", ")}
                           </span>
                         )}
-                        <span className="text-xs text-muted-foreground">
-                          Store: {order.user_id || "N/A"}
+                        <span className="flex items-center gap-1">
+                          <Store className="h-3 w-3" />
+                          {getStoreName(order.user_id)}
                         </span>
                       </div>
                     </div>
