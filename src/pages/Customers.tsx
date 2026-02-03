@@ -14,11 +14,6 @@ import { useToast } from '@/hooks/use-toast';
 import { MultiStoreSelector } from '@/components/dashboard/MultiStoreSelector';
 import { useStoreFilter } from '@/hooks/useStoreFilter';
 import { Store as StoreType } from '@/types/analytics';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 
 interface Customer {
   id: string;
@@ -122,7 +117,7 @@ const Customers = () => {
     setIsSyncing(true);
     try {
       const { data, error } = await supabase.functions.invoke('sync-customers-api', {
-        body: { forceFull: false, pagesLimit: 10 }, // Sync first 10 pages for speed
+        body: { forceFull: false, pagesLimit: 10 },
       });
 
       if (error) throw error;
@@ -158,22 +153,18 @@ const Customers = () => {
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
 
-      // Build customer query
       let customerQuery = supabase
         .from('imported_customers')
         .select('*', { count: 'exact' });
 
-      // Apply store filter
       if (selectedStores.length > 0 && selectedStores.length < availableStores.length) {
         customerQuery = customerQuery.in('user_id', selectedStores);
       }
 
-      // Apply search filter
       if (debouncedSearch) {
         customerQuery = customerQuery.or(`email.ilike.%${debouncedSearch}%,name.ilike.%${debouncedSearch}%`);
       }
 
-      // Apply pagination and ordering
       customerQuery = customerQuery
         .order('shopify_created_at', { ascending: false, nullsFirst: false })
         .range(from, to);
@@ -189,12 +180,10 @@ const Customers = () => {
         return;
       }
 
-      // Get customer IDs to fetch their orders
       const shopifyCustomerIds = customersData
         .map(c => c.shopify_customer_id)
         .filter(Boolean);
 
-      // Fetch orders for these customers
       let ordersMap = new Map<string, Order[]>();
       
       if (shopifyCustomerIds.length > 0) {
@@ -225,7 +214,6 @@ const Customers = () => {
         }
       }
 
-      // Combine customers with their orders
       const customersWithOrders: CustomerWithOrders[] = customersData.map(customer => {
         const customerOrders = ordersMap.get(customer.shopify_customer_id || '') || [];
         const totalSpent = customerOrders.reduce((sum, order) => sum + (order.total_price || 0), 0);
@@ -251,7 +239,6 @@ const Customers = () => {
     }
   }, [selectedStores, debouncedSearch, toast, isInitialized, availableStores.length]);
 
-  // Fetch customers when dependencies change
   useEffect(() => {
     if (isInitialized) {
       fetchCustomers(currentPage);
@@ -392,7 +379,7 @@ const Customers = () => {
         </Card>
       </div>
 
-      {/* Customer Table */}
+      {/* Customer List */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Customer List</CardTitle>
@@ -402,185 +389,190 @@ const Customers = () => {
               : 'No customers found'}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[40px]"></TableHead>
-                  <TableHead className="w-[200px]">Name</TableHead>
-                  <TableHead className="w-[250px]">Email</TableHead>
-                  <TableHead className="w-[120px]">Phone</TableHead>
-                  <TableHead className="w-[100px]">Store</TableHead>
-                  <TableHead className="w-[80px] text-center">Orders</TableHead>
-                  <TableHead className="w-[100px] text-right">Total Spent</TableHead>
-                  <TableHead className="w-[100px]">Joined</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  Array.from({ length: 10 }).map((_, i) => (
-                    <TableRow key={i}>
-                      <TableCell><Skeleton className="h-4 w-4" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-12 mx-auto" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                    </TableRow>
-                  ))
-                ) : customers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={8} className="h-24 text-center">
-                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                        <Users className="h-8 w-8" />
-                        <p>No customers found</p>
-                        {debouncedSearch && (
-                          <p className="text-sm">Try adjusting your search query</p>
+        <CardContent className="space-y-2">
+          {isLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 p-4 border rounded-lg">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-48" />
+                    <Skeleton className="h-3 w-32" />
+                  </div>
+                  <Skeleton className="h-6 w-20" />
+                </div>
+              ))}
+            </div>
+          ) : customers.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <Users className="h-12 w-12 mb-4" />
+              <p className="text-lg font-medium">No customers found</p>
+              {debouncedSearch && (
+                <p className="text-sm mt-1">Try adjusting your search query</p>
+              )}
+              {!debouncedSearch && totalCount === 0 && (
+                <Button variant="outline" size="sm" onClick={syncCustomers} className="mt-4">
+                  <Download className="h-4 w-4 mr-2" />
+                  Sync Customers from API
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {customers.map((customer) => {
+                const isExpanded = expandedCustomers.has(customer.id);
+                
+                return (
+                  <div key={customer.id} className="border rounded-lg overflow-hidden bg-card">
+                    {/* Customer Row */}
+                    <div 
+                      className="flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => toggleCustomerExpand(customer.id)}
+                    >
+                      {/* Expand Button */}
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0">
+                        {isExpanded ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
                         )}
-                        {!debouncedSearch && totalCount === 0 && (
-                          <Button variant="outline" size="sm" onClick={syncCustomers} className="mt-2">
-                            <Download className="h-4 w-4 mr-2" />
-                            Sync Customers from API
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  customers.map((customer) => (
-                    <Collapsible key={customer.id} open={expandedCustomers.has(customer.id)}>
-                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => toggleCustomerExpand(customer.id)}>
-                        <TableCell>
-                          <CollapsibleTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                              {expandedCustomers.has(customer.id) ? (
-                                <ChevronUp className="h-4 w-4" />
-                              ) : (
-                                <ChevronDown className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </CollapsibleTrigger>
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {customer.name || '—'}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span className="text-sm">{customer.email || '—'}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
+                      </Button>
+
+                      {/* Customer Info */}
+                      <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-6 gap-2 md:gap-4 items-center">
+                        {/* Name */}
+                        <div className="md:col-span-1">
+                          <p className="font-medium text-foreground truncate">
+                            {customer.name || 'Unknown'}
+                          </p>
+                        </div>
+
+                        {/* Email */}
+                        <div className="md:col-span-2 flex items-center gap-2 min-w-0">
+                          <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <span className="text-sm text-muted-foreground truncate">
+                            {customer.email || '—'}
+                          </span>
+                        </div>
+
+                        {/* Phone */}
+                        <div className="md:col-span-1 flex items-center gap-2 min-w-0">
                           {customer.telephone ? (
-                            <div className="flex items-center gap-2">
-                              <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                              <span className="text-sm">{customer.telephone}</span>
-                            </div>
+                            <>
+                              <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                              <span className="text-sm text-muted-foreground truncate">
+                                {customer.telephone}
+                              </span>
+                            </>
                           ) : (
-                            <span className="text-muted-foreground text-sm">—</span>
+                            <span className="text-sm text-muted-foreground">—</span>
                           )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">
+                        </div>
+
+                        {/* Store */}
+                        <div className="md:col-span-1">
+                          <Badge variant="outline" className="text-xs whitespace-nowrap">
                             <StoreIcon className="h-3 w-3 mr-1" />
                             {getStoreName(customer.user_id)}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant={customer.orderCount > 0 ? 'default' : 'secondary'}>
-                            {customer.orderCount}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatCurrency(customer.totalSpent)}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
+                        </div>
+
+                        {/* Date */}
+                        <div className="md:col-span-1 text-sm text-muted-foreground">
                           {formatDate(customer.shopify_created_at)}
-                        </TableCell>
-                      </TableRow>
-                      <CollapsibleContent asChild>
-                        <TableRow className="bg-muted/30">
-                          <TableCell colSpan={8} className="p-0">
-                            <div className="p-4">
-                              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                                <ShoppingCart className="h-4 w-4" />
-                                Order History ({customer.orderCount} orders)
-                              </h4>
-                              {customer.orders.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">No orders found for this customer</p>
-                              ) : (
-                                <div className="rounded-md border bg-background">
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow>
-                                        <TableHead>Order #</TableHead>
-                                        <TableHead>Date</TableHead>
-                                        <TableHead>Location</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Opt-In</TableHead>
-                                        <TableHead className="text-right">Amount</TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {customer.orders.slice(0, 10).map((order) => (
-                                        <TableRow key={order.id}>
-                                          <TableCell className="font-medium">
-                                            {order.name || order.external_id}
-                                          </TableCell>
-                                          <TableCell className="text-sm">
-                                            {formatDate(order.shopify_created_at)}
-                                          </TableCell>
-                                          <TableCell className="text-sm">
-                                            {order.city && order.country 
-                                              ? `${order.city}, ${order.country}`
-                                              : order.city || order.country || '—'}
-                                          </TableCell>
-                                          <TableCell>
-                                            <Badge variant="outline" className="text-xs capitalize">
-                                              {order.payment_status || 'unknown'}
-                                            </Badge>
-                                          </TableCell>
-                                          <TableCell>
-                                            <Badge 
-                                              variant={order.opt_in ? 'default' : 'secondary'}
-                                              className="text-xs"
-                                            >
-                                              {order.opt_in ? 'Yes' : 'No'}
-                                            </Badge>
-                                          </TableCell>
-                                          <TableCell className="text-right font-medium">
-                                            {formatCurrency(order.total_price || 0)}
-                                          </TableCell>
-                                        </TableRow>
-                                      ))}
-                                      {customer.orders.length > 10 && (
-                                        <TableRow>
-                                          <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
-                                            ... and {customer.orders.length - 10} more orders
-                                          </TableCell>
-                                        </TableRow>
-                                      )}
-                                    </TableBody>
-                                  </Table>
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                        </div>
+                      </div>
+
+                      {/* Order Stats */}
+                      <div className="flex items-center gap-4 shrink-0">
+                        <Badge variant={customer.orderCount > 0 ? 'default' : 'secondary'}>
+                          {customer.orderCount} orders
+                        </Badge>
+                        <span className="font-medium text-foreground min-w-[80px] text-right">
+                          {formatCurrency(customer.totalSpent)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Expanded Order History */}
+                    {isExpanded && (
+                      <div className="border-t bg-muted/30 p-4">
+                        <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                          <ShoppingCart className="h-4 w-4" />
+                          Order History ({customer.orderCount} orders)
+                        </h4>
+                        
+                        {customer.orders.length === 0 ? (
+                          <p className="text-sm text-muted-foreground py-4 text-center">
+                            No orders found for this customer
+                          </p>
+                        ) : (
+                          <div className="rounded-md border bg-background overflow-hidden">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead className="w-[140px]">Order #</TableHead>
+                                  <TableHead className="w-[120px]">Date</TableHead>
+                                  <TableHead className="w-[180px]">Location</TableHead>
+                                  <TableHead className="w-[100px]">Status</TableHead>
+                                  <TableHead className="w-[80px]">Opt-In</TableHead>
+                                  <TableHead className="w-[100px] text-right">Amount</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {customer.orders.slice(0, 10).map((order) => (
+                                  <TableRow key={order.id}>
+                                    <TableCell className="font-medium">
+                                      {order.name || order.external_id}
+                                    </TableCell>
+                                    <TableCell className="text-sm text-muted-foreground">
+                                      {formatDate(order.shopify_created_at)}
+                                    </TableCell>
+                                    <TableCell className="text-sm text-muted-foreground">
+                                      {order.city && order.country 
+                                        ? `${order.city}, ${order.country}`
+                                        : order.city || order.country || '—'}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge variant="outline" className="text-xs capitalize">
+                                        {order.payment_status || 'unknown'}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Badge 
+                                        variant={order.opt_in ? 'default' : 'secondary'}
+                                        className="text-xs"
+                                      >
+                                        {order.opt_in ? 'Yes' : 'No'}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right font-medium">
+                                      {formatCurrency(order.total_price || 0)}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                                {customer.orders.length > 10 && (
+                                  <TableRow>
+                                    <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-3">
+                                      ... and {customer.orders.length - 10} more orders
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </TableBody>
+                            </Table>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center justify-between pt-4">
               <p className="text-sm text-muted-foreground">
                 Page {currentPage} of {totalPages}
               </p>
