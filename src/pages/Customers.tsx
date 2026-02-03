@@ -116,8 +116,9 @@ const Customers = () => {
   const syncCustomers = async () => {
     setIsSyncing(true);
     try {
+      // pagesLimit: 0 means fetch ALL pages (70k+ customers)
       const { data, error } = await supabase.functions.invoke('sync-customers-api', {
-        body: { forceFull: false, pagesLimit: 10 },
+        body: { forceFull: false, pagesLimit: 0 },
       });
 
       if (error) throw error;
@@ -180,17 +181,18 @@ const Customers = () => {
         return;
       }
 
-      const shopifyCustomerIds = customersData
-        .map(c => c.shopify_customer_id)
+      // Use external_id for matching (orders.customer_id = customers.external_id)
+      const customerExternalIds = customersData
+        .map(c => c.external_id)
         .filter(Boolean);
 
       let ordersMap = new Map<string, Order[]>();
       
-      if (shopifyCustomerIds.length > 0) {
+      if (customerExternalIds.length > 0) {
         const { data: ordersData, error: ordersError } = await supabase
           .from('imported_orders')
           .select('id, external_id, name, total_price, opt_in, payment_status, shopify_created_at, city, country, customer_id')
-          .in('customer_id', shopifyCustomerIds)
+          .in('customer_id', customerExternalIds)
           .order('shopify_created_at', { ascending: false });
 
         if (!ordersError && ordersData) {
@@ -215,7 +217,8 @@ const Customers = () => {
       }
 
       const customersWithOrders: CustomerWithOrders[] = customersData.map(customer => {
-        const customerOrders = ordersMap.get(customer.shopify_customer_id || '') || [];
+        // Match orders using external_id (orders.customer_id = customers.external_id)
+        const customerOrders = ordersMap.get(customer.external_id || '') || [];
         const totalSpent = customerOrders.reduce((sum, order) => sum + (order.total_price || 0), 0);
         
         return {
