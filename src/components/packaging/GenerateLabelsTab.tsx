@@ -179,35 +179,87 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
-    const totalImages = generatedLabels.length * 2; // QR + barcode per label
-    
+    // Generate labels based on selected style
     const labelsHtml = generatedLabels
       .map(
-        (label, index) => `
-        <div class="label-card">
-          <div class="qr-container">
-            <img src="${label.qrDataUrl}" alt="QR Code" class="qr-img" data-img-index="${index * 2}" />
-          </div>
-          <div class="barcode-container">
-            <img src="${label.barcodeDataUrl}" alt="Barcode" class="barcode-img" data-img-index="${index * 2 + 1}" />
-          </div>
-          <div class="label-id">${label.labelId}</div>
-        </div>
-      `
+        (label, index) => {
+          if (labelStyle === "compact") {
+            // QR only style
+            return `
+              <div class="label-card">
+                <div class="corner-mark top-left"></div>
+                <div class="corner-mark top-right"></div>
+                <div class="corner-mark bottom-left"></div>
+                <div class="corner-mark bottom-right"></div>
+                <div class="label-content">
+                  <div class="brand-text">Powered by <strong>Kvatt</strong></div>
+                  <img src="${label.qrDataUrl}" alt="QR Code" class="qr-img" />
+                  <div class="label-id">${label.labelId}</div>
+                </div>
+              </div>
+            `;
+          } else if (labelStyle === "detailed") {
+            // Detailed style with message
+            return `
+              <div class="label-card label-card-horizontal">
+                <div class="corner-mark top-left"></div>
+                <div class="corner-mark top-right"></div>
+                <div class="corner-mark bottom-left"></div>
+                <div class="corner-mark bottom-right"></div>
+                <div class="label-content-horizontal">
+                  <div class="qr-section">
+                    <div class="brand-text">Powered by <strong>Kvatt</strong></div>
+                    <img src="${label.qrDataUrl}" alt="QR Code" class="qr-img-small" />
+                    <div class="label-id-small">${label.labelId}</div>
+                  </div>
+                  <div class="message-section">
+                    <div class="message-title">BRING IT BACK, GET REWARDED!</div>
+                    <div class="message-text">Return your pack for a sustainable future.</div>
+                    <div class="scan-arrow">← Scan here</div>
+                  </div>
+                </div>
+              </div>
+            `;
+          } else {
+            // Standard style - QR with barcode
+            return `
+              <div class="label-card">
+                <div class="corner-mark top-left"></div>
+                <div class="corner-mark top-right"></div>
+                <div class="corner-mark bottom-left"></div>
+                <div class="corner-mark bottom-right"></div>
+                <div class="label-content">
+                  <div class="brand-text">Powered by <strong>Kvatt</strong></div>
+                  <img src="${label.qrDataUrl}" alt="QR Code" class="qr-img" />
+                  <img src="${label.barcodeDataUrl}" alt="Barcode" class="barcode-img" />
+                  <div class="label-id">${label.labelId}</div>
+                </div>
+              </div>
+            `;
+          }
+        }
       )
       .join("");
+
+    const gridCols = labelStyle === "detailed" ? "1" : "3";
+    const cardWidth = labelStyle === "detailed" ? "100%" : "calc(33.33% - 16px)";
 
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Pack Labels</title>
+          <title>Pack Labels - Kvatt</title>
           <style>
-            * { box-sizing: border-box; }
+            * { 
+              box-sizing: border-box; 
+              margin: 0;
+              padding: 0;
+            }
             body { 
-              font-family: Arial, sans-serif; 
+              font-family: 'Inter', Arial, sans-serif; 
               margin: 0; 
-              padding: 20px;
+              padding: 16px;
+              background: #f5f5f5;
             }
             .loading-message {
               position: fixed;
@@ -217,54 +269,159 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
               font-size: 18px;
               color: #666;
               z-index: 1000;
+              background: white;
+              padding: 20px 40px;
+              border-radius: 8px;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             }
             .labels-container {
               display: flex;
               flex-wrap: wrap;
-              gap: 10px;
+              gap: 16px;
+              justify-content: flex-start;
             }
             .label-card {
-              width: calc(50% - 10px);
-              padding: 15px;
-              border: 1px dashed #ccc;
-              page-break-inside: avoid;
-              text-align: center;
+              width: ${cardWidth};
+              position: relative;
               background: white;
+              padding: 20px;
+              page-break-inside: avoid;
             }
-            .qr-container {
+            .label-card-horizontal {
+              width: 100%;
+              max-width: 500px;
+            }
+            
+            /* Corner cutting marks */
+            .corner-mark {
+              position: absolute;
+              width: 12px;
+              height: 12px;
+            }
+            .corner-mark.top-left {
+              top: 0;
+              left: 0;
+              border-top: 1px solid #333;
+              border-left: 1px solid #333;
+            }
+            .corner-mark.top-right {
+              top: 0;
+              right: 0;
+              border-top: 1px solid #333;
+              border-right: 1px solid #333;
+            }
+            .corner-mark.bottom-left {
+              bottom: 0;
+              left: 0;
+              border-bottom: 1px solid #333;
+              border-left: 1px solid #333;
+            }
+            .corner-mark.bottom-right {
+              bottom: 0;
+              right: 0;
+              border-bottom: 1px solid #333;
+              border-right: 1px solid #333;
+            }
+            
+            .label-content {
+              text-align: center;
+              padding: 8px;
+            }
+            .label-content-horizontal {
+              display: flex;
+              align-items: center;
+              gap: 20px;
+              padding: 8px;
+            }
+            .qr-section {
+              text-align: center;
+              flex-shrink: 0;
+            }
+            .message-section {
+              text-align: left;
+              flex: 1;
+            }
+            .message-title {
+              font-family: 'Comic Sans MS', cursive, sans-serif;
+              font-weight: bold;
+              font-size: 16px;
+              color: #333;
+              margin-bottom: 4px;
+            }
+            .message-text {
+              font-family: 'Comic Sans MS', cursive, sans-serif;
+              font-size: 13px;
+              color: #333;
               margin-bottom: 8px;
+            }
+            .scan-arrow {
+              font-family: 'Comic Sans MS', cursive, sans-serif;
+              font-size: 12px;
+              color: #333;
+            }
+            .brand-text {
+              font-size: 9px;
+              color: #666;
+              margin-bottom: 8px;
+              letter-spacing: 0.5px;
+            }
+            .brand-text strong {
+              color: #333;
             }
             .qr-img {
-              width: 120px;
-              height: 120px;
-              display: inline-block;
+              width: 140px;
+              height: 140px;
+              display: block;
+              margin: 0 auto 8px auto;
             }
-            .barcode-container {
-              margin-bottom: 8px;
+            .qr-img-small {
+              width: 90px;
+              height: 90px;
+              display: block;
+              margin: 0 auto 6px auto;
             }
             .barcode-img {
-              max-width: 180px;
+              max-width: 160px;
               height: auto;
-              display: inline-block;
+              display: block;
+              margin: 0 auto 6px auto;
             }
             .label-id {
               font-size: 11px;
-              font-family: monospace;
+              font-family: 'JetBrains Mono', 'Courier New', monospace;
               color: #333;
-              word-break: break-all;
+              letter-spacing: 0.5px;
             }
+            .label-id-small {
+              font-size: 9px;
+              font-family: 'JetBrains Mono', 'Courier New', monospace;
+              color: #0066cc;
+              letter-spacing: 0.3px;
+            }
+            
             @media print {
-              body { margin: 0; padding: 10px; }
+              body { 
+                margin: 0; 
+                padding: 8px;
+                background: white;
+              }
               .loading-message { display: none; }
+              .labels-container {
+                gap: 12px;
+              }
               .label-card {
-                width: calc(50% - 5px);
-                border: 1px dashed #999;
+                width: ${labelStyle === "detailed" ? "48%" : "31%"};
+                padding: 12px;
+                background: white;
+              }
+              .corner-mark {
+                border-color: #666;
               }
             }
           </style>
         </head>
         <body>
-          <div class="loading-message" id="loadingMsg">Loading images... Please wait</div>
+          <div class="loading-message" id="loadingMsg">Loading labels... Please wait</div>
           <div class="labels-container">
             ${labelsHtml}
           </div>
@@ -274,18 +431,24 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
               var loaded = 0;
               var total = images.length;
               
+              if (total === 0) {
+                document.getElementById('loadingMsg').style.display = 'none';
+                setTimeout(function() { window.print(); }, 100);
+                return;
+              }
+              
               function checkAllLoaded() {
                 loaded++;
                 if (loaded >= total) {
                   document.getElementById('loadingMsg').style.display = 'none';
                   setTimeout(function() {
                     window.print();
-                  }, 100);
+                  }, 200);
                 }
               }
               
               images.forEach(function(img) {
-                if (img.complete) {
+                if (img.complete && img.naturalHeight !== 0) {
                   checkAllLoaded();
                 } else {
                   img.onload = checkAllLoaded;
@@ -293,11 +456,11 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                 }
               });
               
-              // Fallback: print after 3 seconds even if images haven't loaded
+              // Fallback: print after 4 seconds
               setTimeout(function() {
                 document.getElementById('loadingMsg').style.display = 'none';
                 window.print();
-              }, 3000);
+              }, 4000);
             })();
           </script>
         </body>
