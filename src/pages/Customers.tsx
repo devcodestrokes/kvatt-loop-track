@@ -442,34 +442,31 @@ const Customers = () => {
                       </Button>
 
                       {/* Customer Info */}
-                      <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-6 gap-2 md:gap-4 items-center">
-                        {/* Name */}
+                      <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-5 gap-2 md:gap-4 items-center">
+                        {/* Name - 2 lines */}
                         <div className="md:col-span-1">
                           <p className="font-medium text-foreground truncate">
-                            {customer.name || 'Unknown'}
+                            {customer.name?.split(' ')[0] || 'Unknown'}
+                          </p>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {customer.name?.split(' ').slice(1).join(' ') || ''}
                           </p>
                         </div>
 
-                        {/* Email */}
-                        <div className="md:col-span-2 flex items-center gap-2 min-w-0">
-                          <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          <span className="text-sm text-muted-foreground truncate">
-                            {customer.email || '—'}
-                          </span>
-                        </div>
-
-                        {/* Phone */}
-                        <div className="md:col-span-1 flex items-center gap-2 min-w-0">
-                          {customer.telephone ? (
-                            <>
-                              <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                              <span className="text-sm text-muted-foreground truncate">
-                                {customer.telephone}
-                              </span>
-                            </>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">—</span>
-                          )}
+                        {/* Email & Phone - 2 lines */}
+                        <div className="md:col-span-2 flex flex-col gap-0.5 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="text-sm text-muted-foreground truncate">
+                              {customer.email || '—'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="text-sm text-muted-foreground truncate">
+                              {customer.telephone || '—'}
+                            </span>
+                          </div>
                         </div>
 
                         {/* Store */}
@@ -486,12 +483,12 @@ const Customers = () => {
                         </div>
                       </div>
 
-                      {/* Order Stats */}
-                      <div className="flex items-center gap-4 shrink-0">
-                        <Badge variant={customer.orderCount > 0 ? 'default' : 'secondary'}>
+                      {/* Order Stats - 2 rows stacked */}
+                      <div className="flex flex-col items-end gap-0.5 shrink-0 min-w-[80px]">
+                        <Badge variant={customer.orderCount > 0 ? 'default' : 'secondary'} className="text-xs">
                           {customer.orderCount} orders
                         </Badge>
-                        <span className="font-medium text-foreground min-w-[80px] text-right">
+                        <span className="font-medium text-foreground text-sm">
                           {formatCurrency(customer.totalSpent)}
                         </span>
                       </div>
