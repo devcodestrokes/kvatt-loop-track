@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.fetch-customers-api]
 verify_jwt = false
+
+[functions.sync-customers-api]
+verify_jwt = false

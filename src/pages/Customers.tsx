@@ -6,40 +6,61 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Users, ChevronLeft, ChevronRight, RefreshCw, Mail, Phone, Store as StoreIcon } from 'lucide-react';
+import { 
+  Search, Users, ChevronLeft, ChevronRight, RefreshCw, Mail, Phone, 
+  Store as StoreIcon, ShoppingCart, ChevronDown, ChevronUp, Download
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MultiStoreSelector } from '@/components/dashboard/MultiStoreSelector';
 import { useStoreFilter } from '@/hooks/useStoreFilter';
 import { Store as StoreType } from '@/types/analytics';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 interface Customer {
-  id: number;
-  user_id: number;
-  shopify_customer_id: string;
-  name: string;
-  email: string;
+  id: string;
+  external_id: string;
+  user_id: string;
+  shopify_customer_id: string | null;
+  name: string | null;
+  email: string | null;
   telephone: string | null;
+  shopify_created_at: string | null;
   created_at: string;
-  updated_at: string;
 }
 
-interface Pagination {
-  current_page: number;
-  last_page: number;
-  per_page: number;
-  total: number;
-  from: number;
-  to: number;
+interface Order {
+  id: string;
+  external_id: string;
+  name: string | null;
+  total_price: number | null;
+  opt_in: boolean | null;
+  payment_status: string | null;
+  shopify_created_at: string | null;
+  city: string | null;
+  country: string | null;
+}
+
+interface CustomerWithOrders extends Customer {
+  orders: Order[];
+  orderCount: number;
+  totalSpent: number;
 }
 
 const Customers = () => {
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [pagination, setPagination] = useState<Pagination | null>(null);
+  const [customers, setCustomers] = useState<CustomerWithOrders[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [expandedCustomers, setExpandedCustomers] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+  const pageSize = 50;
   
   // Store management
   const [availableStores, setAvailableStores] = useState<StoreType[]>([]);
@@ -90,40 +111,134 @@ const Customers = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
-      setCurrentPage(1); // Reset to page 1 when searching
+      setCurrentPage(1);
     }, 500);
     
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  // Sync customers from API to Supabase
+  const syncCustomers = async () => {
+    setIsSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-customers-api', {
+        body: { forceFull: false, pagesLimit: 10 }, // Sync first 10 pages for speed
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: 'Sync Complete',
+          description: `Synced ${data.inserted} customers. Total: ${data.total?.toLocaleString()}`,
+        });
+        fetchCustomers(currentPage);
+      } else {
+        throw new Error(data.error || 'Sync failed');
+      }
+    } catch (error: any) {
+      console.error('Error syncing customers:', error);
+      toast({
+        title: 'Sync Error',
+        description: error.message || 'Failed to sync customer data',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Fetch customers from Supabase with their orders
   const fetchCustomers = useCallback(async (page: number = 1) => {
-    // Don't fetch if stores aren't initialized yet
     if (!isInitialized) return;
     
     setIsLoading(true);
     
     try {
-      // Get the first selected store or undefined for all stores
-      const storeId = selectedStores.length === 1 ? selectedStores[0] : undefined;
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      // Build customer query
+      let customerQuery = supabase
+        .from('imported_customers')
+        .select('*', { count: 'exact' });
+
+      // Apply store filter
+      if (selectedStores.length > 0 && selectedStores.length < availableStores.length) {
+        customerQuery = customerQuery.in('user_id', selectedStores);
+      }
+
+      // Apply search filter
+      if (debouncedSearch) {
+        customerQuery = customerQuery.or(`email.ilike.%${debouncedSearch}%,name.ilike.%${debouncedSearch}%`);
+      }
+
+      // Apply pagination and ordering
+      customerQuery = customerQuery
+        .order('shopify_created_at', { ascending: false, nullsFirst: false })
+        .range(from, to);
+
+      const { data: customersData, error: customersError, count } = await customerQuery;
+
+      if (customersError) throw customersError;
+
+      setTotalCount(count || 0);
+
+      if (!customersData || customersData.length === 0) {
+        setCustomers([]);
+        return;
+      }
+
+      // Get customer IDs to fetch their orders
+      const shopifyCustomerIds = customersData
+        .map(c => c.shopify_customer_id)
+        .filter(Boolean);
+
+      // Fetch orders for these customers
+      let ordersMap = new Map<string, Order[]>();
       
-      const { data, error } = await supabase.functions.invoke('fetch-customers-api', {
-        body: {
-          page,
-          store: storeId,
-          search: debouncedSearch || undefined,
-        },
+      if (shopifyCustomerIds.length > 0) {
+        const { data: ordersData, error: ordersError } = await supabase
+          .from('imported_orders')
+          .select('id, external_id, name, total_price, opt_in, payment_status, shopify_created_at, city, country, customer_id')
+          .in('customer_id', shopifyCustomerIds)
+          .order('shopify_created_at', { ascending: false });
+
+        if (!ordersError && ordersData) {
+          ordersData.forEach(order => {
+            const customerId = (order as any).customer_id;
+            if (!ordersMap.has(customerId)) {
+              ordersMap.set(customerId, []);
+            }
+            ordersMap.get(customerId)!.push({
+              id: order.id,
+              external_id: order.external_id,
+              name: order.name,
+              total_price: order.total_price,
+              opt_in: order.opt_in,
+              payment_status: order.payment_status,
+              shopify_created_at: order.shopify_created_at,
+              city: order.city,
+              country: order.country,
+            });
+          });
+        }
+      }
+
+      // Combine customers with their orders
+      const customersWithOrders: CustomerWithOrders[] = customersData.map(customer => {
+        const customerOrders = ordersMap.get(customer.shopify_customer_id || '') || [];
+        const totalSpent = customerOrders.reduce((sum, order) => sum + (order.total_price || 0), 0);
+        
+        return {
+          ...customer,
+          orders: customerOrders,
+          orderCount: customerOrders.length,
+          totalSpent,
+        };
       });
 
-      if (error) {
-        throw error;
-      }
-
-      if (data.success) {
-        setCustomers(data.data || []);
-        setPagination(data.pagination);
-      } else {
-        throw new Error(data.error || 'Failed to fetch customers');
-      }
+      setCustomers(customersWithOrders);
     } catch (error: any) {
       console.error('Error fetching customers:', error);
       toast({
@@ -134,43 +249,59 @@ const Customers = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedStores, debouncedSearch, toast, isInitialized]);
+  }, [selectedStores, debouncedSearch, toast, isInitialized, availableStores.length]);
 
-  // Fetch customers when page, store, or search changes
+  // Fetch customers when dependencies change
   useEffect(() => {
     if (isInitialized) {
       fetchCustomers(currentPage);
     }
   }, [currentPage, selectedStores, debouncedSearch, fetchCustomers, isInitialized]);
 
+  const totalPages = Math.ceil(totalCount / pageSize);
+
   const handlePrevPage = () => {
-    if (pagination && currentPage > 1) {
+    if (currentPage > 1) {
       setCurrentPage(currentPage - 1);
     }
   };
 
   const handleNextPage = () => {
-    if (pagination && currentPage < pagination.last_page) {
+    if (currentPage < totalPages) {
       setCurrentPage(currentPage + 1);
     }
   };
 
-  const handleRefresh = () => {
-    fetchCustomers(currentPage);
+  const toggleCustomerExpand = (customerId: string) => {
+    setExpandedCustomers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(customerId)) {
+        newSet.delete(customerId);
+      } else {
+        newSet.add(customerId);
+      }
+      return newSet;
+    });
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '—';
     return new Date(dateString).toLocaleDateString('en-GB', {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
     });
   };
 
-  const getStoreName = (userId: number) => {
-    const name = storeNameMapping.get(userId.toString());
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP',
+    }).format(amount);
+  };
+
+  const getStoreName = (userId: string) => {
+    const name = storeNameMapping.get(userId);
     return name || `Store ${userId}`;
   };
 
@@ -184,7 +315,7 @@ const Customers = () => {
             Customers
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            View and search customer data across all stores
+            View customers with their order history
           </p>
         </div>
         
@@ -200,7 +331,17 @@ const Customers = () => {
           <Button
             variant="outline"
             size="sm"
-            onClick={handleRefresh}
+            onClick={syncCustomers}
+            disabled={isSyncing}
+            className="gap-2"
+          >
+            <Download className={`h-4 w-4 ${isSyncing ? 'animate-pulse' : ''}`} />
+            {isSyncing ? 'Syncing...' : 'Sync Customers'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchCustomers(currentPage)}
             disabled={isLoading}
             className="gap-2"
           >
@@ -211,7 +352,7 @@ const Customers = () => {
       </div>
 
       {/* Search and Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <Card className="md:col-span-2">
           <CardContent className="pt-4">
             <div className="relative">
@@ -231,10 +372,22 @@ const Customers = () => {
             <div>
               <p className="text-sm text-muted-foreground">Total Customers</p>
               <p className="text-2xl font-bold text-foreground">
-                {pagination ? pagination.total.toLocaleString() : '—'}
+                {totalCount.toLocaleString()}
               </p>
             </div>
             <Users className="h-8 w-8 text-kvatt-terracotta/20" />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Showing</p>
+              <p className="text-2xl font-bold text-foreground">
+                {customers.length}
+              </p>
+            </div>
+            <ShoppingCart className="h-8 w-8 text-kvatt-terracotta/20" />
           </CardContent>
         </Card>
       </div>
@@ -244,9 +397,9 @@ const Customers = () => {
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Customer List</CardTitle>
           <CardDescription>
-            {pagination
-              ? `Showing ${pagination.from || 0} to ${pagination.to || 0} of ${pagination.total.toLocaleString()} customers`
-              : 'Loading customers...'}
+            {totalCount > 0
+              ? `Showing ${(currentPage - 1) * pageSize + 1} to ${Math.min(currentPage * pageSize, totalCount)} of ${totalCount.toLocaleString()} customers`
+              : 'No customers found'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -254,68 +407,171 @@ const Customers = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[40px]"></TableHead>
                   <TableHead className="w-[200px]">Name</TableHead>
                   <TableHead className="w-[250px]">Email</TableHead>
-                  <TableHead className="w-[150px]">Phone</TableHead>
-                  <TableHead className="w-[120px]">Store</TableHead>
-                  <TableHead className="w-[180px]">Created</TableHead>
+                  <TableHead className="w-[120px]">Phone</TableHead>
+                  <TableHead className="w-[100px]">Store</TableHead>
+                  <TableHead className="w-[80px] text-center">Orders</TableHead>
+                  <TableHead className="w-[100px] text-right">Total Spent</TableHead>
+                  <TableHead className="w-[100px]">Joined</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   Array.from({ length: 10 }).map((_, i) => (
                     <TableRow key={i}>
+                      <TableCell><Skeleton className="h-4 w-4" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-48" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-20" /></TableCell>
-                      <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-12 mx-auto" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                     </TableRow>
                   ))
                 ) : customers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">
+                    <TableCell colSpan={8} className="h-24 text-center">
                       <div className="flex flex-col items-center gap-2 text-muted-foreground">
                         <Users className="h-8 w-8" />
                         <p>No customers found</p>
                         {debouncedSearch && (
                           <p className="text-sm">Try adjusting your search query</p>
                         )}
+                        {!debouncedSearch && totalCount === 0 && (
+                          <Button variant="outline" size="sm" onClick={syncCustomers} className="mt-2">
+                            <Download className="h-4 w-4 mr-2" />
+                            Sync Customers from API
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
                 ) : (
                   customers.map((customer) => (
-                    <TableRow key={customer.id}>
-                      <TableCell className="font-medium">
-                        {customer.name || '—'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="text-sm">{customer.email}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {customer.telephone ? (
+                    <Collapsible key={customer.id} open={expandedCustomers.has(customer.id)}>
+                      <TableRow className="cursor-pointer hover:bg-muted/50" onClick={() => toggleCustomerExpand(customer.id)}>
+                        <TableCell>
+                          <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                              {expandedCustomers.has(customer.id) ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </CollapsibleTrigger>
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {customer.name || '—'}
+                        </TableCell>
+                        <TableCell>
                           <div className="flex items-center gap-2">
-                            <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span className="text-sm">{customer.telephone}</span>
+                            <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-sm">{customer.email || '—'}</span>
                           </div>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">—</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          <StoreIcon className="h-3 w-3 mr-1" />
-                          {getStoreName(customer.user_id)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {formatDate(customer.created_at)}
-                      </TableCell>
-                    </TableRow>
+                        </TableCell>
+                        <TableCell>
+                          {customer.telephone ? (
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span className="text-sm">{customer.telephone}</span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            <StoreIcon className="h-3 w-3 mr-1" />
+                            {getStoreName(customer.user_id)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant={customer.orderCount > 0 ? 'default' : 'secondary'}>
+                            {customer.orderCount}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatCurrency(customer.totalSpent)}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {formatDate(customer.shopify_created_at)}
+                        </TableCell>
+                      </TableRow>
+                      <CollapsibleContent asChild>
+                        <TableRow className="bg-muted/30">
+                          <TableCell colSpan={8} className="p-0">
+                            <div className="p-4">
+                              <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                                <ShoppingCart className="h-4 w-4" />
+                                Order History ({customer.orderCount} orders)
+                              </h4>
+                              {customer.orders.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">No orders found for this customer</p>
+                              ) : (
+                                <div className="rounded-md border bg-background">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead>Order #</TableHead>
+                                        <TableHead>Date</TableHead>
+                                        <TableHead>Location</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead>Opt-In</TableHead>
+                                        <TableHead className="text-right">Amount</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {customer.orders.slice(0, 10).map((order) => (
+                                        <TableRow key={order.id}>
+                                          <TableCell className="font-medium">
+                                            {order.name || order.external_id}
+                                          </TableCell>
+                                          <TableCell className="text-sm">
+                                            {formatDate(order.shopify_created_at)}
+                                          </TableCell>
+                                          <TableCell className="text-sm">
+                                            {order.city && order.country 
+                                              ? `${order.city}, ${order.country}`
+                                              : order.city || order.country || '—'}
+                                          </TableCell>
+                                          <TableCell>
+                                            <Badge variant="outline" className="text-xs capitalize">
+                                              {order.payment_status || 'unknown'}
+                                            </Badge>
+                                          </TableCell>
+                                          <TableCell>
+                                            <Badge 
+                                              variant={order.opt_in ? 'default' : 'secondary'}
+                                              className="text-xs"
+                                            >
+                                              {order.opt_in ? 'Yes' : 'No'}
+                                            </Badge>
+                                          </TableCell>
+                                          <TableCell className="text-right font-medium">
+                                            {formatCurrency(order.total_price || 0)}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                      {customer.orders.length > 10 && (
+                                        <TableRow>
+                                          <TableCell colSpan={6} className="text-center text-sm text-muted-foreground">
+                                            ... and {customer.orders.length - 10} more orders
+                                          </TableCell>
+                                        </TableRow>
+                                      )}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      </CollapsibleContent>
+                    </Collapsible>
                   ))
                 )}
               </TableBody>
@@ -323,10 +579,10 @@ const Customers = () => {
           </div>
 
           {/* Pagination */}
-          {pagination && (
+          {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4">
               <p className="text-sm text-muted-foreground">
-                Page {pagination.current_page} of {pagination.last_page}
+                Page {currentPage} of {totalPages}
               </p>
               <div className="flex items-center gap-2">
                 <Button
@@ -342,7 +598,7 @@ const Customers = () => {
                   variant="outline"
                   size="sm"
                   onClick={handleNextPage}
-                  disabled={currentPage >= pagination.last_page || isLoading}
+                  disabled={currentPage >= totalPages || isLoading}
                 >
                   Next
                   <ChevronRight className="h-4 w-4" />
