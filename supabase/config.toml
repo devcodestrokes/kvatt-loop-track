@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.get-store-mapping]
 verify_jwt = false
+
+[functions.fetch-customers-api]
+verify_jwt = false
