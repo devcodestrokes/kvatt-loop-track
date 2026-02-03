@@ -13,7 +13,8 @@ import {
   Lightbulb,
   LogOut,
   ChevronRight,
-  Users
+  Users,
+  Search
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import kvattLogo from '@/assets/kvatt-logo.jpeg';
@@ -37,6 +38,7 @@ const overviewItems = [
   { title: 'Analytics', url: '/', icon: BarChart3 },
   { title: 'Insights', url: '/insights', icon: Lightbulb },
   { title: 'Customers', url: '/customers', icon: Users },
+  { title: 'Search Orders', url: '/search-orders', icon: Search },
 ];
 
 const packagingItems = [

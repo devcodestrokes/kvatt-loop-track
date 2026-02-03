@@ -17,6 +17,7 @@ import CircularityReports from "./pages/CircularityReports";
 import LandingPages from "./pages/LandingPages";
 import Insights from "./pages/Insights";
 import Customers from "./pages/Customers";
+import SearchOrders from "./pages/SearchOrders";
 import Settings from "./pages/Settings";
 import Help from "./pages/Help";
 import Auth from "./pages/Auth";
@@ -50,6 +51,7 @@ const App = () => (
                       <Route path="/landing-pages" element={<LandingPages />} />
                       <Route path="/insights" element={<Insights />} />
                       <Route path="/customers" element={<Customers />} />
+                      <Route path="/search-orders" element={<SearchOrders />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/help" element={<Help />} />
                       <Route path="*" element={<NotFound />} />
