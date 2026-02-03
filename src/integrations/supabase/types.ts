@@ -139,6 +139,45 @@ export type Database = {
         }
         Relationships: []
       }
+      imported_customers: {
+        Row: {
+          created_at: string
+          email: string | null
+          external_id: string
+          id: string
+          name: string | null
+          shopify_created_at: string | null
+          shopify_customer_id: string | null
+          telephone: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          external_id: string
+          id?: string
+          name?: string | null
+          shopify_created_at?: string | null
+          shopify_customer_id?: string | null
+          telephone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          external_id?: string
+          id?: string
+          name?: string | null
+          shopify_created_at?: string | null
+          shopify_customer_id?: string | null
+          telephone?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       imported_orders: {
         Row: {
           city: string | null
