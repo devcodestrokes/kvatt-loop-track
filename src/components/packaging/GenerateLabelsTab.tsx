@@ -130,19 +130,19 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
 
+    const totalImages = generatedLabels.length * 2; // QR + barcode per label
+    
     const labelsHtml = generatedLabels
       .map(
-        (label) => `
-        <div style="display: inline-block; width: 48%; margin: 1%; padding: 10px; border: 1px dashed #ccc; page-break-inside: avoid;">
-          <div style="text-align: center; margin-bottom: 5px;">
-            <img src="${label.qrDataUrl}" alt="QR Code" style="width: 100px; height: 100px;" />
+        (label, index) => `
+        <div class="label-card">
+          <div class="qr-container">
+            <img src="${label.qrDataUrl}" alt="QR Code" class="qr-img" data-img-index="${index * 2}" />
           </div>
-          <div style="text-align: center; margin-bottom: 5px;">
-            <img src="${label.barcodeDataUrl}" alt="Barcode" style="max-width: 150px;" />
+          <div class="barcode-container">
+            <img src="${label.barcodeDataUrl}" alt="Barcode" class="barcode-img" data-img-index="${index * 2 + 1}" />
           </div>
-          <div style="text-align: center; font-size: 10px; font-family: monospace;">
-            ${label.labelId}
-          </div>
+          <div class="label-id">${label.labelId}</div>
         </div>
       `
       )
@@ -154,15 +154,103 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
         <head>
           <title>Pack Labels</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
+            * { box-sizing: border-box; }
+            body { 
+              font-family: Arial, sans-serif; 
+              margin: 0; 
+              padding: 20px;
+            }
+            .loading-message {
+              position: fixed;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              font-size: 18px;
+              color: #666;
+              z-index: 1000;
+            }
+            .labels-container {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 10px;
+            }
+            .label-card {
+              width: calc(50% - 10px);
+              padding: 15px;
+              border: 1px dashed #ccc;
+              page-break-inside: avoid;
+              text-align: center;
+              background: white;
+            }
+            .qr-container {
+              margin-bottom: 8px;
+            }
+            .qr-img {
+              width: 120px;
+              height: 120px;
+              display: inline-block;
+            }
+            .barcode-container {
+              margin-bottom: 8px;
+            }
+            .barcode-img {
+              max-width: 180px;
+              height: auto;
+              display: inline-block;
+            }
+            .label-id {
+              font-size: 11px;
+              font-family: monospace;
+              color: #333;
+              word-break: break-all;
+            }
             @media print {
-              body { margin: 0; }
+              body { margin: 0; padding: 10px; }
+              .loading-message { display: none; }
+              .label-card {
+                width: calc(50% - 5px);
+                border: 1px dashed #999;
+              }
             }
           </style>
         </head>
         <body>
-          ${labelsHtml}
-          <script>window.print();</script>
+          <div class="loading-message" id="loadingMsg">Loading images... Please wait</div>
+          <div class="labels-container">
+            ${labelsHtml}
+          </div>
+          <script>
+            (function() {
+              var images = document.querySelectorAll('img');
+              var loaded = 0;
+              var total = images.length;
+              
+              function checkAllLoaded() {
+                loaded++;
+                if (loaded >= total) {
+                  document.getElementById('loadingMsg').style.display = 'none';
+                  setTimeout(function() {
+                    window.print();
+                  }, 100);
+                }
+              }
+              
+              images.forEach(function(img) {
+                if (img.complete) {
+                  checkAllLoaded();
+                } else {
+                  img.onload = checkAllLoaded;
+                  img.onerror = checkAllLoaded;
+                }
+              });
+              
+              // Fallback: print after 3 seconds even if images haven't loaded
+              setTimeout(function() {
+                document.getElementById('loadingMsg').style.display = 'none';
+                window.print();
+              }, 3000);
+            })();
+          </script>
         </body>
       </html>
     `);
