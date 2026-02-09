@@ -39,7 +39,6 @@ const overviewItems = [
   { title: 'Analytics', url: '/', icon: BarChart3 },
   { title: 'Insights', url: '/insights', icon: Lightbulb },
   { title: 'Customers', url: '/customers', icon: Users },
-  { title: 'Search Orders', url: '/search-orders', icon: Search },
 ];
 
 const packagingItems = [
