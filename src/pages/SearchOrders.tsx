@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Search, Mail, Package, Calendar, DollarSign, MapPin, Loader2, Store } from "lucide-react";
+import { useState } from "react";
+import { Search, Mail, Package, Calendar, DollarSign, MapPin, Loader2, Store, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -37,6 +37,22 @@ const STORE_MAPPINGS: Record<string, string> = {
 const getStoreName = (userId: string | null): string => {
   if (!userId) return "N/A";
   return STORE_MAPPINGS[userId] || `Store ${userId}`;
+};
+
+const getReturnPortalUrl = (order: OrderResult, customerEmail: string): string | null => {
+  const storeName = getStoreName(order.user_id);
+  const orderId = order.shopify_order_id || order.name || '';
+  
+  switch (storeName) {
+    case 'SIRPLUS':
+      return `https://returnsportal.shop/sirplus?s=1&lang=&e=${encodeURIComponent(customerEmail)}&o=${encodeURIComponent(orderId)}&a=true`;
+    case 'Universal Works':
+      return `https://returns.universalworks.co.uk/?s=1&lang=&e=${encodeURIComponent(customerEmail)}&o=${encodeURIComponent(orderId)}`;
+    case 'TOAST':
+      return `https://toast.returns.international/`;
+    default:
+      return null;
+  }
 };
 
 interface OrderResult {
@@ -248,59 +264,70 @@ export default function SearchOrders() {
               </div>
             ) : (
               <div className="space-y-3">
-                {orders.map((order) => (
-                  <div
-                    key={order.id}
-                    className="flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50"
-                  >
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{order.name}</span>
-                        {order.shopify_order_id && (
-                          <span className="text-xs text-muted-foreground">
-                            (Shopify: {order.shopify_order_id})
-                          </span>
-                        )}
-                        <Badge
-                          variant={order.opt_in ? "default" : "secondary"}
-                          className="text-xs"
-                        >
-                          {order.opt_in ? "Opted In" : "Opted Out"}
-                        </Badge>
-                        {order.payment_status && (
-                          <Badge variant="outline" className="text-xs">
-                            {order.payment_status}
+                {orders.map((order) => {
+                  const returnUrl = customer ? getReturnPortalUrl(order, customer.email) : null;
+                  return (
+                    <div
+                      key={order.id}
+                      className={`flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50 ${returnUrl ? 'cursor-pointer' : ''}`}
+                      onClick={() => {
+                        if (returnUrl) {
+                          window.open(returnUrl, '_blank', 'noopener,noreferrer');
+                        }
+                      }}
+                    >
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{order.name}</span>
+                          {order.shopify_order_id && (
+                            <span className="text-xs text-muted-foreground">
+                              (Shopify: {order.shopify_order_id})
+                            </span>
+                          )}
+                          <Badge
+                            variant={order.opt_in ? "default" : "secondary"}
+                            className="text-xs"
+                          >
+                            {order.opt_in ? "Opted In" : "Opted Out"}
                           </Badge>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {order.shopify_created_at
-                            ? format(new Date(order.shopify_created_at), "MMM d, yyyy")
-                            : "N/A"}
-                        </span>
-                        {(order.city || order.country) && (
+                          {order.payment_status && (
+                            <Badge variant="outline" className="text-xs">
+                              {order.payment_status}
+                            </Badge>
+                          )}
+                          {returnUrl && (
+                            <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {[order.city, order.province, order.country]
-                              .filter(Boolean)
-                              .join(", ")}
+                            <Calendar className="h-3 w-3" />
+                            {order.shopify_created_at
+                              ? format(new Date(order.shopify_created_at), "MMM d, yyyy")
+                              : "N/A"}
                           </span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <Store className="h-3 w-3" />
-                          {getStoreName(order.user_id)}
-                        </span>
+                          {(order.city || order.country) && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {[order.city, order.province, order.country]
+                                .filter(Boolean)
+                                .join(", ")}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Store className="h-3 w-3" />
+                            {getStoreName(order.user_id)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-semibold">
+                          £{(order.total_price || 0).toFixed(2)}
+                        </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-lg font-semibold">
-                        £{(order.total_price || 0).toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
