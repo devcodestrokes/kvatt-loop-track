@@ -100,36 +100,30 @@ export default function SearchOrders() {
     setSearched(true);
 
     try {
-      // Step 1: Find customer by email (indexed query)
-      const { data: customerData, error: customerError } = await supabase
-        .from("imported_customers")
-        .select("external_id, name, email, telephone")
-        .ilike("email", email.trim())
-        .limit(1)
-        .single();
+      const { data, error: fnError } = await supabase.functions.invoke('search-orders-by-email', {
+        body: { email: email.trim() },
+      });
 
-      if (customerError || !customerData) {
-        setError("No customer found with this email");
+      if (fnError) {
+        setError("Failed to search orders");
         setLoading(false);
         return;
       }
 
-      setCustomer(customerData);
-
-      // Step 2: Fetch orders by customer_id (indexed query)
-      const { data: ordersData, error: ordersError } = await supabase
-        .from("imported_orders")
-        .select("id, name, total_price, opt_in, payment_status, shopify_created_at, shopify_order_id, city, province, country, user_id")
-        .eq("customer_id", customerData.external_id)
-        .order("shopify_created_at", { ascending: false });
-
-      if (ordersError) {
-        setError("Failed to fetch orders");
+      if (!data?.success || !data?.customer) {
+        setError(data?.message || "No customer found with this email");
         setLoading(false);
         return;
       }
 
-      setOrders(ordersData || []);
+      setCustomer({
+        external_id: data.customer.id,
+        name: data.customer.name,
+        email: data.customer.email,
+        telephone: data.customer.telephone,
+      });
+
+      setOrders(data.orders || []);
     } catch (err) {
       setError("An error occurred while searching");
     } finally {
