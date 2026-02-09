@@ -347,7 +347,7 @@ const Customers = () => {
   const handleOrderClick = (customer: CustomerWithOrders, order: Order) => {
     const storeName = getStoreName(customer.user_id);
     const email = customer.email || '';
-    const orderName = order.name || order.external_id;
+    const orderName = (order.name || order.external_id).replace(/^#/, '');
     const url = getReturnPortalUrl(storeName, email, orderName);
     if (url) {
       window.open(url, '_blank');
