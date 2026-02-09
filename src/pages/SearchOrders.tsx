@@ -39,9 +39,14 @@ const getStoreName = (userId: string | null): string => {
   return STORE_MAPPINGS[userId] || `Store ${userId}`;
 };
 
+const extractOrderNumber = (orderName: string): string => {
+  // Strip any prefix like "#" or store-specific prefixes (e.g., "#277766", "SP163967", "UKT2344084")
+  return orderName.replace(/^#/, '');
+};
+
 const getReturnPortalUrl = (order: OrderResult, customerEmail: string): string | null => {
   const storeName = getStoreName(order.user_id);
-  const orderId = order.shopify_order_id || order.name || '';
+  const orderId = extractOrderNumber(order.name || '');
   
   switch (storeName) {
     case 'SIRPLUS':
