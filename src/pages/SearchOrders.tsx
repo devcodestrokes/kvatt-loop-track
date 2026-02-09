@@ -135,12 +135,6 @@ export default function SearchOrders() {
 
   return (
     <div className="space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Search Orders</h1>
-        <p className="text-sm text-muted-foreground">
-          Find all orders by customer email
-        </p>
-      </div>
 
       {/* Search Form */}
       <Card>
