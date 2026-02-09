@@ -35,6 +35,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/search-orders" element={<SearchOrders />} />
             <Route
               path="/*"
               element={
@@ -52,7 +53,6 @@ const App = () => (
                       <Route path="/landing-pages" element={<LandingPages />} />
                       <Route path="/insights" element={<Insights />} />
                       <Route path="/customers" element={<Customers />} />
-                      <Route path="/search-orders" element={<SearchOrders />} />
                       <Route path="/packaging-labels" element={<PackagingLabels />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/help" element={<Help />} />
