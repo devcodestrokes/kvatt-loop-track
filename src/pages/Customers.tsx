@@ -8,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Search, Users, ChevronLeft, ChevronRight, RefreshCw, Mail, Phone, 
-  Store as StoreIcon, ShoppingCart, ChevronDown, ChevronUp, Download
+  Store as StoreIcon, ShoppingCart, ChevronDown, ChevronUp, Download, ExternalLink
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { MultiStoreSelector } from '@/components/dashboard/MultiStoreSelector';
@@ -330,6 +330,30 @@ const Customers = () => {
     return name || `Store ${userId}`;
   };
 
+  const getReturnPortalUrl = (storeName: string, email: string, orderName: string) => {
+    const lowerStore = storeName.toLowerCase();
+    if (lowerStore.includes('sirplus')) {
+      return `https://returnsportal.shop/sirplus?s=1&lang=&e=${encodeURIComponent(email)}&o=${encodeURIComponent(orderName)}&a=true`;
+    }
+    if (lowerStore.includes('universal works')) {
+      return `https://returns.universalworks.co.uk/?s=1&lang=&e=${encodeURIComponent(email)}&o=${encodeURIComponent(orderName)}`;
+    }
+    if (lowerStore.includes('toast')) {
+      return `https://toast.returns.international/`;
+    }
+    return null;
+  };
+
+  const handleOrderClick = (customer: CustomerWithOrders, order: Order) => {
+    const storeName = getStoreName(customer.user_id);
+    const email = customer.email || '';
+    const orderName = order.name || order.external_id;
+    const url = getReturnPortalUrl(storeName, email, orderName);
+    if (url) {
+      window.open(url, '_blank');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-6 space-y-6">
       {/* Header */}
@@ -565,37 +589,48 @@ const Customers = () => {
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {customer.orders.slice(0, 10).map((order) => (
-                                  <TableRow key={order.id}>
-                                    <TableCell className="font-medium">
-                                      {order.name || order.external_id}
-                                    </TableCell>
-                                    <TableCell className="text-sm text-muted-foreground">
-                                      {formatDate(order.shopify_created_at)}
-                                    </TableCell>
-                                    <TableCell className="text-sm text-muted-foreground">
-                                      {order.city && order.country 
-                                        ? `${order.city}, ${order.country}`
-                                        : order.city || order.country || '—'}
-                                    </TableCell>
-                                    <TableCell>
-                                      <Badge variant="outline" className="text-xs capitalize">
-                                        {order.payment_status || 'unknown'}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                      <Badge 
-                                        variant={order.opt_in ? 'default' : 'secondary'}
-                                        className="text-xs"
-                                      >
-                                        {order.opt_in ? 'Yes' : 'No'}
-                                      </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right font-medium">
-                                      {formatCurrency(order.total_price || 0)}
-                                    </TableCell>
-                                  </TableRow>
-                                ))}
+                                {customer.orders.slice(0, 10).map((order) => {
+                                  const storeName = getStoreName(customer.user_id);
+                                  const hasPortal = !!getReturnPortalUrl(storeName, customer.email || '', order.name || order.external_id);
+                                  return (
+                                    <TableRow 
+                                      key={order.id}
+                                      className={hasPortal ? 'cursor-pointer hover:bg-muted/50' : ''}
+                                      onClick={() => hasPortal && handleOrderClick(customer, order)}
+                                    >
+                                      <TableCell className="font-medium">
+                                        <span className="flex items-center gap-1.5">
+                                          {order.name || order.external_id}
+                                          {hasPortal && <ExternalLink className="h-3 w-3 text-muted-foreground" />}
+                                        </span>
+                                      </TableCell>
+                                      <TableCell className="text-sm text-muted-foreground">
+                                        {formatDate(order.shopify_created_at)}
+                                      </TableCell>
+                                      <TableCell className="text-sm text-muted-foreground">
+                                        {order.city && order.country 
+                                          ? `${order.city}, ${order.country}`
+                                          : order.city || order.country || '—'}
+                                      </TableCell>
+                                      <TableCell>
+                                        <Badge variant="outline" className="text-xs capitalize">
+                                          {order.payment_status || 'unknown'}
+                                        </Badge>
+                                      </TableCell>
+                                      <TableCell>
+                                        <Badge 
+                                          variant={order.opt_in ? 'default' : 'secondary'}
+                                          className="text-xs"
+                                        >
+                                          {order.opt_in ? 'Yes' : 'No'}
+                                        </Badge>
+                                      </TableCell>
+                                      <TableCell className="text-right font-medium">
+                                        {formatCurrency(order.total_price || 0)}
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                })}
                                 {customer.orders.length > 10 && (
                                   <TableRow>
                                     <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-3">
