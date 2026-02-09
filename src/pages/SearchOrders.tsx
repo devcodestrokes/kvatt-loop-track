@@ -46,6 +46,7 @@ interface OrderResult {
   opt_in: boolean;
   payment_status: string;
   shopify_created_at: string;
+  shopify_order_id: string | null;
   city: string;
   province: string;
   country: string;
@@ -97,7 +98,7 @@ export default function SearchOrders() {
       // Step 2: Fetch orders by customer_id (indexed query)
       const { data: ordersData, error: ordersError } = await supabase
         .from("imported_orders")
-        .select("id, name, total_price, opt_in, payment_status, shopify_created_at, city, province, country, user_id")
+        .select("id, name, total_price, opt_in, payment_status, shopify_created_at, shopify_order_id, city, province, country, user_id")
         .eq("customer_id", customerData.external_id)
         .order("shopify_created_at", { ascending: false });
 
@@ -255,6 +256,11 @@ export default function SearchOrders() {
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{order.name}</span>
+                        {order.shopify_order_id && (
+                          <span className="text-xs text-muted-foreground">
+                            (Shopify: {order.shopify_order_id})
+                          </span>
+                        )}
                         <Badge
                           variant={order.opt_in ? "default" : "secondary"}
                           className="text-xs"
