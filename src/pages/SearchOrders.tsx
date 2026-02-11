@@ -79,17 +79,21 @@ interface CustomerInfo {
 
 function SupportFooter() {
   return (
-    <div className="mt-auto pt-12 pb-8 text-center">
-      <p className="text-sm font-medium text-stone-500 mb-3">need support?</p>
-      <div className="flex flex-col items-center gap-2 text-sm text-stone-600">
-        <a href="mailto:returns@kvatt.com" className="flex items-center gap-2 hover:text-stone-900 transition-colors">
-          <Mail className="h-4 w-4" />
-          returns@kvatt.com
-        </a>
-        <a href="https://wa.me/447549884850" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-stone-900 transition-colors">
-          <Phone className="h-4 w-4" />
-          +44 (0) 75.49.88.48.50
-        </a>
+    <div className="mt-auto pt-16 pb-8">
+      <p className="text-sm font-semibold text-stone-700 mb-3">Need support:</p>
+      <div className="flex flex-col gap-1.5 text-sm text-stone-600">
+        <p>
+          <span className="font-semibold">email:</span>{" "}
+          <a href="mailto:returns@kvatt.com" className="hover:text-stone-900 transition-colors">
+            returns@kvatt.com
+          </a>
+        </p>
+        <p>
+          <span className="font-semibold">whatsapp:</span>{" "}
+          <a href="https://wa.me/447549884850" target="_blank" rel="noopener noreferrer" className="hover:text-stone-900 transition-colors">
+            +44 (0) 75.49.88.48.50
+          </a>
+        </p>
       </div>
     </div>
   );
@@ -103,7 +107,7 @@ export default function SearchOrders() {
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [step, setStep] = useState<'search' | 'results'>('search');
+  const [step, setStep] = useState<'start' | 'search' | 'results'>('start');
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,12 +155,16 @@ export default function SearchOrders() {
   };
 
   const handleBack = () => {
-    setStep('search');
-    setSearched(false);
-    setError(null);
-    setOrders([]);
-    setCustomer(null);
-    setSelectedOrderId(null);
+    if (step === 'results') {
+      setStep('search');
+      setSearched(false);
+      setError(null);
+      setOrders([]);
+      setCustomer(null);
+      setSelectedOrderId(null);
+    } else if (step === 'search') {
+      setStep('start');
+    }
   };
 
   const handleConfirmReturn = () => {
@@ -184,11 +192,11 @@ export default function SearchOrders() {
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#e8e4de' }}>
       <div className="flex-1 flex flex-col w-full max-w-md mx-auto px-6 py-8">
 
-        {/* Back button on results step */}
-        {step === 'results' && (
+        {/* Back button */}
+        {(step === 'results' || step === 'search') && (
           <button
             onClick={handleBack}
-            className="flex items-center gap-1 text-sm text-stone-600 hover:text-stone-900 transition-colors mb-4 self-start"
+            className="flex items-center gap-1 text-sm text-stone-700 hover:text-stone-900 transition-colors mb-4 self-start font-medium"
           >
             <ArrowLeft className="h-4 w-4" />
             back
@@ -196,13 +204,39 @@ export default function SearchOrders() {
         )}
 
         {/* Logo */}
-        <div className="flex justify-center mb-8">
+        <div className="flex justify-center mb-10">
           <img
             src={kvattLogo}
             alt="Kvatt"
-            className="h-16 w-16 rounded-full object-cover"
+            className="h-12 w-auto object-contain"
           />
         </div>
+
+        {/* STEP 0: What are you returning? */}
+        {step === 'start' && (
+          <div className="flex flex-col flex-1">
+            <h1 className="text-3xl font-bold text-stone-900 mb-10 leading-tight">
+              What are you<br />returning?
+            </h1>
+
+            <div className="space-y-4 w-full max-w-sm">
+              <button
+                onClick={() => setStep('search')}
+                className="w-full py-4 bg-stone-900 text-white rounded-lg text-base font-medium hover:bg-stone-800 transition-colors"
+              >
+                An item from my order
+              </button>
+              <button
+                onClick={() => setStep('search')}
+                className="w-full py-4 bg-stone-900 text-white rounded-lg text-base font-medium hover:bg-stone-800 transition-colors"
+              >
+                Just the pack (nothing inside)
+              </button>
+            </div>
+
+            <SupportFooter />
+          </div>
+        )}
 
         {/* STEP 1: Search */}
         {step === 'search' && (
