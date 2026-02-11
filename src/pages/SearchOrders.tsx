@@ -208,7 +208,8 @@ export default function SearchOrders() {
           <img
             src={kvattLogo}
             alt="Kvatt"
-            className="h-12 w-auto object-contain"
+            style={{ width: '70px', height: '60px' }}
+            className="object-contain"
           />
         </div>
 
