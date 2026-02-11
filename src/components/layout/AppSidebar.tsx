@@ -15,7 +15,8 @@ import {
   ChevronRight,
   Users,
   Search,
-  Boxes
+  Boxes,
+  FlaskConical
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import kvattLogo from '@/assets/kvatt-logo.jpeg';
@@ -37,6 +38,7 @@ import {
 
 const overviewItems = [
   { title: 'Analytics', url: '/', icon: BarChart3 },
+  { title: 'A/B Testing', url: '/ab-testing', icon: FlaskConical },
   { title: 'Insights', url: '/insights', icon: Lightbulb },
   { title: 'Customers', url: '/customers', icon: Users },
 ];
