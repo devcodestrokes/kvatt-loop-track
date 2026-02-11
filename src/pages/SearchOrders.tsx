@@ -244,13 +244,13 @@ export default function SearchOrders() {
         {step === 'pack' && (
           <div className="flex flex-col flex-1">
             <h1
-              style={{ fontFamily: 'Inter, sans-serif', fontSize: '52px', fontWeight: 500, lineHeight: '100%', letterSpacing: '-0.0425em' }}
+              style={{ fontFamily: 'Inter, sans-serif', fontSize: '47px', fontWeight: 500, lineHeight: '100%', letterSpacing: '-0.0425em' }}
               className="text-stone-900 mb-6"
             >
               Thanks for returning<br />the empty pack!
             </h1>
             <div
-              style={{ fontFamily: 'Inter, sans-serif', fontSize: '26px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
+              style={{ fontFamily: 'Inter, sans-serif', fontSize: '21px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
               className="text-stone-900 mb-10"
             >
               <p className="mb-4">
@@ -263,7 +263,7 @@ export default function SearchOrders() {
 
             <button
               onClick={() => window.open('https://www.royalmail.com/services/find-post-office', '_blank', 'noopener,noreferrer')}
-              style={{ fontFamily: 'Inter, sans-serif', fontSize: '30.68px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
+              style={{ fontFamily: 'Inter, sans-serif', fontSize: '25.68px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
               className="w-full py-5 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors"
             >
               find a drop-off near me
