@@ -253,10 +253,10 @@ export default function SearchOrders() {
               className="text-stone-900 mb-10"
             >
               <p className="mb-4">
-                Fold it into the provided pink pouch and drop it in any UK Royal Mail postbox.
+                Fold it into the provided pink pouch and<br />drop it in any UK Royal Mail postbox.
               </p>
               <p>
-                We will reuse it for future orders and help reduce waste.
+                We will reuse it for future orders and help<br />reduce waste.
               </p>
             </div>
 
