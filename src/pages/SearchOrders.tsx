@@ -272,24 +272,29 @@ export default function SearchOrders() {
 
         {/* STEP 1: Search */}
         {step === 'search' && (
-          <div className="flex flex-col items-center flex-1">
-            <h1 className="text-3xl font-bold text-stone-900 mb-8 text-center">
-              Let's find your order
+          <div className="flex flex-col flex-1">
+            <h1
+              style={{ fontFamily: 'Inter, sans-serif', fontSize: '52px', fontWeight: 500, lineHeight: '100%', letterSpacing: '-0.0425em' }}
+              className="text-stone-900 mb-8"
+            >
+              Let's find<br />your order
             </h1>
 
-            <form onSubmit={handleSearch} className="w-full space-y-4">
+            <form onSubmit={handleSearch} className="w-full space-y-3">
               <input
                 type="email"
                 placeholder="enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg border border-stone-300 bg-transparent text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 text-base"
+                style={{ fontFamily: 'Inter, sans-serif', fontSize: '20px', letterSpacing: '-0.0425em' }}
+                className="w-full px-6 py-4 rounded-full border-0 bg-white/60 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 text-center"
                 autoFocus
               />
               <button
                 type="submit"
                 disabled={loading || !email.trim()}
-                className="w-full py-3 bg-stone-900 text-white rounded-full text-base font-medium hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                style={{ fontFamily: 'Inter, sans-serif', fontSize: '24px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
+                className="w-full py-4 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
