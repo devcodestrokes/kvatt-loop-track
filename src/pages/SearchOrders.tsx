@@ -1,11 +1,8 @@
 import { useState } from "react";
-import { Search, Mail, Package, Calendar, DollarSign, MapPin, Loader2, Store, ExternalLink } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Loader2, ArrowLeft, Mail, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import kvattLogo from "@/assets/kvatt-logo.jpeg";
 
 // Store mapping from CSV data
 const STORE_MAPPINGS: Record<string, string> = {
@@ -40,7 +37,6 @@ const getStoreName = (userId: string | null): string => {
 };
 
 const extractOrderNumber = (orderName: string): string => {
-  // Strip any prefix like "#" or store-specific prefixes (e.g., "#277766", "SP163967", "UKT2344084")
   return orderName.replace(/^#/, '');
 };
 
@@ -81,6 +77,24 @@ interface CustomerInfo {
   telephone: string;
 }
 
+function SupportFooter() {
+  return (
+    <div className="mt-auto pt-12 pb-8 text-center">
+      <p className="text-sm font-medium text-stone-500 mb-3">need support?</p>
+      <div className="flex flex-col items-center gap-2 text-sm text-stone-600">
+        <a href="mailto:returns@kvatt.com" className="flex items-center gap-2 hover:text-stone-900 transition-colors">
+          <Mail className="h-4 w-4" />
+          returns@kvatt.com
+        </a>
+        <a href="https://wa.me/447549884850" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-stone-900 transition-colors">
+          <Phone className="h-4 w-4" />
+          +44 (0) 75.49.88.48.50
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export default function SearchOrders() {
   const [email, setEmail] = useState("");
   const [orders, setOrders] = useState<OrderResult[]>([]);
@@ -88,6 +102,8 @@ export default function SearchOrders() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [step, setStep] = useState<'search' | 'results'>('search');
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,6 +114,7 @@ export default function SearchOrders() {
     setOrders([]);
     setCustomer(null);
     setSearched(true);
+    setSelectedOrderId(null);
 
     try {
       const { data, error: fnError } = await supabase.functions.invoke('search-orders-by-email', {
@@ -111,8 +128,9 @@ export default function SearchOrders() {
       }
 
       if (!data?.success || !data?.customer) {
-        setError(data?.message || "No customer found with this email");
+        setError(data?.message || "No orders found for this email");
         setLoading(false);
+        setStep('results');
         return;
       }
 
@@ -124,6 +142,7 @@ export default function SearchOrders() {
       });
 
       setOrders(data.orders || []);
+      setStep('results');
     } catch (err) {
       setError("An error occurred while searching");
     } finally {
@@ -131,201 +150,211 @@ export default function SearchOrders() {
     }
   };
 
-  const totalSpent = orders.reduce((sum, order) => sum + (order.total_price || 0), 0);
+  const handleBack = () => {
+    setStep('search');
+    setSearched(false);
+    setError(null);
+    setOrders([]);
+    setCustomer(null);
+    setSelectedOrderId(null);
+  };
+
+  const handleConfirmReturn = () => {
+    if (!selectedOrderId || !customer) return;
+    const selectedOrder = orders.find(o => o.id === selectedOrderId);
+    if (!selectedOrder) return;
+    const returnUrl = getReturnPortalUrl(selectedOrder, customer.email);
+    if (returnUrl) {
+      window.open(returnUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const selectedOrder = orders.find(o => o.id === selectedOrderId);
+  const hasReturnUrl = selectedOrder && customer ? !!getReturnPortalUrl(selectedOrder, customer.email) : false;
+
+  // Group orders by store
+  const ordersByStore = orders.reduce<Record<string, OrderResult[]>>((acc, order) => {
+    const store = getStoreName(order.user_id);
+    if (!acc[store]) acc[store] = [];
+    acc[store].push(order);
+    return acc;
+  }, {});
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#e8e4de' }}>
+      <div className="flex-1 flex flex-col w-full max-w-md mx-auto px-6 py-8">
 
-      {/* Search Form */}
-      <Card>
-        <CardContent className="pt-6">
-          <form onSubmit={handleSearch} className="flex gap-3">
-            <div className="relative flex-1">
-              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
+        {/* Back button on results step */}
+        {step === 'results' && (
+          <button
+            onClick={handleBack}
+            className="flex items-center gap-1 text-sm text-stone-600 hover:text-stone-900 transition-colors mb-4 self-start"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            back
+          </button>
+        )}
+
+        {/* Logo */}
+        <div className="flex justify-center mb-8">
+          <img
+            src={kvattLogo}
+            alt="Kvatt"
+            className="h-16 w-16 rounded-full object-cover"
+          />
+        </div>
+
+        {/* STEP 1: Search */}
+        {step === 'search' && (
+          <div className="flex flex-col items-center flex-1">
+            <h1 className="text-3xl font-bold text-stone-900 mb-8 text-center">
+              Let's find your order
+            </h1>
+
+            <form onSubmit={handleSearch} className="w-full space-y-4">
+              <input
                 type="email"
-                placeholder="Enter customer email..."
+                placeholder="enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="pl-10"
+                className="w-full px-4 py-3 rounded-lg border border-stone-300 bg-transparent text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 text-base"
                 autoFocus
               />
-            </div>
-            <Button type="submit" disabled={loading || !email.trim()}>
-              {loading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Search className="mr-2 h-4 w-4" />
-              )}
-              Search
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <button
+                type="submit"
+                disabled={loading || !email.trim()}
+                className="w-full py-3 bg-stone-900 text-white rounded-full text-base font-medium hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : null}
+                find order
+              </button>
+            </form>
 
-      {/* Customer Info */}
-      {customer && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Customer Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Name</p>
-                <p className="font-medium">{customer.name || "N/A"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Email</p>
-                <p className="font-medium">{customer.email}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Phone</p>
-                <p className="font-medium">{customer.telephone || "N/A"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Total Orders</p>
-                <p className="font-medium">{orders.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            <SupportFooter />
+          </div>
+        )}
 
-      {/* Summary Stats */}
-      {orders.length > 0 && (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-2">
-                <Package className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Orders</span>
-              </div>
-              <p className="mt-1 text-2xl font-bold">{orders.length}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Total Spent</span>
-              </div>
-              <p className="mt-1 text-2xl font-bold">£{totalSpent.toFixed(2)}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-2">
-                <Package className="h-4 w-4 text-primary" />
-                <span className="text-sm text-muted-foreground">Opt-ins</span>
-              </div>
-              <p className="mt-1 text-2xl font-bold">
-                {orders.filter((o) => o.opt_in).length}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Avg Order</span>
-              </div>
-              <p className="mt-1 text-2xl font-bold">
-                £{orders.length > 0 ? (totalSpent / orders.length).toFixed(2) : "0.00"}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Orders List */}
-      {searched && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Orders</CardTitle>
-          </CardHeader>
-          <CardContent>
+        {/* STEP 2: Results */}
+        {step === 'results' && (
+          <div className="flex flex-col flex-1">
             {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <div className="flex-1 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-stone-500" />
               </div>
             ) : error ? (
-              <div className="py-8 text-center text-muted-foreground">{error}</div>
+              <div className="flex flex-col items-center flex-1">
+                <h1 className="text-2xl font-bold text-stone-900 mb-2 text-center">
+                  No orders found
+                </h1>
+                <p className="text-stone-500 text-sm text-center mb-6">
+                  {error}
+                </p>
+                <button
+                  onClick={handleBack}
+                  className="py-3 px-8 bg-stone-900 text-white rounded-full text-base font-medium hover:bg-stone-800 transition-colors"
+                >
+                  try again
+                </button>
+                <SupportFooter />
+              </div>
             ) : orders.length === 0 ? (
-              <div className="py-8 text-center text-muted-foreground">
-                No orders found for this customer
+              <div className="flex flex-col items-center flex-1">
+                <h1 className="text-2xl font-bold text-stone-900 mb-2 text-center">
+                  No orders found
+                </h1>
+                <p className="text-stone-500 text-sm text-center mb-6">
+                  We couldn't find any orders for this email
+                </p>
+                <button
+                  onClick={handleBack}
+                  className="py-3 px-8 bg-stone-900 text-white rounded-full text-base font-medium hover:bg-stone-800 transition-colors"
+                >
+                  try again
+                </button>
+                <SupportFooter />
               </div>
             ) : (
-              <div className="space-y-3">
-                {orders.map((order) => {
-                  const returnUrl = customer ? getReturnPortalUrl(order, customer.email) : null;
-                  return (
-                    <div
-                      key={order.id}
-                      className={`flex items-center justify-between rounded-lg border p-4 transition-colors hover:bg-muted/50 ${returnUrl ? 'cursor-pointer' : ''}`}
-                      onClick={() => {
-                        if (returnUrl) {
-                          window.open(returnUrl, '_blank', 'noopener,noreferrer');
-                        }
-                      }}
-                    >
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{order.name}</span>
-                          {order.shopify_order_id && (
-                            <span className="text-xs text-muted-foreground">
-                              (Shopify: {order.shopify_order_id})
-                            </span>
-                          )}
-                          <Badge
-                            variant={order.opt_in ? "default" : "secondary"}
-                            className="text-xs"
-                          >
-                            {order.opt_in ? "Opted In" : "Opted Out"}
-                          </Badge>
-                          {order.payment_status && (
-                            <Badge variant="outline" className="text-xs">
-                              {order.payment_status}
-                            </Badge>
-                          )}
-                          {returnUrl && (
-                            <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {order.shopify_created_at
-                              ? format(new Date(order.shopify_created_at), "MMM d, yyyy")
-                              : "N/A"}
-                          </span>
-                          {(order.city || order.country) && (
-                            <span className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {[order.city, order.province, order.country]
-                                .filter(Boolean)
-                                .join(", ")}
-                            </span>
-                          )}
-                          <span className="flex items-center gap-1">
-                            <Store className="h-3 w-3" />
-                            {getStoreName(order.user_id)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-semibold">
-                          £{(order.total_price || 0).toFixed(2)}
-                        </p>
+              <>
+                <p className="text-sm text-stone-500 text-center mb-1">we found a match!</p>
+                <h1 className="text-2xl font-bold text-stone-900 mb-6 text-center">
+                  Select your order below
+                </h1>
+
+                <div className="space-y-6 mb-6">
+                  {Object.entries(ordersByStore).map(([storeName, storeOrders]) => (
+                    <div key={storeName}>
+                      <p className="text-xs font-medium text-stone-500 uppercase tracking-wider mb-2">
+                        {storeName}
+                      </p>
+                      <div className="space-y-2">
+                        {storeOrders.map((order) => {
+                          const isSelected = selectedOrderId === order.id;
+                          return (
+                            <button
+                              key={order.id}
+                              onClick={() => setSelectedOrderId(order.id)}
+                              className={`w-full text-left p-4 rounded-lg border transition-all ${
+                                isSelected
+                                  ? 'border-stone-900 bg-stone-100'
+                                  : 'border-stone-300 hover:border-stone-400'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div
+                                    className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
+                                      isSelected ? 'border-stone-900' : 'border-stone-400'
+                                    }`}
+                                  >
+                                    {isSelected && (
+                                      <div className="h-2.5 w-2.5 rounded-full bg-stone-900" />
+                                    )}
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-stone-900 text-sm">
+                                      {order.name}
+                                    </p>
+                                    <p className="text-xs text-stone-500">
+                                      {order.shopify_created_at
+                                        ? format(new Date(order.shopify_created_at), "MMM d, yyyy")
+                                        : "N/A"}
+                                    </p>
+                                  </div>
+                                </div>
+                                <p className="font-semibold text-stone-900">
+                                  £{(order.total_price || 0).toFixed(2)}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+
+                <button
+                  onClick={handleConfirmReturn}
+                  disabled={!selectedOrderId || !hasReturnUrl}
+                  className="w-full py-3 bg-stone-900 text-white rounded-full text-base font-medium hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  confirm & start return
+                </button>
+
+                {selectedOrderId && !hasReturnUrl && (
+                  <p className="text-xs text-stone-500 text-center mt-2">
+                    Return portal not available for this store
+                  </p>
+                )}
+
+                <SupportFooter />
+              </>
             )}
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
