@@ -242,19 +242,28 @@ export default function SearchOrders() {
         {/* PACK STEP: Just the pack flow */}
         {step === 'pack' && (
           <div className="flex flex-col flex-1">
-            <h1 className="text-3xl font-bold text-stone-900 mb-2 leading-tight">
+            <h1
+              style={{ fontFamily: 'Inter, sans-serif', fontSize: '52px', fontWeight: 500, lineHeight: '100%', letterSpacing: '-0.0425em' }}
+              className="text-stone-900 mb-6"
+            >
               Thanks for returning<br />the empty pack!
             </h1>
-            <p className="text-sm text-stone-600 mb-1">
-              Fold it into the provided pink pouch and drop it in any UK Royal Mail postbox.
-            </p>
-            <p className="text-sm text-stone-600 mb-8">
-              We will reuse it for future orders and help reduce waste.
-            </p>
+            <div
+              style={{ fontFamily: 'Inter, sans-serif', fontSize: '26px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
+              className="text-stone-900 mb-10"
+            >
+              <p className="mb-4">
+                Fold it into the provided pink pouch and drop it in any UK Royal Mail postbox.
+              </p>
+              <p>
+                We will reuse it for future orders and help reduce waste.
+              </p>
+            </div>
 
             <button
               onClick={() => window.open('https://www.royalmail.com/services/find-post-office', '_blank', 'noopener,noreferrer')}
-              className="w-full max-w-sm py-4 bg-stone-900 text-white rounded-lg text-base font-medium hover:bg-stone-800 transition-colors"
+              style={{ fontFamily: 'Inter, sans-serif', fontSize: '30.68px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
+              className="w-full py-5 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors"
             >
               find a drop-off near me
             </button>
