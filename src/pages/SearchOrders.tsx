@@ -277,7 +277,7 @@ export default function SearchOrders() {
         {step === 'search' && (
           <div className="flex flex-col flex-1">
             <h1
-              style={{ fontFamily: 'Inter, sans-serif', fontSize: '52px', fontWeight: 500, lineHeight: '100%', letterSpacing: '-0.0425em' }}
+              style={{ fontFamily: 'Inter, sans-serif', fontSize: '49px', fontWeight: 500, lineHeight: '100%', letterSpacing: '-0.0425em' }}
               className="text-stone-900 mb-8"
             >
               Let's find<br />your order
@@ -289,14 +289,14 @@ export default function SearchOrders() {
                 placeholder="enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                style={{ fontFamily: 'Inter, sans-serif', fontSize: '20px', letterSpacing: '-0.0425em' }}
+                style={{ fontFamily: 'Inter, sans-serif', fontSize: '17px', letterSpacing: '-0.0425em' }}
                 className="w-full px-6 py-4 rounded-full border-0 bg-white/60 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 text-center"
                 autoFocus
               />
               <button
                 type="submit"
                 disabled={loading || !email.trim()}
-                style={{ fontFamily: 'Inter, sans-serif', fontSize: '24px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
+                style={{ fontFamily: 'Inter, sans-serif', fontSize: '21px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
                 className="w-full py-4 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (
