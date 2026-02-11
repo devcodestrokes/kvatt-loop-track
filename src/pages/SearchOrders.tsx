@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, ArrowLeft, Mail, Phone } from "lucide-react";
+import { Loader2, ChevronLeft, Mail, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import kvattLogo from "@/assets/kvatt-logo.jpeg";
@@ -194,9 +194,10 @@ export default function SearchOrders() {
       {(step === 'results' || step === 'search' || step === 'pack') && (
         <button
           onClick={handleBack}
-          className="absolute top-8 left-8 flex items-center gap-1 text-sm text-stone-700 hover:text-stone-900 transition-colors font-medium z-10"
+          style={{ fontFamily: 'Inter, sans-serif', fontSize: '26px', fontWeight: 400, letterSpacing: '-0.0425em' }}
+          className="absolute top-8 left-8 flex items-center gap-1 text-stone-900 hover:text-stone-700 transition-colors z-10"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ChevronLeft className="h-7 w-7" strokeWidth={2.5} />
           back
         </button>
       )}
