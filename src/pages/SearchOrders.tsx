@@ -189,20 +189,22 @@ export default function SearchOrders() {
   }, {});
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#e8e4de' }}>
+    <div className="min-h-screen flex flex-col relative" style={{ backgroundColor: '#e8e4de' }}>
+      {/* Back button - absolute top left */}
+      {(step === 'results' || step === 'search' || step === 'pack') && (
+        <button
+          onClick={handleBack}
+          className="absolute top-8 left-8 flex items-center gap-1 text-sm text-stone-700 hover:text-stone-900 transition-colors font-medium z-10"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          back
+        </button>
+      )}
+
       <div className="flex-1 flex flex-col w-full max-w-md mx-auto px-6 py-8">
 
-        {/* Header: back button + centered logo */}
-        <div className="relative flex items-center justify-center mb-10">
-          {(step === 'results' || step === 'search' || step === 'pack') && (
-            <button
-              onClick={handleBack}
-              className="absolute left-0 flex items-center gap-1 text-sm text-stone-700 hover:text-stone-900 transition-colors font-medium"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              back
-            </button>
-          )}
+        {/* Logo - centered */}
+        <div className="flex justify-center mb-10">
           <img
             src={kvattLogo}
             alt="Kvatt"
