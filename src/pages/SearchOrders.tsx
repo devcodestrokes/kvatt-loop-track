@@ -79,18 +79,18 @@ interface CustomerInfo {
 
 function SupportFooter() {
   return (
-    <div className="mt-auto pt-16 pb-8">
-      <p className="text-sm font-semibold text-stone-700 mb-3">Need support:</p>
-      <div className="flex flex-col gap-1.5 text-sm text-stone-600">
+    <div className="mt-auto pt-16 pb-8" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.0425em' }}>
+      <p className="font-semibold text-stone-900 mb-3" style={{ fontSize: '26px', lineHeight: '1.3' }}>Need support:</p>
+      <div className="flex flex-col gap-1.5 text-stone-900" style={{ fontSize: '26px', lineHeight: '1.3' }}>
         <p>
           <span className="font-semibold">email:</span>{" "}
-          <a href="mailto:returns@kvatt.com" className="hover:text-stone-900 transition-colors">
+          <a href="mailto:returns@kvatt.com" className="hover:text-stone-600 transition-colors">
             returns@kvatt.com
           </a>
         </p>
         <p>
           <span className="font-semibold">whatsapp:</span>{" "}
-          <a href="https://wa.me/447549884850" target="_blank" rel="noopener noreferrer" className="hover:text-stone-900 transition-colors">
+          <a href="https://wa.me/447549884850" target="_blank" rel="noopener noreferrer" className="hover:text-stone-600 transition-colors">
             +44 (0) 75.49.88.48.50
           </a>
         </p>
