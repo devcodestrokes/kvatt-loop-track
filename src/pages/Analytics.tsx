@@ -14,10 +14,8 @@ import { WeeklyBreakdown } from '@/components/dashboard/WeeklyBreakdown';
 import { WeeklyPerformanceChart } from '@/components/dashboard/WeeklyPerformanceChart';
 import { OptInsDetailView } from '@/components/dashboard/OptInsDetailView';
 import { LoadingSkeleton } from '@/components/dashboard/LoadingSkeleton';
-import { ABTestingTab } from '@/components/dashboard/ABTestingTab';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Analytics = () => {
   const {
@@ -120,142 +118,129 @@ const Analytics = () => {
 
   return (
     <div className="space-y-8">
-      <Tabs defaultValue="analytics" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="ab-testing">A/B Testing</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="analytics" className="mt-6 space-y-8">
-          {/* Header */}
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="icon-glow">
-                  <Sparkles className="h-5 w-5 text-white" />
-                </div>
-                <span className="badge-premium">Live Data</span>
-              </div>
-              <h1 className="text-3xl font-bold tracking-tight text-foreground">Analytics</h1>
-              <p className="mt-1 text-base text-muted-foreground">
-                Track opt-in rates and packaging adoption across your stores
-              </p>
+      {/* Header */}
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="icon-glow">
+              <Sparkles className="h-5 w-5 text-white" />
             </div>
-            <div className="flex items-center gap-3">
-              {lastUpdated && (
-                <span className="text-sm text-muted-foreground">
-                  Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
-              )}
-              <Button
-                variant="outline"
-                onClick={handleRefresh}
-                disabled={isLoading}
-                className="gap-2 rounded-xl border-border/50 bg-card/50 backdrop-blur-sm transition-all hover:bg-card hover:shadow-md"
-              >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
-            </div>
+            <span className="badge-premium">Live Data</span>
           </div>
-
-          {/* Filters */}
-          <div className="filter-bar flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <MultiStoreSelector
-              stores={stores}
-              selectedStores={selectedStores}
-              onToggleStore={toggleStore}
-              onSelectAll={selectAll}
-              onUnselectAll={unselectAll}
-              disabled={isLoading}
-            />
-            {dateRange && (
-              <DateRangePicker
-                dateRange={dateRange}
-                onDateRangeChange={handleDateRangeChange}
-                disabled={isLoading}
-              />
-            )}
-          </div>
-
-          {isLoading && data.length === 0 ? (
-            <LoadingSkeleton />
-          ) : (
-            <>
-              {/* Metrics Grid */}
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                <MetricCard
-                  title="Total Checkouts"
-                  value={totals.totalCheckouts.toLocaleString()}
-                  icon={<ShoppingCart className="h-5 w-5" />}
-                  color="blue"
-                  delay={0}
-                />
-                <MetricCard
-                  title="Opt-ins"
-                  value={totals.totalOptIns.toLocaleString()}
-                  icon={<CheckCircle className="h-5 w-5" />}
-                  color="coral"
-                  delay={100}
-                />
-                <MetricCard
-                  title="Opt-outs"
-                  value={totals.totalOptOuts.toLocaleString()}
-                  icon={<XCircle className="h-5 w-5" />}
-                  color="muted"
-                  delay={200}
-                />
-                <MetricCard
-                  title="Opt-in Rate"
-                  value={`${optInRate}%`}
-                  icon={<TrendingUp className="h-5 w-5" />}
-                  color="brown"
-                  delay={300}
-                />
-              </div>
-
-              {/* Charts */}
-              {filteredData.length > 0 && (
-                <div className="grid gap-6 lg:grid-cols-3">
-                  <div className="lg:col-span-2">
-                    <AnalyticsChart data={filteredData} type="bar" />
-                  </div>
-                  <div>
-                    <AnalyticsChart 
-                      data={filteredData} 
-                      type="pie" 
-                      onPieClick={() => setOptInsDetailOpen(true)}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Weekly Breakdown */}
-              <WeeklyBreakdown 
-                fetchDailyData={fetchDailyData}
-                selectedStores={selectedStores}
-                isLoading={isLoading}
-                dateRange={dateRange || undefined}
-              />
-
-              {/* Weekly Performance Chart */}
-              <WeeklyPerformanceChart 
-                fetchDailyData={fetchDailyData}
-                selectedStores={selectedStores}
-                isLoading={isLoading}
-                dateRange={dateRange || undefined}
-              />
-
-              {/* Data Table */}
-              <DataTable data={filteredData} dateRange={dateRange || undefined} />
-            </>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Analytics</h1>
+          <p className="mt-1 text-base text-muted-foreground">
+            Track opt-in rates and packaging adoption across your stores
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {lastUpdated && (
+            <span className="text-sm text-muted-foreground">
+              Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
           )}
-        </TabsContent>
+          <Button
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className="gap-2 rounded-xl border-border/50 bg-card/50 backdrop-blur-sm transition-all hover:bg-card hover:shadow-md"
+          >
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
+      </div>
 
-        <TabsContent value="ab-testing" className="mt-6">
-          <ABTestingTab />
-        </TabsContent>
-      </Tabs>
+      {/* Filters */}
+      <div className="filter-bar flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <MultiStoreSelector
+          stores={stores}
+          selectedStores={selectedStores}
+          onToggleStore={toggleStore}
+          onSelectAll={selectAll}
+          onUnselectAll={unselectAll}
+          disabled={isLoading}
+        />
+        {dateRange && (
+          <DateRangePicker
+            dateRange={dateRange}
+            onDateRangeChange={handleDateRangeChange}
+            disabled={isLoading}
+          />
+        )}
+      </div>
+
+      {isLoading && data.length === 0 ? (
+        <LoadingSkeleton />
+      ) : (
+        <>
+          {/* Metrics Grid */}
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
+              title="Total Checkouts"
+              value={totals.totalCheckouts.toLocaleString()}
+              icon={<ShoppingCart className="h-5 w-5" />}
+              color="blue"
+              delay={0}
+            />
+            <MetricCard
+              title="Opt-ins"
+              value={totals.totalOptIns.toLocaleString()}
+              icon={<CheckCircle className="h-5 w-5" />}
+              color="coral"
+              delay={100}
+            />
+            <MetricCard
+              title="Opt-outs"
+              value={totals.totalOptOuts.toLocaleString()}
+              icon={<XCircle className="h-5 w-5" />}
+              color="muted"
+              delay={200}
+            />
+            <MetricCard
+              title="Opt-in Rate"
+              value={`${optInRate}%`}
+              icon={<TrendingUp className="h-5 w-5" />}
+              color="brown"
+              delay={300}
+            />
+          </div>
+
+          {/* Charts */}
+          {filteredData.length > 0 && (
+            <div className="grid gap-6 lg:grid-cols-3">
+              <div className="lg:col-span-2">
+                <AnalyticsChart data={filteredData} type="bar" />
+              </div>
+              <div>
+                <AnalyticsChart 
+                  data={filteredData} 
+                  type="pie" 
+                  onPieClick={() => setOptInsDetailOpen(true)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Weekly Breakdown */}
+          <WeeklyBreakdown 
+            fetchDailyData={fetchDailyData}
+            selectedStores={selectedStores}
+            isLoading={isLoading}
+            dateRange={dateRange || undefined}
+          />
+
+          {/* Weekly Performance Chart */}
+          <WeeklyPerformanceChart 
+            fetchDailyData={fetchDailyData}
+            selectedStores={selectedStores}
+            isLoading={isLoading}
+            dateRange={dateRange || undefined}
+          />
+
+          {/* Data Table */}
+          <DataTable data={filteredData} dateRange={dateRange || undefined} />
+        </>
+      )}
 
       {/* Opt-ins Detail View */}
       <OptInsDetailView

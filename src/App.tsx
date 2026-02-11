@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ProtectedRoute } from "@/components/layout/ProtectedRoute";
 import Analytics from "./pages/Analytics";
+import ABTesting from "./pages/ABTesting";
 import Labels from "./pages/Labels";
 import QRTracking from "./pages/QRTracking";
 import Merchants from "./pages/Merchants";
@@ -43,6 +44,7 @@ const App = () => (
                   <DashboardLayout>
                     <Routes>
                       <Route path="/" element={<Analytics />} />
+                      <Route path="/ab-testing" element={<ABTesting />} />
                       <Route path="/labels" element={<Labels />} />
                       <Route path="/qr-tracking" element={<QRTracking />} />
                       <Route path="/merchants" element={<Merchants />} />
