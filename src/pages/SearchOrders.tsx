@@ -107,7 +107,7 @@ export default function SearchOrders() {
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [step, setStep] = useState<'start' | 'search' | 'results'>('start');
+  const [step, setStep] = useState<'start' | 'search' | 'results' | 'pack'>('start');
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,7 +162,7 @@ export default function SearchOrders() {
       setOrders([]);
       setCustomer(null);
       setSelectedOrderId(null);
-    } else if (step === 'search') {
+    } else if (step === 'search' || step === 'pack') {
       setStep('start');
     }
   };
@@ -193,7 +193,7 @@ export default function SearchOrders() {
       <div className="flex-1 flex flex-col w-full max-w-md mx-auto px-6 py-8">
 
         {/* Back button */}
-        {(step === 'results' || step === 'search') && (
+        {(step === 'results' || step === 'search' || step === 'pack') && (
           <button
             onClick={handleBack}
             className="flex items-center gap-1 text-sm text-stone-700 hover:text-stone-900 transition-colors mb-4 self-start font-medium"
@@ -227,12 +227,36 @@ export default function SearchOrders() {
                 An item from my order
               </button>
               <button
-                onClick={() => setStep('search')}
+                onClick={() => setStep('pack')}
                 className="w-full py-4 bg-stone-900 text-white rounded-lg text-base font-medium hover:bg-stone-800 transition-colors"
               >
                 Just the pack (nothing inside)
               </button>
             </div>
+
+            <SupportFooter />
+          </div>
+        )}
+
+        {/* PACK STEP: Just the pack flow */}
+        {step === 'pack' && (
+          <div className="flex flex-col flex-1">
+            <h1 className="text-3xl font-bold text-stone-900 mb-2 leading-tight">
+              Thanks for returning<br />the empty pack!
+            </h1>
+            <p className="text-sm text-stone-600 mb-1">
+              Fold it into the provided pink pouch and drop it in any UK Royal Mail postbox.
+            </p>
+            <p className="text-sm text-stone-600 mb-8">
+              We will reuse it for future orders and help reduce waste.
+            </p>
+
+            <button
+              onClick={() => window.open('https://www.royalmail.com/services/find-post-office', '_blank', 'noopener,noreferrer')}
+              className="w-full max-w-sm py-4 bg-stone-900 text-white rounded-lg text-base font-medium hover:bg-stone-800 transition-colors"
+            >
+              find a drop-off near me
+            </button>
 
             <SupportFooter />
           </div>
