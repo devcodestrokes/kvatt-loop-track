@@ -213,21 +213,28 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Pack Labels - Kvatt</title>
+          <title></title>
           <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600&display=swap" rel="stylesheet">
           <style>
             * { box-sizing: border-box; margin: 0; padding: 0; }
+            html, body {
+              width: 130mm;
+              height: 82mm;
+              margin: 0;
+              padding: 0;
+              background: none;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
+            }
             @page {
               size: 130mm 82mm;
               margin: 0;
             }
             body { 
-              font-family: 'Inter', sans-serif; 
-              margin: 0; padding: 0;
-              background: white;
+              font-family: 'Inter', sans-serif;
             }
             .labels-container {
-              display: flex; flex-direction: column;
+              margin: 0; padding: 0;
             }
             .label-card {
               width: 130mm;
@@ -237,6 +244,8 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
               display: flex;
               flex-direction: column;
               page-break-after: always;
+              margin: 0;
+              padding: 0;
             }
             .label-upper {
               flex: 1;
@@ -298,8 +307,8 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
             .support-title { font-weight: 600; }
             .support-number { font-weight: 400; }
             @media print {
-              body { margin: 0; padding: 0; background: white; }
-              .label-card { page-break-after: always; }
+              html, body { margin: 0 !important; padding: 0 !important; background: none !important; }
+              .label-card { page-break-after: always; break-after: page; }
             }
           </style>
         </head>
