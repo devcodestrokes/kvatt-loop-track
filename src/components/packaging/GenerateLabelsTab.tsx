@@ -573,7 +573,7 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                   style={{ aspectRatio: '130 / 82', backgroundColor: '#e6e3db', borderRadius: '6px', containerType: 'inline-size' as any }}
                 >
                   {/* Upper section */}
-                  <div className="flex items-stretch" style={{ flex: '1 1 0', position: 'relative' }}>
+                  <div className="flex items-center" style={{ flex: '1 1 0', position: 'relative' }}>
                     {/* Left text - vertically centered */}
                     <div className="flex-1 flex flex-col justify-center" style={{ padding: '0 0 0 6cqi' }}>
                       <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '6.5cqi', fontWeight: 900, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em' }}>
