@@ -79,15 +79,15 @@ interface CustomerInfo {
 
 function SupportFooter() {
   return (
-    <div className="mt-10 text-left" style={{ letterSpacing: '-0.0425em', fontSize: '16px', lineHeight: '1.6', color: '#1c1917' }}>
-      <p className="font-semibold mt-[83px]" style={{ fontSize: '16px', marginTop: '5px', marginBottom: '5px' }}>Need support:</p>
-      <div className="flex flex-col" style={{ fontSize: '16px', lineHeight: '1.6' }}>
+    <div className="mt-48 text-left" style={{ letterSpacing: '-0.0425em', fontSize: '26px', lineHeight: '1.6', color: '#1c1917' }}>
+      <p className="font-semibold mt-[83px]" style={{ fontSize: '26px', marginTop: '5px', marginBottom: '20px' }}>Need support:</p>
+      <div className="flex flex-col" style={{ fontSize: '24px', lineHeight: '1.6' }}>
         <p>
-          <span className="font-semibold">email:</span>{"   "}
+          <span className="font-semibold" style={{ marginRight: '10px' }}>email:</span>{"    "}
           <span className="font-normal">returns@kvatt.com</span>
         </p>
         <p>
-          <span className="font-semibold">whatsapp:</span>{"   "}
+          <span className="font-semibold" style={{ marginRight: '10px' }}>whatsapp:</span>{"    "}
           <span className="font-normal">+44 (0) 75.49.88.48.50</span>
         </p>
       </div>
@@ -348,13 +348,13 @@ export default function SearchOrders() {
 
           <>
                 <p
-              style={{ fontSize: '15px', fontWeight: 400, letterSpacing: '-0.0425em' }}
-              className="text-stone-500 mb-1">
+              style={{ fontSize: '26px', fontWeight: 400, letterSpacing: '-0.0425em' }}
+              className="text-black mb-1">
 
                   We found a match!
                 </p>
                 <h1
-              style={{ fontSize: '34px', fontWeight: 700, lineHeight: '105%', letterSpacing: '-0.0425em' }}
+              style={{ fontSize: '52px', fontWeight: 700, lineHeight: '105%', letterSpacing: '-0.0425em' }}
               className="text-stone-900 mb-5">
 
                   Select your<br />order below
