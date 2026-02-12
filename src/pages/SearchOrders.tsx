@@ -185,7 +185,7 @@ export default function SearchOrders() {
   }, {});
 
   return (
-    <div className="min-h-screen flex flex-col relative" style={{ backgroundColor: '#e8e4de' }}>
+    <div className="min-h-screen flex flex-col relative" style={{ backgroundColor: '#e8e4de', fontFamily: "'Inter', sans-serif" }}>
       {/* Back button - absolute top left */}
       {(step === 'results' || step === 'search' || step === 'pack') &&
       <button
