@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Download, Printer, QrCode } from "lucide-react";
+import { Loader2, Download, Printer, QrCode, FileDown } from "lucide-react";
 import kvattLogo from "@/assets/kvatt-logo.jpeg";
 import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
@@ -353,6 +353,68 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
     URL.revokeObjectURL(url);
   };
 
+  const handleDownloadPDF = async () => {
+    const { default: jsPDF } = await import("jspdf");
+    
+    // Label dimensions in mm
+    const W = 130, H = 82;
+    const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [H, W] });
+
+    for (let i = 0; i < generatedLabels.length; i++) {
+      const label = generatedLabels[i];
+      if (i > 0) pdf.addPage([H, W], "landscape");
+
+      // Stone background
+      pdf.setFillColor(230, 227, 219);
+      pdf.rect(0, 0, W, H, "F");
+
+      // Black bottom bar (bottom 20mm)
+      const barH = 20;
+      pdf.setFillColor(0, 0, 0);
+      pdf.rect(0, H - barH, W, barH, "F");
+
+      // Heading text
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(28);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text("Start your", 8, 28);
+      pdf.text("return", 8, 40);
+      
+      pdf.setFont("helvetica", "italic");
+      pdf.setFontSize(26);
+      pdf.text("with one tap", 8, 54);
+
+      // Label ID top-right
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(7);
+      pdf.setTextColor(80, 80, 80);
+      pdf.text(label.labelId, W - 6, 8, { align: "right" });
+
+      // QR Code (right side)
+      const qrSize = 36;
+      pdf.addImage(label.qrDataUrl, "PNG", W - 6 - qrSize, 12, qrSize, qrSize);
+
+      // Barcode in black bar
+      const barcodeW = 55, barcodeH = 14;
+      pdf.addImage(label.barcodeDataUrl, "PNG", 8, H - barH + (barH - barcodeH) / 2, barcodeW, barcodeH);
+
+      // Support text
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(9);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text("Call for support:", W - 6, H - barH + 9, { align: "right" });
+      pdf.setFont("helvetica", "normal");
+      pdf.text("+44 (0) 75.49.88.48.50", W - 6, H - barH + 14, { align: "right" });
+    }
+
+    pdf.save(`pack-labels-${new Date().toISOString().split("T")[0]}.pdf`);
+    
+    toast({
+      title: "PDF downloaded",
+      description: `Downloaded ${generatedLabels.length} labels as PDF`,
+    });
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -443,10 +505,14 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
           </Button>
 
           {generatedLabels.length > 0 && (
-            <div className="flex gap-2 pt-4 border-t">
+            <div className="flex gap-2 pt-4 border-t flex-wrap">
               <Button variant="outline" onClick={handlePrint}>
                 <Printer className="mr-2 h-4 w-4" />
                 Print Labels
+              </Button>
+              <Button variant="outline" onClick={handleDownloadPDF}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Download PDF
               </Button>
               <Button variant="outline" onClick={handleExportCSV}>
                 <Download className="mr-2 h-4 w-4" />
@@ -474,25 +540,25 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                   {/* Upper section */}
                   <div className="flex-1 flex items-stretch">
                     <div className="flex-1 flex flex-col justify-center pl-5 pt-4 pb-2">
-                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '22px', fontWeight: 900, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em' }}>
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '20px', fontWeight: 900, lineHeight: 1.1, color: '#000', letterSpacing: '-0.02em' }}>
                         Start your
                       </div>
-                      <div className="flex items-center gap-1" style={{ fontFamily: "'Inter', sans-serif", fontSize: '22px', fontWeight: 900, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em' }}>
-                        return <img src={kvattLogo} alt="Kvatt" style={{ width: '28px', height: '24px', objectFit: 'contain', display: 'inline-block' }} />
+                      <div className="flex items-center gap-1" style={{ fontFamily: "'Inter', sans-serif", fontSize: '20px', fontWeight: 900, lineHeight: 1.1, color: '#000', letterSpacing: '-0.02em' }}>
+                        return <img src={kvattLogo} alt="Kvatt" style={{ width: '24px', height: '20px', objectFit: 'contain', display: 'inline-block' }} />
                       </div>
-                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '20px', fontWeight: 500, fontStyle: 'italic', lineHeight: 1.15, color: '#000', letterSpacing: '-0.02em', marginTop: '2px' }}>
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '18px', fontWeight: 500, fontStyle: 'italic', lineHeight: 1.15, color: '#000', letterSpacing: '-0.02em', marginTop: '2px' }}>
                         with one tap
                       </div>
                     </div>
-                    <div className="flex flex-col items-end flex-shrink-0 pt-3 pr-4">
-                      <span style={{ fontSize: '7px', fontWeight: 500, color: '#333', marginBottom: '4px' }}>{label.labelId}</span>
-                      <img src={label.qrDataUrl} alt="QR Code" className="block" style={{ width: '85px', height: '85px' }} />
+                    <div className="flex flex-col items-end flex-shrink-0 pt-2 pr-3">
+                      <span style={{ fontSize: '6px', fontWeight: 500, color: '#555', marginBottom: '3px' }}>{label.labelId}</span>
+                      <img src={label.qrDataUrl} alt="QR Code" className="block" style={{ width: '75px', height: '75px' }} />
                     </div>
                   </div>
                   {/* Lower black bar */}
-                  <div className="flex items-center gap-2 px-4" style={{ backgroundColor: '#000', height: '48px' }}>
-                    <img src={label.barcodeDataUrl} alt="Barcode" style={{ height: '34px', width: 'auto', maxWidth: '55%', flexShrink: 0 }} />
-                    <div style={{ color: '#fff', fontSize: '8px', lineHeight: 1.3, marginLeft: 'auto', textAlign: 'right' as const, whiteSpace: 'nowrap' }}>
+                  <div className="flex items-center gap-2 px-3" style={{ backgroundColor: '#000', height: '42px', flexShrink: 0 }}>
+                    <img src={label.barcodeDataUrl} alt="Barcode" style={{ height: '28px', width: 'auto', maxWidth: '50%', flexShrink: 0 }} />
+                    <div style={{ color: '#fff', fontSize: '7px', lineHeight: 1.3, marginLeft: 'auto', textAlign: 'right' as const, whiteSpace: 'nowrap' }}>
                       <div style={{ fontWeight: 600 }}>Call for support:</div>
                       <div>+44 (0) 75.49.88.48.50</div>
                     </div>
