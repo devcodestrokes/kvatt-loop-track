@@ -278,7 +278,7 @@ export default function SearchOrders() {
         <div className="w-full">
             <h1
             style={{ fontSize: '40px', fontWeight: 500, lineHeight: '100%', letterSpacing: '-0.0425em' }}
-            className="text-stone-900 mb-8">
+            className="text-stone-900 mb-4">
 
               Let's find<br />your order
             </h1>
@@ -290,7 +290,7 @@ export default function SearchOrders() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               style={{ fontSize: '16px', letterSpacing: '-0.0425em' }}
-              className="w-full px-6 py-4 rounded-full border-0 bg-white/60 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 text-center"
+              className="w-full my-8 px-6 py-4 rounded-full border-0 bg-white/60 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 text-center"
               autoFocus />
 
 
