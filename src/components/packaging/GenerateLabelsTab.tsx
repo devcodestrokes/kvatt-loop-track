@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Download, Printer, QrCode, FileDown } from "lucide-react";
-import kvattLogo from "@/assets/kvatt-logo.jpeg";
+import kvattLogo from "@/assets/kvatt-bird-logo.png";
 import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
 
