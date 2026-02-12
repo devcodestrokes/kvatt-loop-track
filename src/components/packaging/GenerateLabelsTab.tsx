@@ -250,11 +250,17 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
             .label-upper {
               flex: 1;
               display: flex;
-              align-items: center;
-              padding: 6mm 8mm 4mm 8mm;
-              gap: 4mm;
+              align-items: stretch;
+              padding: 0;
+              position: relative;
             }
-            .label-left { flex: 1; }
+            .label-left { 
+              flex: 1; 
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              padding: 6mm 0 4mm 8mm;
+            }
             .heading-bold {
               font-size: 32px;
               font-weight: 900;
@@ -285,25 +291,27 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
               flex-direction: column;
               align-items: flex-end;
               flex-shrink: 0;
+              padding: 3mm 6mm 4mm 0;
             }
             .label-id-top {
               font-size: 9px;
               font-weight: 500;
               color: #333;
               letter-spacing: 0.02em;
-              margin-bottom: 3px;
+              margin-bottom: 2mm;
               text-align: right;
             }
-            .qr-img { width: 38mm; height: 38mm; display: block; }
+            .qr-img { width: 36mm; height: 36mm; display: block; }
             .label-lower {
               background: #000;
               display: flex;
               align-items: center;
-              padding: 3mm 8mm;
-              gap: 6mm;
+              padding: 2.5mm 6mm 2.5mm 8mm;
+              gap: 4mm;
+              height: 20mm;
             }
-            .barcode-img { height: 14mm; width: auto; flex-shrink: 0; }
-            .support-text { color: #fff; font-size: 11px; line-height: 1.3; margin-left: auto; text-align: right; }
+            .barcode-img { height: 16mm; width: auto; max-width: 55%; flex-shrink: 0; }
+            .support-text { color: #fff; font-size: 12px; line-height: 1.3; margin-left: auto; text-align: right; white-space: nowrap; }
             .support-title { font-weight: 600; }
             .support-number { font-weight: 400; }
             @media print {
@@ -464,8 +472,8 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                   style={{ aspectRatio: '130 / 82', backgroundColor: '#e6e3db', borderRadius: '6px' }}
                 >
                   {/* Upper section */}
-                  <div className="flex-1 flex items-center px-5 pt-4 pb-2 gap-3">
-                    <div className="flex-1">
+                  <div className="flex-1 flex items-stretch">
+                    <div className="flex-1 flex flex-col justify-center pl-5 pt-4 pb-2">
                       <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '22px', fontWeight: 900, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em' }}>
                         Start your
                       </div>
@@ -476,15 +484,15 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                         with one tap
                       </div>
                     </div>
-                    <div className="flex flex-col items-end flex-shrink-0">
-                      <span style={{ fontSize: '7px', fontWeight: 500, color: '#333', marginBottom: '3px' }}>{label.labelId}</span>
-                      <img src={label.qrDataUrl} alt="QR Code" className="block" style={{ width: '90px', height: '90px' }} />
+                    <div className="flex flex-col items-end flex-shrink-0 pt-3 pr-4">
+                      <span style={{ fontSize: '7px', fontWeight: 500, color: '#333', marginBottom: '4px' }}>{label.labelId}</span>
+                      <img src={label.qrDataUrl} alt="QR Code" className="block" style={{ width: '85px', height: '85px' }} />
                     </div>
                   </div>
                   {/* Lower black bar */}
-                  <div className="flex items-center gap-3 px-4 py-2" style={{ backgroundColor: '#000' }}>
-                    <img src={label.barcodeDataUrl} alt="Barcode" style={{ height: '28px', width: 'auto', flexShrink: 0 }} />
-                    <div style={{ color: '#fff', fontSize: '8px', lineHeight: 1.3, marginLeft: 'auto', textAlign: 'right' as const }}>
+                  <div className="flex items-center gap-2 px-4" style={{ backgroundColor: '#000', height: '48px' }}>
+                    <img src={label.barcodeDataUrl} alt="Barcode" style={{ height: '34px', width: 'auto', maxWidth: '55%', flexShrink: 0 }} />
+                    <div style={{ color: '#fff', fontSize: '8px', lineHeight: 1.3, marginLeft: 'auto', textAlign: 'right' as const, whiteSpace: 'nowrap' }}>
                       <div style={{ fontWeight: 600 }}>Call for support:</div>
                       <div>+44 (0) 75.49.88.48.50</div>
                     </div>
