@@ -255,8 +255,8 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
               gap: 6px;
             }
             .bird-logo {
-              width: 36px;
-              height: 30px;
+               width: 52px;
+               height: 44px;
               object-fit: contain;
               display: inline-block;
             }
@@ -465,7 +465,7 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                         Start your
                       </div>
                       <div className="flex items-center gap-1" style={{ fontFamily: "'Inter', sans-serif", fontSize: '24px', fontWeight: 900, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em' }}>
-                        return <img src={kvattLogo} alt="Kvatt" style={{ width: '22px', height: '19px', objectFit: 'contain', display: 'inline-block' }} />
+                        return <img src={kvattLogo} alt="Kvatt" style={{ width: '32px', height: '27px', objectFit: 'contain', display: 'inline-block' }} />
                       </div>
                       <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '22px', fontWeight: 500, fontStyle: 'italic', lineHeight: 1.15, color: '#000', letterSpacing: '-0.02em', marginTop: '2px' }}>
                         with one tap
