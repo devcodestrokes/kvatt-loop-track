@@ -79,15 +79,15 @@ interface CustomerInfo {
 
 function SupportFooter() {
   return (
-    <div className="pb-8 px-6 text-center" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.0425em' }}>
-      <p className="font-semibold text-stone-900 mb-3" style={{ fontSize: '18px', lineHeight: '1.3' }}>Need support:</p>
-      <div className="flex flex-col gap-1" style={{ fontSize: '16px', lineHeight: '1.4' }}>
+    <div className="mt-12 text-left" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.0425em' }}>
+      <p className="font-semibold text-stone-900 mb-2" style={{ fontSize: '16px', lineHeight: '1.3' }}>Need support:</p>
+      <div className="flex flex-col gap-0.5" style={{ fontSize: '15px', lineHeight: '1.5' }}>
         <p className="text-stone-900">
-          <span className="font-semibold">email:</span>{"   "}
+          <span className="font-semibold">email:</span>{"  "}
           <span className="font-normal">returns@kvatt.com</span>
         </p>
         <p className="text-stone-900">
-          <span className="font-semibold">whatsapp:</span>{"   "}
+          <span className="font-semibold">whatsapp:</span>{"  "}
           <span className="font-normal">+44 (0) 75.49.88.48.50</span>
         </p>
       </div>
@@ -232,6 +232,7 @@ export default function SearchOrders() {
                 Just the pack (nothing inside)
               </button>
             </div>
+            <SupportFooter />
           </div>
         )}
 
@@ -263,6 +264,7 @@ export default function SearchOrders() {
             >
               find a drop-off near me
             </button>
+            <SupportFooter />
           </div>
         )}
 
@@ -298,6 +300,7 @@ export default function SearchOrders() {
                 find order
               </button>
             </form>
+            <SupportFooter />
           </div>
         )}
 
@@ -422,14 +425,11 @@ export default function SearchOrders() {
                 )}
               </>
             )}
+            <SupportFooter />
           </div>
         )}
       </div>
 
-      {/* Fixed Footer at bottom center */}
-      <div className="fixed bottom-0 left-0 right-0 flex justify-center">
-        <SupportFooter />
-      </div>
     </div>
   );
 }
