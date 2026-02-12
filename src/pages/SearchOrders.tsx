@@ -186,26 +186,26 @@ export default function SearchOrders() {
 
   return (
     <div className="min-h-screen flex flex-col relative" style={{ backgroundColor: '#e8e4de', fontFamily: "'Inter', sans-serif" }}>
-      {/* Back button - absolute top left */}
-      {(step === 'results' || step === 'search' || step === 'pack') &&
-      <button
-        onClick={handleBack}
-        style={{ fontSize: '18px', fontWeight: 400, letterSpacing: '-0.0425em' }}
-        className="absolute top-8 left-8 flex items-center gap-1 text-stone-900 hover:text-stone-700 transition-colors z-10">
-
-          <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
-          back
-        </button>
-      }
-
-      {/* Fixed Logo at top */}
-      <div className="flex justify-center pt-8 pb-4 py-[47px]">
-        <img
-          src={kvattLogo}
-          alt="Kvatt"
-          style={{ width: '70px', height: '60px' }}
-          className="object-contain" />
-
+      {/* Top section: back button then logo below it */}
+      <div className="px-6 pt-6">
+        {(step === 'results' || step === 'search' || step === 'pack') ? (
+          <button
+            onClick={handleBack}
+            style={{ fontSize: '18px', fontWeight: 400, letterSpacing: '-0.0425em' }}
+            className="flex items-center gap-1 text-stone-900 hover:text-stone-700 transition-colors mb-3">
+            <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+            back
+          </button>
+        ) : (
+          <div style={{ height: '27px' }} />
+        )}
+        <div className="flex justify-center pb-4">
+          <img
+            src={kvattLogo}
+            alt="Kvatt"
+            style={{ width: '70px', height: '60px' }}
+            className="object-contain" />
+        </div>
       </div>
 
       {/* Middle content - vertically centered in remaining space */}
