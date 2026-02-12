@@ -426,8 +426,8 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       pdf.text(label.labelId, W - 6, 8, { align: "right" });
 
       // QR Code (right side)
-      const qrSize = 36;
-      pdf.addImage(label.qrDataUrl, "PNG", W - 6 - qrSize, 12, qrSize, qrSize);
+      const qrSize = 40;
+      pdf.addImage(label.qrDataUrl, "PNG", W - 10 - qrSize, 12, qrSize, qrSize);
 
       // Barcode in black bar
       const barcodeW = 55, barcodeH = 14;
