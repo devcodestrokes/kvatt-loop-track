@@ -193,7 +193,6 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                 <div class="heading-italic">with one tap</div>
               </div>
               <div class="label-right">
-                <div class="qr-label">QRCode</div>
                 <div class="label-id-top">${label.labelId}</div>
                 <img src="${label.qrDataUrl}" alt="QR Code" class="qr-img" />
               </div>
