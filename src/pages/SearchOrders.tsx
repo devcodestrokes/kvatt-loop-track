@@ -80,19 +80,15 @@ interface CustomerInfo {
 function SupportFooter() {
   return (
     <div className="mt-auto pt-16 pb-8" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.0425em' }}>
-      <p className="font-semibold text-stone-900 mb-3" style={{ fontSize: '26px', lineHeight: '1.3' }}>Need support:</p>
-      <div className="flex flex-col gap-1.5 text-stone-900" style={{ fontSize: '26px', lineHeight: '1.3' }}>
-        <p>
-          <span className="font-semibold">email:</span>{" "}
-          <a href="mailto:returns@kvatt.com" className="hover:text-stone-600 transition-colors">
-            returns@kvatt.com
-          </a>
+      <p className="font-semibold text-stone-900 mb-3" style={{ fontSize: '18px', lineHeight: '1.3' }}>Need support:</p>
+      <div className="flex flex-col gap-1" style={{ fontSize: '16px', lineHeight: '1.4' }}>
+        <p className="text-stone-900">
+          <span className="font-semibold">email:</span>{"   "}
+          <span className="font-normal">returns@kvatt.com</span>
         </p>
-        <p>
-          <span className="font-semibold">whatsapp:</span>{" "}
-          <a href="https://wa.me/447549884850" target="_blank" rel="noopener noreferrer" className="hover:text-stone-600 transition-colors">
-            +44 (0) 75.49.88.48.50
-          </a>
+        <p className="text-stone-900">
+          <span className="font-semibold">whatsapp:</span>{"   "}
+          <span className="font-normal">+44 (0) 75.49.88.48.50</span>
         </p>
       </div>
     </div>
@@ -351,68 +347,79 @@ export default function SearchOrders() {
               </div>
             ) : (
               <>
-                <p className="text-sm text-stone-500 text-center mb-1">we found a match!</p>
-                <h1 className="text-2xl font-bold text-stone-900 mb-6 text-center">
-                  Select your order below
+                <p
+                  style={{ fontFamily: 'Inter, sans-serif', fontSize: '18px', fontWeight: 400, letterSpacing: '-0.0425em' }}
+                  className="text-stone-500 mb-2"
+                >
+                  We found a match!
+                </p>
+                <h1
+                  style={{ fontFamily: 'Inter, sans-serif', fontSize: '40px', fontWeight: 700, lineHeight: '100%', letterSpacing: '-0.0425em' }}
+                  className="text-stone-900 mb-6"
+                >
+                  Select your<br />order below
                 </h1>
 
-                <div className="space-y-6 mb-6">
-                  {Object.entries(ordersByStore).map(([storeName, storeOrders]) => (
-                    <div key={storeName}>
-                      <p className="text-xs font-medium text-stone-500 uppercase tracking-wider mb-2">
-                        {storeName}
-                      </p>
-                      <div className="space-y-2">
-                        {storeOrders.map((order) => {
-                          const isSelected = selectedOrderId === order.id;
-                          return (
-                            <button
-                              key={order.id}
-                              onClick={() => setSelectedOrderId(order.id)}
-                              className={`w-full text-left p-4 rounded-lg border transition-all ${
-                                isSelected
-                                  ? 'border-stone-900 bg-stone-100'
-                                  : 'border-stone-300 hover:border-stone-400'
-                              }`}
+                <div className="space-y-3 mb-4">
+                  {orders.map((order) => {
+                    const isSelected = selectedOrderId === order.id;
+                    return (
+                      <button
+                        key={order.id}
+                        onClick={() => setSelectedOrderId(order.id)}
+                        className={`w-full text-left rounded-xl transition-all ${
+                          isSelected
+                            ? 'border-2 border-stone-900 bg-[#ddd9d1]'
+                            : 'border border-stone-300/50 bg-[#ddd9d1]/60'
+                        }`}
+                        style={{ padding: '18px 20px' }}
+                      >
+                        <div className="flex items-center gap-4">
+                          {/* Radio circle */}
+                          <div
+                            className={`flex-shrink-0 rounded-full border-2 flex items-center justify-center ${
+                              isSelected ? 'border-stone-900' : 'border-stone-400'
+                            }`}
+                            style={{ width: '22px', height: '22px' }}
+                          >
+                            {isSelected && (
+                              <div className="rounded-full bg-stone-900" style={{ width: '12px', height: '12px' }} />
+                            )}
+                          </div>
+                          {/* Order info */}
+                          <div style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.0425em' }}>
+                            <p
+                              className="text-stone-900"
+                              style={{ fontSize: '16px', fontWeight: 500, lineHeight: '1.4' }}
                             >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div
-                                    className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
-                                      isSelected ? 'border-stone-900' : 'border-stone-400'
-                                    }`}
-                                  >
-                                    {isSelected && (
-                                      <div className="h-2.5 w-2.5 rounded-full bg-stone-900" />
-                                    )}
-                                  </div>
-                                  <div>
-                                    <p className="font-medium text-stone-900 text-sm">
-                                      {order.name}
-                                    </p>
-                                    <p className="text-xs text-stone-500">
-                                      {order.shopify_created_at
-                                        ? format(new Date(order.shopify_created_at), "MMM d, yyyy")
-                                        : "N/A"}
-                                    </p>
-                                  </div>
-                                </div>
-                                <p className="font-semibold text-stone-900">
-                                  £{(order.total_price || 0).toFixed(2)}
-                                </p>
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
+                              #{extractOrderNumber(order.name || '')}
+                            </p>
+                            <p
+                              className="text-stone-700"
+                              style={{ fontSize: '16px', fontWeight: 400, lineHeight: '1.4' }}
+                            >
+                              date: {order.shopify_created_at
+                                ? format(new Date(order.shopify_created_at), "dd.MM.yyyy")
+                                : "N/A"}
+                            </p>
+                            <p
+                              className="text-stone-700"
+                              style={{ fontSize: '16px', fontWeight: 400, lineHeight: '1.4' }}
+                            >
+                              amount: £{Math.round(order.total_price || 0)}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <button
                   onClick={handleConfirmReturn}
                   disabled={!selectedOrderId || !hasReturnUrl}
-                  className="w-full py-3 bg-stone-900 text-white rounded-full text-base font-medium hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ fontFamily: 'Inter, sans-serif', fontSize: '21px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
+                  className="w-full py-4 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   confirm & start return
                 </button>
