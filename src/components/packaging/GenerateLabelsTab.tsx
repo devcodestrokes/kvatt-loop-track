@@ -353,8 +353,35 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
     URL.revokeObjectURL(url);
   };
 
+  // Convert an image URL/import to a base64 data URL
+  const imageToDataUrl = (src: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("No canvas context"));
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      };
+      img.onerror = () => reject(new Error("Failed to load image"));
+      img.src = src;
+    });
+  };
+
   const handleDownloadPDF = async () => {
     const { default: jsPDF } = await import("jspdf");
+
+    // Pre-convert logo to data URL so jsPDF can embed it
+    let logoDataUrl: string | null = null;
+    try {
+      logoDataUrl = await imageToDataUrl(kvattLogo);
+    } catch (e) {
+      console.warn("Could not load logo for PDF:", e);
+    }
     
     // Label dimensions in mm
     const W = 130, H = 82;
@@ -379,6 +406,14 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       pdf.setTextColor(0, 0, 0);
       pdf.text("Start your", 8, 28);
       pdf.text("return", 8, 40);
+
+      // Bird logo next to "return"
+      if (logoDataUrl) {
+        const logoW = 12, logoH = 10;
+        // Position logo right after "return" text
+        const returnTextWidth = pdf.getTextWidth("return");
+        pdf.addImage(logoDataUrl, "PNG", 8 + returnTextWidth + 2, 40 - logoH + 1, logoW, logoH);
+      }
       
       pdf.setFont("helvetica", "italic");
       pdf.setFontSize(26);
