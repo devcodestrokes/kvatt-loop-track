@@ -428,32 +428,32 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
 
       // Heading text
       pdf.setFont("Inter", "bold");
-      pdf.setFontSize(28);
+      pdf.setFontSize(34);
       pdf.setTextColor(0, 0, 0);
-      pdf.text("Start your", 8, 28);
-      pdf.text("return", 8, 40);
+      pdf.text("Start your", 8, 20);
+      pdf.text("return", 8, 32);
 
       // Bird logo next to "return"
       if (logoDataUrl) {
         const logoW = 12, logoH = 10;
         // Position logo right after "return" text
         const returnTextWidth = pdf.getTextWidth("return");
-        pdf.addImage(logoDataUrl, "PNG", 8 + returnTextWidth + 2, 40 - logoH + 1, logoW, logoH);
+        pdf.addImage(logoDataUrl, "PNG", 8 + returnTextWidth + 2, 32 - logoH + 1, logoW, logoH);
       }
       
       pdf.setFont("Inter", "italic");
-      pdf.setFontSize(26);
-      pdf.text("with one tap", 8, 54);
+      pdf.setFontSize(28);
+      pdf.text("with one tap", 8, 44);
 
       // Label ID top-right
       pdf.setFont("Inter", "normal");
       pdf.setFontSize(8);
       pdf.setTextColor(80, 80, 80);
-      pdf.text(label.labelId, W - 15, 8, { align: "right" });
+      pdf.text(label.labelId, W - 15, 5, { align: "right" });
 
       // QR Code (right side)
-      const qrSize = 50;
-      pdf.addImage(label.qrDataUrl, "PNG", W - 4 - qrSize, 10, qrSize, qrSize);
+      const qrSize = 52;
+      pdf.addImage(label.qrDataUrl, "PNG", W - 4 - qrSize, 6, qrSize, qrSize);
 
       // Barcode in black bar
       const barcodeW = 55, barcodeH = 14;
@@ -461,9 +461,9 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
 
       // Support text
       pdf.setFont("Inter", "bold");
-      pdf.setFontSize(9);
+      pdf.setFontSize(11);
       pdf.setTextColor(255, 255, 255);
-      pdf.text("Call for support:", W - 6, H - barH + 9, { align: "right" });
+      pdf.text("Call for support:", W - 19, H - barH + 8, { align: "right" });
       pdf.setFont("Inter", "normal");
       pdf.text("+44 (0) 75.49.88.48.50", W - 6, H - barH + 14, { align: "right" });
     }
