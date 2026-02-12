@@ -289,7 +289,7 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
             .label-right {
               display: flex;
               flex-direction: column;
-              align-items: flex-end;
+              align-items: center;
               flex-shrink: 0;
               padding: 3mm 6mm 4mm 0;
             }
@@ -299,7 +299,7 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
               color: #333;
               letter-spacing: 0.02em;
               margin-bottom: 2mm;
-              text-align: right;
+              text-align: center;
             }
             .qr-img { width: 36mm; height: 36mm; display: block; }
             .label-lower {
@@ -550,8 +550,8 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                         with one tap
                       </div>
                     </div>
-                    <div className="flex flex-col items-end flex-shrink-0 pt-2 pr-3">
-                      <span style={{ fontSize: '6px', fontWeight: 500, color: '#555', marginBottom: '3px' }}>{label.labelId}</span>
+                    <div className="flex flex-col items-center flex-shrink-0 pt-2 pr-3">
+                      <span style={{ fontSize: '6px', fontWeight: 500, color: '#555', marginBottom: '3px', textAlign: 'center' }}>{label.labelId}</span>
                       <img src={label.qrDataUrl} alt="QR Code" className="block" style={{ width: '75px', height: '75px' }} />
                     </div>
                   </div>
