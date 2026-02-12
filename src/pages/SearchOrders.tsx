@@ -79,7 +79,7 @@ interface CustomerInfo {
 
 function SupportFooter() {
   return (
-    <div className="pb-8 px-6" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.0425em' }}>
+    <div className="pb-8 px-6 text-center" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.0425em' }}>
       <p className="font-semibold text-stone-900 mb-3" style={{ fontSize: '18px', lineHeight: '1.3' }}>Need support:</p>
       <div className="flex flex-col gap-1" style={{ fontSize: '16px', lineHeight: '1.4' }}>
         <p className="text-stone-900">
@@ -426,8 +426,8 @@ export default function SearchOrders() {
         )}
       </div>
 
-      {/* Fixed Footer at bottom-left */}
-      <div className="fixed bottom-0 left-0">
+      {/* Fixed Footer at bottom center */}
+      <div className="fixed bottom-0 left-0 right-0 flex justify-center">
         <SupportFooter />
       </div>
     </div>
