@@ -227,8 +227,8 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
               justify-content: flex-start;
             }
             .label-card {
-              width: 480px;
-              aspect-ratio: 1200 / 754;
+               width: 585px;
+              aspect-ratio: 1950 / 1225;
               background: #e6e3db;
               border-radius: 4px;
               overflow: hidden;
@@ -451,12 +451,12 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
             <CardDescription>Preview of the first 20 generated labels</CardDescription>
           </CardHeader>
           <CardContent>
-            <div ref={printRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div ref={printRef} className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {generatedLabels.slice(0, 20).map((label) => (
                 <div
                   key={label.id}
                   className="overflow-hidden flex flex-col"
-                  style={{ aspectRatio: '1200 / 754', backgroundColor: '#e6e3db', borderRadius: '6px' }}
+                  style={{ aspectRatio: '1950 / 1225', backgroundColor: '#e6e3db', borderRadius: '6px' }}
                 >
                   {/* Upper section */}
                   <div className="flex-1 flex items-center px-5 pt-5 pb-3 gap-3">
