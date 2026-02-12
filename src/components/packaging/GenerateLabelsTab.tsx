@@ -565,7 +565,7 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
             <CardDescription>Preview of the first 20 generated labels</CardDescription>
           </CardHeader>
           <CardContent>
-             <div ref={printRef} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <div ref={printRef} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {generatedLabels.slice(0, 20).map((label) => (
                 <div
                   key={label.id}
@@ -580,7 +580,7 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                         Start your
                       </div>
                       <div className="flex items-center" style={{ fontFamily: "'Inter', sans-serif", fontSize: '6.5cqi', fontWeight: 900, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em', gap: '1cqi' }}>
-                        return <img src={kvattLogo} alt="Kvatt" style={{ width: '5cqi', height: '4.2cqi', objectFit: 'contain', display: 'inline-block' }} />
+                        return <img src={kvattLogo} alt="Kvatt" style={{ width: '7cqi', height: '5.5cqi', objectFit: 'contain', display: 'inline-block' }} />
                       </div>
                       <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '5.5cqi', fontWeight: 500, fontStyle: 'italic', lineHeight: 1.15, color: '#000', letterSpacing: '-0.02em', marginTop: '0.8cqi' }}>
                         with one tap
