@@ -64,9 +64,9 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
 
   const generateQRCode = async (labelId: string): Promise<string> => {
     return await QRCode.toDataURL(labelId, {
-      width: 200,
-      margin: 2,
-      color: { dark: "#000000", light: "#ffffff" },
+      width: 400,
+      margin: 1,
+      color: { dark: "#000000", light: "#e6e3db" },
     });
   };
 
@@ -75,10 +75,11 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
     JsBarcode(canvas, labelId, {
       format: "CODE128",
       width: 2,
-      height: 60,
-      displayValue: true,
-      fontSize: 12,
-      margin: 5,
+      height: 50,
+      displayValue: false,
+      margin: 0,
+      background: "#000000",
+      lineColor: "#ffffff",
     });
     return canvas.toDataURL("image/png");
   };
@@ -182,286 +183,130 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
     // Generate labels based on selected style
     const labelsHtml = generatedLabels
       .map(
-        (label, index) => {
-          if (labelStyle === "compact") {
-            // QR only style
-            return `
-              <div class="label-card">
-                <div class="corner-mark top-left"></div>
-                <div class="corner-mark top-right"></div>
-                <div class="corner-mark bottom-left"></div>
-                <div class="corner-mark bottom-right"></div>
-                <div class="label-content">
-                  <div class="brand-text">Powered by <strong>Kvatt</strong></div>
-                  <img src="${label.qrDataUrl}" alt="QR Code" class="qr-img" />
-                  <div class="label-id">${label.labelId}</div>
-                </div>
+        (label) => `
+          <div class="label-card">
+            <div class="label-upper">
+              <div class="label-left">
+                <div class="heading-bold">Start your</div>
+                <div class="heading-bold">return ‹</div>
+                <div class="heading-italic">with one tap</div>
               </div>
-            `;
-          } else if (labelStyle === "detailed") {
-            // Detailed style with message
-            return `
-              <div class="label-card label-card-horizontal">
-                <div class="corner-mark top-left"></div>
-                <div class="corner-mark top-right"></div>
-                <div class="corner-mark bottom-left"></div>
-                <div class="corner-mark bottom-right"></div>
-                <div class="label-content-horizontal">
-                  <div class="qr-section">
-                    <div class="brand-text">Powered by <strong>Kvatt</strong></div>
-                    <img src="${label.qrDataUrl}" alt="QR Code" class="qr-img-small" />
-                    <div class="label-id-small">${label.labelId}</div>
-                  </div>
-                  <div class="message-section">
-                    <div class="message-title">BRING IT BACK, GET REWARDED!</div>
-                    <div class="message-text">Return your pack for a sustainable future.</div>
-                    <div class="scan-arrow">← Scan here</div>
-                  </div>
-                </div>
+              <div class="label-right">
+                <div class="qr-label">QRCode</div>
+                <div class="label-id-top">${label.labelId}</div>
+                <img src="${label.qrDataUrl}" alt="QR Code" class="qr-img" />
               </div>
-            `;
-          } else {
-            // Standard style - QR with barcode
-            return `
-              <div class="label-card">
-                <div class="corner-mark top-left"></div>
-                <div class="corner-mark top-right"></div>
-                <div class="corner-mark bottom-left"></div>
-                <div class="corner-mark bottom-right"></div>
-                <div class="label-content">
-                  <div class="brand-text">Powered by <strong>Kvatt</strong></div>
-                  <img src="${label.qrDataUrl}" alt="QR Code" class="qr-img" />
-                  <img src="${label.barcodeDataUrl}" alt="Barcode" class="barcode-img" />
-                  <div class="label-id">${label.labelId}</div>
-                </div>
+            </div>
+            <div class="label-lower">
+              <img src="${label.barcodeDataUrl}" alt="Barcode" class="barcode-img" />
+              <div class="support-text">
+                <div class="support-title">Call for support:</div>
+                <div class="support-number">+44 (0) 75.49.88.48.50</div>
               </div>
-            `;
-          }
-        }
+            </div>
+          </div>
+        `
       )
       .join("");
-
-    const gridCols = labelStyle === "detailed" ? "1" : "3";
-    const cardWidth = labelStyle === "detailed" ? "100%" : "calc(33.33% - 16px)";
 
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
           <title>Pack Labels - Kvatt</title>
+          <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600&display=swap" rel="stylesheet">
           <style>
-            * { 
-              box-sizing: border-box; 
-              margin: 0;
-              padding: 0;
-            }
+            * { box-sizing: border-box; margin: 0; padding: 0; }
             body { 
-              font-family: 'Inter', Arial, sans-serif; 
-              margin: 0; 
-              padding: 16px;
+              font-family: 'Inter', sans-serif; 
+              margin: 0; padding: 24px;
               background: #f5f5f5;
             }
-            .loading-message {
-              position: fixed;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              font-size: 18px;
-              color: #666;
-              z-index: 1000;
-              background: white;
-              padding: 20px 40px;
-              border-radius: 8px;
-              box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            }
             .labels-container {
-              display: flex;
-              flex-wrap: wrap;
-              gap: 16px;
+              display: flex; flex-wrap: wrap; gap: 24px;
               justify-content: flex-start;
             }
             .label-card {
-              width: ${cardWidth};
-              position: relative;
-              background: white;
-              padding: 20px;
+              width: 480px;
+              aspect-ratio: 1200 / 754;
+              background: #e6e3db;
+              border-radius: 4px;
+              overflow: hidden;
+              display: flex;
+              flex-direction: column;
               page-break-inside: avoid;
             }
-            .label-card-horizontal {
-              width: 100%;
-              max-width: 500px;
-            }
-            
-            /* Corner cutting marks */
-            .corner-mark {
-              position: absolute;
-              width: 12px;
-              height: 12px;
-            }
-            .corner-mark.top-left {
-              top: 0;
-              left: 0;
-              border-top: 1px solid #333;
-              border-left: 1px solid #333;
-            }
-            .corner-mark.top-right {
-              top: 0;
-              right: 0;
-              border-top: 1px solid #333;
-              border-right: 1px solid #333;
-            }
-            .corner-mark.bottom-left {
-              bottom: 0;
-              left: 0;
-              border-bottom: 1px solid #333;
-              border-left: 1px solid #333;
-            }
-            .corner-mark.bottom-right {
-              bottom: 0;
-              right: 0;
-              border-bottom: 1px solid #333;
-              border-right: 1px solid #333;
-            }
-            
-            .label-content {
-              text-align: center;
-              padding: 8px;
-            }
-            .label-content-horizontal {
+            .label-upper {
+              flex: 1;
               display: flex;
               align-items: center;
-              gap: 20px;
-              padding: 8px;
+              padding: 28px 32px 16px 32px;
+              gap: 16px;
             }
-            .qr-section {
-              text-align: center;
+            .label-left { flex: 1; }
+            .heading-bold {
+              font-size: 38px;
+              font-weight: 900;
+              line-height: 1.05;
+              color: #000;
+              letter-spacing: -0.02em;
+            }
+            .heading-italic {
+              font-size: 36px;
+              font-weight: 500;
+              font-style: italic;
+              line-height: 1.15;
+              color: #000;
+              letter-spacing: -0.02em;
+              margin-top: 2px;
+            }
+            .label-right {
+              display: flex;
+              flex-direction: column;
+              align-items: center;
               flex-shrink: 0;
             }
-            .message-section {
-              text-align: left;
-              flex: 1;
+            .qr-label {
+              font-size: 10px;
+              color: #888;
+              letter-spacing: 0.03em;
+              margin-bottom: 2px;
             }
-            .message-title {
-              font-family: 'Comic Sans MS', cursive, sans-serif;
-              font-weight: bold;
-              font-size: 16px;
-              color: #333;
-              margin-bottom: 4px;
-            }
-            .message-text {
-              font-family: 'Comic Sans MS', cursive, sans-serif;
-              font-size: 13px;
-              color: #333;
-              margin-bottom: 8px;
-            }
-            .scan-arrow {
-              font-family: 'Comic Sans MS', cursive, sans-serif;
-              font-size: 12px;
-              color: #333;
-            }
-            .brand-text {
-              font-size: 9px;
-              color: #666;
-              margin-bottom: 8px;
-              letter-spacing: 0.5px;
-            }
-            .brand-text strong {
-              color: #333;
-            }
-            .qr-img {
-              width: 140px;
-              height: 140px;
-              display: block;
-              margin: 0 auto 8px auto;
-            }
-            .qr-img-small {
-              width: 90px;
-              height: 90px;
-              display: block;
-              margin: 0 auto 6px auto;
-            }
-            .barcode-img {
-              max-width: 160px;
-              height: auto;
-              display: block;
-              margin: 0 auto 6px auto;
-            }
-            .label-id {
+            .label-id-top {
               font-size: 11px;
-              font-family: 'JetBrains Mono', 'Courier New', monospace;
+              font-weight: 500;
               color: #333;
-              letter-spacing: 0.5px;
+              letter-spacing: 0.02em;
+              margin-bottom: 6px;
             }
-            .label-id-small {
-              font-size: 9px;
-              font-family: 'JetBrains Mono', 'Courier New', monospace;
-              color: #0066cc;
-              letter-spacing: 0.3px;
+            .qr-img { width: 160px; height: 160px; display: block; }
+            .label-lower {
+              background: #000;
+              display: flex;
+              align-items: center;
+              padding: 12px 32px;
+              gap: 24px;
             }
-            
+            .barcode-img { height: 40px; width: auto; }
+            .support-text { color: #fff; font-size: 14px; line-height: 1.4; }
+            .support-title { font-weight: 600; }
+            .support-number { font-weight: 400; }
             @media print {
-              body { 
-                margin: 0; 
-                padding: 8px;
-                background: white;
-              }
-              .loading-message { display: none; }
-              .labels-container {
-                gap: 12px;
-              }
-              .label-card {
-                width: ${labelStyle === "detailed" ? "48%" : "31%"};
-                padding: 12px;
-                background: white;
-              }
-              .corner-mark {
-                border-color: #666;
-              }
+              body { margin: 0; padding: 8px; background: white; }
+              .labels-container { gap: 16px; }
+              .label-card { width: 100mm; }
             }
           </style>
         </head>
         <body>
-          <div class="loading-message" id="loadingMsg">Loading labels... Please wait</div>
-          <div class="labels-container">
-            ${labelsHtml}
-          </div>
+          <div class="labels-container">${labelsHtml}</div>
           <script>
-            (function() {
-              var images = document.querySelectorAll('img');
-              var loaded = 0;
-              var total = images.length;
-              
-              if (total === 0) {
-                document.getElementById('loadingMsg').style.display = 'none';
-                setTimeout(function() { window.print(); }, 100);
-                return;
-              }
-              
-              function checkAllLoaded() {
-                loaded++;
-                if (loaded >= total) {
-                  document.getElementById('loadingMsg').style.display = 'none';
-                  setTimeout(function() {
-                    window.print();
-                  }, 200);
-                }
-              }
-              
-              images.forEach(function(img) {
-                if (img.complete && img.naturalHeight !== 0) {
-                  checkAllLoaded();
-                } else {
-                  img.onload = checkAllLoaded;
-                  img.onerror = checkAllLoaded;
-                }
-              });
-              
-              // Fallback: print after 4 seconds
-              setTimeout(function() {
-                document.getElementById('loadingMsg').style.display = 'none';
-                window.print();
-              }, 4000);
-            })();
+            var images = document.querySelectorAll('img');
+            var loaded = 0, total = images.length;
+            if (total === 0) { setTimeout(function() { window.print(); }, 100); }
+            function check() { loaded++; if (loaded >= total) setTimeout(function() { window.print(); }, 200); }
+            images.forEach(function(img) { if (img.complete) check(); else { img.onload = check; img.onerror = check; } });
+            setTimeout(function() { window.print(); }, 4000);
           </script>
         </body>
       </html>
@@ -597,25 +442,40 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
             <CardDescription>Preview of the first 20 generated labels</CardDescription>
           </CardHeader>
           <CardContent>
-            <div ref={printRef} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div ref={printRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {generatedLabels.slice(0, 20).map((label) => (
                 <div
                   key={label.id}
-                  className="border rounded-lg p-3 text-center bg-white"
+                  className="overflow-hidden flex flex-col"
+                  style={{ aspectRatio: '1200 / 754', backgroundColor: '#e6e3db', borderRadius: '6px' }}
                 >
-                  <img
-                    src={label.qrDataUrl}
-                    alt="QR Code"
-                    className="mx-auto w-20 h-20 mb-2"
-                  />
-                  <img
-                    src={label.barcodeDataUrl}
-                    alt="Barcode"
-                    className="mx-auto max-w-[120px] mb-1"
-                  />
-                  <p className="text-xs font-mono text-muted-foreground truncate">
-                    {label.labelId}
-                  </p>
+                  {/* Upper section */}
+                  <div className="flex-1 flex items-center px-5 pt-5 pb-3 gap-3">
+                    <div className="flex-1">
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '24px', fontWeight: 900, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em' }}>
+                        Start your
+                      </div>
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '24px', fontWeight: 900, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em' }}>
+                        return ‹
+                      </div>
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '22px', fontWeight: 500, fontStyle: 'italic', lineHeight: 1.15, color: '#000', letterSpacing: '-0.02em', marginTop: '2px' }}>
+                        with one tap
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-center flex-shrink-0">
+                      <span style={{ fontSize: '7px', color: '#888', letterSpacing: '0.03em' }}>QRCode</span>
+                      <span style={{ fontSize: '7px', fontWeight: 500, color: '#333', marginBottom: '3px' }}>{label.labelId}</span>
+                      <img src={label.qrDataUrl} alt="QR Code" className="block" style={{ width: '100px', height: '100px' }} />
+                    </div>
+                  </div>
+                  {/* Lower black bar */}
+                  <div className="flex items-center gap-4 px-5 py-2" style={{ backgroundColor: '#000' }}>
+                    <img src={label.barcodeDataUrl} alt="Barcode" style={{ height: '28px', width: 'auto' }} />
+                    <div style={{ color: '#fff', fontSize: '9px', lineHeight: 1.4 }}>
+                      <div style={{ fontWeight: 600 }}>Call for support:</div>
+                      <div>+44 (0) 75.49.88.48.50</div>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
