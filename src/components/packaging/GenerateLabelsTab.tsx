@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Download, Printer, QrCode } from "lucide-react";
+import kvattLogo from "@/assets/kvatt-logo.jpeg";
 import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
 
@@ -188,7 +189,7 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
             <div class="label-upper">
               <div class="label-left">
                 <div class="heading-bold">Start your</div>
-                <div class="heading-bold">return ‹</div>
+                <div class="heading-bold">return <img src="${kvattLogo}" alt="Kvatt" class="bird-logo" /></div>
                 <div class="heading-italic">with one tap</div>
               </div>
               <div class="label-right">
@@ -250,6 +251,15 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
               line-height: 1.05;
               color: #000;
               letter-spacing: -0.02em;
+              display: flex;
+              align-items: center;
+              gap: 6px;
+            }
+            .bird-logo {
+              width: 36px;
+              height: 30px;
+              object-fit: contain;
+              display: inline-block;
             }
             .heading-italic {
               font-size: 36px;
@@ -455,8 +465,8 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                       <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '24px', fontWeight: 900, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em' }}>
                         Start your
                       </div>
-                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '24px', fontWeight: 900, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em' }}>
-                        return ‹
+                      <div className="flex items-center gap-1" style={{ fontFamily: "'Inter', sans-serif", fontSize: '24px', fontWeight: 900, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em' }}>
+                        return <img src={kvattLogo} alt="Kvatt" style={{ width: '22px', height: '19px', objectFit: 'contain', display: 'inline-block' }} />
                       </div>
                       <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '22px', fontWeight: 500, fontStyle: 'italic', lineHeight: 1.15, color: '#000', letterSpacing: '-0.02em', marginTop: '2px' }}>
                         with one tap
