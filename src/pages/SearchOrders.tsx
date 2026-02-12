@@ -83,12 +83,12 @@ function SupportFooter() {
       <p className="font-semibold my-0 font-sans mt-[100px] mb-[30px]" style={{ fontSize: '26px', marginTop: '5px', marginBottom: '5px' }}>Need support:</p>
       <div className="flex flex-col" style={{ fontSize: '26px', lineHeight: '1.45' }}>
         <p>
-          <span className="font-semibold">email:</span>{"   "}
-          <span className="font-normal">returns@kvatt.com</span>
+          <span className="font-semibold font-sans">email:</span>{"   "}
+          <span className="font-light"> returns@kvatt.com</span>
         </p>
         <p>
-          <span className="font-semibold">whatsapp:</span>{"   "}
-          <span className="font-normal">+44 (0) 75.49.88.48.50</span>
+          <span className="font-semibold font-sans">whatsapp:</span>{"   "}
+          <span className="font-light"> +44 (0) 75.49.88.48.50</span>
         </p>
       </div>
     </div>);
