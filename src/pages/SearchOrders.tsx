@@ -79,7 +79,7 @@ interface CustomerInfo {
 
 function SupportFooter() {
   return (
-    <div className="mt-auto pt-16 pb-8" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.0425em' }}>
+    <div className="pb-8 px-6" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.0425em' }}>
       <p className="font-semibold text-stone-900 mb-3" style={{ fontSize: '18px', lineHeight: '1.3' }}>Need support:</p>
       <div className="flex flex-col gap-1" style={{ fontSize: '16px', lineHeight: '1.4' }}>
         <p className="text-stone-900">
@@ -198,21 +198,22 @@ export default function SearchOrders() {
         </button>
       )}
 
-      <div className="flex-1 flex flex-col w-full max-w-md mx-auto px-6 py-8">
+      {/* Fixed Logo at top */}
+      <div className="flex justify-center pt-8 pb-4">
+        <img
+          src={kvattLogo}
+          alt="Kvatt"
+          style={{ width: '70px', height: '60px' }}
+          className="object-contain"
+        />
+      </div>
 
-        {/* Logo - centered */}
-        <div className="flex justify-center mb-10">
-          <img
-            src={kvattLogo}
-            alt="Kvatt"
-            style={{ width: '70px', height: '60px' }}
-            className="object-contain"
-          />
-        </div>
+      {/* Middle content - vertically centered in remaining space */}
+      <div className="flex-1 flex flex-col items-center justify-center w-full max-w-md mx-auto px-6">
 
         {/* STEP 0: What are you returning? */}
         {step === 'start' && (
-          <div className="flex flex-col flex-1">
+          <div className="w-full">
             <h1 className="text-3xl font-bold text-stone-900 mb-10 leading-tight">
               What are you<br />returning?
             </h1>
@@ -231,14 +232,12 @@ export default function SearchOrders() {
                 Just the pack (nothing inside)
               </button>
             </div>
-
-            <SupportFooter />
           </div>
         )}
 
         {/* PACK STEP: Just the pack flow */}
         {step === 'pack' && (
-          <div className="flex flex-col flex-1">
+          <div className="w-full">
             <h1
               style={{ fontFamily: 'Inter, sans-serif', fontSize: '47px', fontWeight: 500, lineHeight: '100%', letterSpacing: '-0.0425em' }}
               className="text-stone-900 mb-6"
@@ -264,14 +263,12 @@ export default function SearchOrders() {
             >
               find a drop-off near me
             </button>
-
-            <SupportFooter />
           </div>
         )}
 
         {/* STEP 1: Search */}
         {step === 'search' && (
-          <div className="flex flex-col flex-1">
+          <div className="w-full">
             <h1
               style={{ fontFamily: 'Inter, sans-serif', fontSize: '49px', fontWeight: 500, lineHeight: '100%', letterSpacing: '-0.0425em' }}
               className="text-stone-900 mb-8"
@@ -301,20 +298,18 @@ export default function SearchOrders() {
                 find order
               </button>
             </form>
-
-            <SupportFooter />
           </div>
         )}
 
         {/* STEP 2: Results */}
         {step === 'results' && (
-          <div className="flex flex-col flex-1">
+          <div className="w-full">
             {loading ? (
-              <div className="flex-1 flex items-center justify-center">
+              <div className="flex items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-stone-500" />
               </div>
             ) : error ? (
-              <div className="flex flex-col items-center flex-1">
+              <div className="flex flex-col items-center">
                 <h1 className="text-2xl font-bold text-stone-900 mb-2 text-center">
                   No orders found
                 </h1>
@@ -327,10 +322,9 @@ export default function SearchOrders() {
                 >
                   try again
                 </button>
-                <SupportFooter />
               </div>
             ) : orders.length === 0 ? (
-              <div className="flex flex-col items-center flex-1">
+              <div className="flex flex-col items-center">
                 <h1 className="text-2xl font-bold text-stone-900 mb-2 text-center">
                   No orders found
                 </h1>
@@ -343,7 +337,6 @@ export default function SearchOrders() {
                 >
                   try again
                 </button>
-                <SupportFooter />
               </div>
             ) : (
               <>
@@ -375,7 +368,6 @@ export default function SearchOrders() {
                         style={{ padding: '18px 20px' }}
                       >
                         <div className="flex items-center gap-4">
-                          {/* Radio circle */}
                           <div
                             className={`flex-shrink-0 rounded-full border-2 flex items-center justify-center ${
                               isSelected ? 'border-stone-900' : 'border-stone-400'
@@ -386,7 +378,6 @@ export default function SearchOrders() {
                               <div className="rounded-full bg-stone-900" style={{ width: '12px', height: '12px' }} />
                             )}
                           </div>
-                          {/* Order info */}
                           <div style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.0425em' }}>
                             <p
                               className="text-stone-900"
@@ -429,13 +420,14 @@ export default function SearchOrders() {
                     Return portal not available for this store
                   </p>
                 )}
-
-                <SupportFooter />
               </>
             )}
           </div>
         )}
       </div>
+
+      {/* Fixed Footer at bottom */}
+      <SupportFooter />
     </div>
   );
 }
