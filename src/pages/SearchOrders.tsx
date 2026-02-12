@@ -80,14 +80,14 @@ interface CustomerInfo {
 function SupportFooter() {
   return (
     <div className="mt-10 text-left" style={{ letterSpacing: '-0.0425em', fontSize: '16px', lineHeight: '1.6', color: '#1c1917' }}>
-      <p className="font-semibold mb-[20px] mt-[50px] text-xl" style={{ fontSize: '16px', marginTop: '5px', marginBottom: '5px' }}>Need support:</p>
+      <p className="font-semibold mt-[83px]" style={{ fontSize: '16px', marginTop: '5px', marginBottom: '5px' }}>Need support:</p>
       <div className="flex flex-col" style={{ fontSize: '16px', lineHeight: '1.6' }}>
         <p>
-          <span className="font-semibold text-lg">email:</span>{"   "}
+          <span className="font-semibold">email:</span>{"   "}
           <span className="font-normal">returns@kvatt.com</span>
         </p>
         <p>
-          <span className="font-semibold text-lg">whatsapp:</span>{"   "}
+          <span className="font-semibold">whatsapp:</span>{"   "}
           <span className="font-normal">+44 (0) 75.49.88.48.50</span>
         </p>
       </div>
