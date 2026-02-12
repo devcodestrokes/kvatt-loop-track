@@ -80,7 +80,7 @@ interface CustomerInfo {
 function SupportFooter() {
   return (
     <div className="mt-12 text-left" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.0425em', fontSize: '26px', lineHeight: '1.4', color: '#000000' }}>
-      <p className="font-semibold mb-1" style={{ fontSize: '26px' }}>Need support:</p>
+      <p className="font-semibold" style={{ fontSize: '26px', marginTop: '5px', marginBottom: '5px' }}>Need support:</p>
       <div className="flex flex-col" style={{ fontSize: '26px', lineHeight: '1.45' }}>
         <p>
           <span className="font-semibold">email:</span>{"   "}
