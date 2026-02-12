@@ -79,20 +79,20 @@ interface CustomerInfo {
 
 function SupportFooter() {
   return (
-    <div className="mt-12 text-left" style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.0425em', fontSize: '26px', lineHeight: '1.4', color: '#000000' }}>
-      <p className="font-semibold my-0 font-sans mt-[100px] mb-[30px]" style={{ fontSize: '26px', marginTop: '5px', marginBottom: '5px' }}>Need support:</p>
-      <div className="flex flex-col" style={{ fontSize: '26px', lineHeight: '1.45' }}>
+    <div className="mt-10 text-left" style={{ letterSpacing: '-0.0425em', fontSize: '16px', lineHeight: '1.6', color: '#1c1917' }}>
+      <p className="font-semibold" style={{ fontSize: '16px', marginTop: '5px', marginBottom: '5px' }}>Need support:</p>
+      <div className="flex flex-col" style={{ fontSize: '16px', lineHeight: '1.6' }}>
         <p>
-          <span className="font-semibold font-sans">email:</span>{"   "}
-          <span className="font-light text-gray-950"> returns@kvatt.com</span>
+          <span className="font-semibold">email:</span>{"   "}
+          <span className="font-normal">returns@kvatt.com</span>
         </p>
         <p>
-          <span className="font-semibold font-sans">whatsapp:</span>{"   "}
-          <span className="font-light"> +44 (0) 75.49.88.48.50</span>
+          <span className="font-semibold">whatsapp:</span>{"   "}
+          <span className="font-normal">+44 (0) 75.49.88.48.50</span>
         </p>
       </div>
-    </div>);
-
+    </div>
+  );
 }
 
 export default function SearchOrders() {
@@ -187,16 +187,16 @@ export default function SearchOrders() {
   return (
     <div className="min-h-screen flex flex-col relative" style={{ backgroundColor: '#e8e4de', fontFamily: "'Inter', sans-serif" }}>
       {/* Back button - absolute top left */}
-      {(step === 'results' || step === 'search' || step === 'pack') &&
-      <button
-        onClick={handleBack}
-        style={{ fontFamily: 'Inter, sans-serif', fontSize: '26px', fontWeight: 400, letterSpacing: '-0.0425em' }}
-        className="absolute top-8 left-8 flex items-center gap-1 text-stone-900 hover:text-stone-700 transition-colors z-10">
-
-          <ChevronLeft className="h-7 w-7" strokeWidth={2.5} />
+      {(step === 'results' || step === 'search' || step === 'pack') && (
+        <button
+          onClick={handleBack}
+          style={{ fontSize: '18px', fontWeight: 400, letterSpacing: '-0.0425em' }}
+          className="absolute top-8 left-8 flex items-center gap-1 text-stone-900 hover:text-stone-700 transition-colors z-10"
+        >
+          <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
           back
         </button>
-      }
+      )}
 
       {/* Fixed Logo at top */}
       <div className="flex justify-center pt-8 pb-4 py-[47px]">
@@ -204,51 +204,56 @@ export default function SearchOrders() {
           src={kvattLogo}
           alt="Kvatt"
           style={{ width: '70px', height: '60px' }}
-          className="object-contain" />
-
+          className="object-contain"
+        />
       </div>
 
       {/* Middle content - vertically centered in remaining space */}
       <div className="flex-1 flex flex-col items-center justify-center w-full max-w-md mx-auto px-6">
 
         {/* STEP 0: What are you returning? */}
-        {step === 'start' &&
-        <div className="w-full">
-            <h1 className="text-3xl font-bold text-stone-900 mb-10 leading-tight">
+        {step === 'start' && (
+          <div className="w-full">
+            <h1
+              style={{ fontSize: '36px', fontWeight: 700, lineHeight: '105%', letterSpacing: '-0.0425em' }}
+              className="text-stone-900 mb-10"
+            >
               What are you<br />returning?
             </h1>
 
             <div className="space-y-4 w-full max-w-sm">
               <button
-              onClick={() => setStep('search')}
-              className="w-full py-4 bg-stone-900 text-white rounded-lg text-base font-medium hover:bg-stone-800 transition-colors">
-
+                onClick={() => setStep('search')}
+                style={{ fontSize: '17px', fontWeight: 400, letterSpacing: '-0.0425em' }}
+                className="w-full py-4 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors"
+              >
                 An item from my order
               </button>
               <button
-              onClick={() => setStep('pack')}
-              className="w-full py-4 bg-stone-900 text-white rounded-lg text-base font-medium hover:bg-stone-800 transition-colors">
-
+                onClick={() => setStep('pack')}
+                style={{ fontSize: '17px', fontWeight: 400, letterSpacing: '-0.0425em' }}
+                className="w-full py-4 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors"
+              >
                 Just the pack (nothing inside)
               </button>
             </div>
             <SupportFooter />
           </div>
-        }
+        )}
 
         {/* PACK STEP: Just the pack flow */}
-        {step === 'pack' &&
-        <div className="w-full">
+        {step === 'pack' && (
+          <div className="w-full">
             <h1
-            style={{ fontFamily: 'Inter, sans-serif', fontSize: '47px', fontWeight: 500, lineHeight: '100%', letterSpacing: '-0.0425em' }}
-            className="text-stone-900 mb-6">
-
+              style={{ fontSize: '40px', fontWeight: 500, lineHeight: '100%', letterSpacing: '-0.0425em' }}
+              className="text-stone-900 mb-6"
+            >
               Thanks for returning<br />the empty pack!
             </h1>
             <div
-            style={{ fontFamily: 'Inter, sans-serif', fontSize: '21px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
-            className="text-stone-900 mb-10">
-
+              style={{ fontSize: '18px', fontWeight: 400, lineHeight: '130%', letterSpacing: '-0.0425em' }}
+              className="text-stone-900 mb-10"
+            >
               <p className="mb-4">
                 Fold it into the provided pink pouch and<br />drop it in any UK Royal Mail postbox.
               </p>
@@ -258,61 +263,60 @@ export default function SearchOrders() {
             </div>
 
             <button
-            onClick={() => window.open('https://www.royalmail.com/services/find-post-office', '_blank', 'noopener,noreferrer')}
-            style={{ fontFamily: 'Inter, sans-serif', fontSize: '25.68px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
-            className="w-full py-5 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
-
+              onClick={() => window.open('https://www.royalmail.com/services/find-post-office', '_blank', 'noopener,noreferrer')}
+              style={{ fontSize: '19px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
+              className="w-full py-5 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors"
+            >
               find a drop-off near me
             </button>
             <SupportFooter />
           </div>
-        }
+        )}
 
         {/* STEP 1: Search */}
-        {step === 'search' &&
-        <div className="w-full">
+        {step === 'search' && (
+          <div className="w-full">
             <h1
-            style={{ fontFamily: 'Inter, sans-serif', fontSize: '49px', fontWeight: 500, lineHeight: '100%', letterSpacing: '-0.0425em' }}
-            className="text-stone-900 mb-8">
-
+              style={{ fontSize: '40px', fontWeight: 500, lineHeight: '100%', letterSpacing: '-0.0425em' }}
+              className="text-stone-900 mb-8"
+            >
               Let's find<br />your order
             </h1>
 
             <form onSubmit={handleSearch} className="w-full space-y-3">
               <input
-              type="email"
-              placeholder="enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={{ fontFamily: 'Inter, sans-serif', fontSize: '17px', letterSpacing: '-0.0425em' }}
-              className="w-full px-6 py-4 rounded-full border-0 bg-white/60 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 text-center"
-              autoFocus />
+                type="email"
+                placeholder="enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={{ fontSize: '16px', letterSpacing: '-0.0425em' }}
+                className="w-full px-6 py-4 rounded-full border-0 bg-white/60 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 text-center"
+                autoFocus
+              />
 
               <button
-              type="submit"
-              disabled={loading || !email.trim()}
-              style={{ fontFamily: 'Inter, sans-serif', fontSize: '21px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
-              className="w-full py-4 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-
-                {loading ?
-              <Loader2 className="h-4 w-4 animate-spin" /> :
-              null}
+                type="submit"
+                disabled={loading || !email.trim()}
+                style={{ fontSize: '19px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
+                className="w-full py-4 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 find order
               </button>
             </form>
             <SupportFooter />
           </div>
-        }
+        )}
 
         {/* STEP 2: Results */}
-        {step === 'results' &&
-        <div className="w-full">
-            {loading ?
-          <div className="flex items-center justify-center">
+        {step === 'results' && (
+          <div className="w-full">
+            {loading ? (
+              <div className="flex items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-stone-500" />
-              </div> :
-          error ?
-          <div className="flex flex-col items-center">
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center">
                 <h1 className="text-2xl font-bold text-stone-900 mb-2 text-center">
                   No orders found
                 </h1>
@@ -320,14 +324,14 @@ export default function SearchOrders() {
                   {error}
                 </p>
                 <button
-              onClick={handleBack}
-              className="py-3 px-8 bg-stone-900 text-white rounded-full text-base font-medium hover:bg-stone-800 transition-colors">
-
+                  onClick={handleBack}
+                  className="py-3 px-8 bg-stone-900 text-white rounded-full text-base font-medium hover:bg-stone-800 transition-colors"
+                >
                   try again
                 </button>
-              </div> :
-          orders.length === 0 ?
-          <div className="flex flex-col items-center">
+              </div>
+            ) : orders.length === 0 ? (
+              <div className="flex flex-col items-center">
                 <h1 className="text-2xl font-bold text-stone-900 mb-2 text-center">
                   No orders found
                 </h1>
@@ -335,101 +339,100 @@ export default function SearchOrders() {
                   We couldn't find any orders for this email
                 </p>
                 <button
-              onClick={handleBack}
-              className="py-3 px-8 bg-stone-900 text-white rounded-full text-base font-medium hover:bg-stone-800 transition-colors">
-
+                  onClick={handleBack}
+                  className="py-3 px-8 bg-stone-900 text-white rounded-full text-base font-medium hover:bg-stone-800 transition-colors"
+                >
                   try again
                 </button>
-              </div> :
-
-          <>
+              </div>
+            ) : (
+              <>
                 <p
-              style={{ fontFamily: 'Inter, sans-serif', fontSize: '18px', fontWeight: 400, letterSpacing: '-0.0425em' }}
-              className="text-stone-500 mb-2">
-
+                  style={{ fontSize: '15px', fontWeight: 400, letterSpacing: '-0.0425em' }}
+                  className="text-stone-500 mb-1"
+                >
                   We found a match!
                 </p>
                 <h1
-              style={{ fontFamily: 'Inter, sans-serif', fontSize: '40px', fontWeight: 700, lineHeight: '100%', letterSpacing: '-0.0425em' }}
-              className="text-stone-900 mb-6">
-
+                  style={{ fontSize: '34px', fontWeight: 700, lineHeight: '105%', letterSpacing: '-0.0425em' }}
+                  className="text-stone-900 mb-5"
+                >
                   Select your<br />order below
                 </h1>
 
-                <div className="space-y-3 mb-4">
+                <div className="space-y-3 mb-5">
                   {orders.map((order) => {
-                const isSelected = selectedOrderId === order.id;
-                return (
-                  <button
-                    key={order.id}
-                    onClick={() => setSelectedOrderId(order.id)}
-                    className={`w-full text-left rounded-xl transition-all ${
-                    isSelected ?
-                    'border-2 border-stone-900 bg-[#ddd9d1]' :
-                    'border border-stone-300/50 bg-[#ddd9d1]/60'}`
-                    }
-                    style={{ padding: '18px 20px' }}>
-
+                    const isSelected = selectedOrderId === order.id;
+                    return (
+                      <button
+                        key={order.id}
+                        onClick={() => setSelectedOrderId(order.id)}
+                        className={`w-full text-left rounded-2xl transition-all ${
+                          isSelected
+                            ? 'border-2 border-stone-900 bg-[#ddd9d1]'
+                            : 'border border-stone-300/50 bg-[#ddd9d1]/60'
+                        }`}
+                        style={{ padding: '16px 20px' }}
+                      >
                         <div className="flex items-center gap-4">
                           <div
-                        className={`flex-shrink-0 rounded-full border-2 flex items-center justify-center ${
-                        isSelected ? 'border-stone-900' : 'border-stone-400'}`
-                        }
-                        style={{ width: '22px', height: '22px' }}>
-
-                            {isSelected &&
-                        <div className="rounded-full bg-stone-900" style={{ width: '12px', height: '12px' }} />
-                        }
+                            className={`flex-shrink-0 rounded-full border-2 flex items-center justify-center ${
+                              isSelected ? 'border-stone-900' : 'border-stone-400'
+                            }`}
+                            style={{ width: '20px', height: '20px' }}
+                          >
+                            {isSelected && (
+                              <div className="rounded-full bg-stone-900" style={{ width: '12px', height: '12px' }} />
+                            )}
                           </div>
-                          <div style={{ fontFamily: 'Inter, sans-serif', letterSpacing: '-0.0425em' }}>
+                          <div style={{ letterSpacing: '-0.0425em' }}>
                             <p
-                          className="text-stone-900"
-                          style={{ fontSize: '16px', fontWeight: 500, lineHeight: '1.4' }}>
-
+                              className="text-stone-900"
+                              style={{ fontSize: '15px', fontWeight: 500, lineHeight: '1.5' }}
+                            >
                               #{extractOrderNumber(order.name || '')}
                             </p>
                             <p
-                          className="text-stone-700"
-                          style={{ fontSize: '16px', fontWeight: 400, lineHeight: '1.4' }}>
-
-                              date: {order.shopify_created_at ?
-                          format(new Date(order.shopify_created_at), "dd.MM.yyyy") :
-                          "N/A"}
+                              className="text-stone-900"
+                              style={{ fontSize: '15px', fontWeight: 400, lineHeight: '1.5' }}
+                            >
+                              date: {order.shopify_created_at
+                                ? format(new Date(order.shopify_created_at), "dd.MM.yyyy")
+                                : "N/A"}
                             </p>
                             <p
-                          className="text-stone-700"
-                          style={{ fontSize: '16px', fontWeight: 400, lineHeight: '1.4' }}>
-
+                              className="text-stone-900"
+                              style={{ fontSize: '15px', fontWeight: 400, lineHeight: '1.5' }}
+                            >
                               amount: £{Math.round(order.total_price || 0)}
                             </p>
                           </div>
                         </div>
-                      </button>);
-
-              })}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <button
-              onClick={handleConfirmReturn}
-              disabled={!selectedOrderId || !hasReturnUrl}
-              style={{ fontFamily: 'Inter, sans-serif', fontSize: '21px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
-              className="w-full py-4 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-
+                  onClick={handleConfirmReturn}
+                  disabled={!selectedOrderId || !hasReturnUrl}
+                  style={{ fontSize: '18px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
+                  className="w-full py-4 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   confirm & start return
                 </button>
 
-                {selectedOrderId && !hasReturnUrl &&
-            <p className="text-xs text-stone-500 text-center mt-2">
+                {selectedOrderId && !hasReturnUrl && (
+                  <p className="text-xs text-stone-500 text-center mt-2">
                     Return portal not available for this store
                   </p>
-            }
+                )}
               </>
-          }
+            )}
             <SupportFooter />
           </div>
-        }
+        )}
       </div>
-
-    </div>);
-
+    </div>
+  );
 }
