@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Download, Printer, QrCode, FileDown } from "lucide-react";
-import kvattLogo from "@/assets/kvatt-logo.jpeg";
+import kvattLogo from "@/assets/kvatt-bird-logo.png";
 import QRCode from "qrcode";
 import JsBarcode from "jsbarcode";
 
@@ -565,7 +565,7 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
             <CardDescription>Preview of the first 20 generated labels</CardDescription>
           </CardHeader>
           <CardContent>
-             <div ref={printRef} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <div ref={printRef} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {generatedLabels.slice(0, 20).map((label) => (
                 <div
                   key={label.id}
@@ -580,7 +580,7 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                         Start your
                       </div>
                       <div className="flex items-center" style={{ fontFamily: "'Inter', sans-serif", fontSize: '6.5cqi', fontWeight: 900, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em', gap: '1cqi' }}>
-                        return <img src={kvattLogo} alt="Kvatt" style={{ width: '5cqi', height: '4.2cqi', objectFit: 'contain', display: 'inline-block' }} />
+                        return <img src={kvattLogo} alt="Kvatt" style={{ width: '7cqi', height: '5.5cqi', objectFit: 'contain', display: 'inline-block' }} />
                       </div>
                       <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '5.5cqi', fontWeight: 500, fontStyle: 'italic', lineHeight: 1.15, color: '#000', letterSpacing: '-0.02em', marginTop: '0.8cqi' }}>
                         with one tap
@@ -595,7 +595,7 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                   {/* Lower black bar */}
                   <div className="flex items-center" style={{ backgroundColor: '#000', height: '24.4%', flexShrink: 0, padding: '0 4cqi 0 5cqi', gap: '2cqi' }}>
                     <img src={label.barcodeDataUrl} alt="Barcode" style={{ height: '60%', width: 'auto', maxWidth: '48%', flexShrink: 0 }} />
-                    <div style={{ color: '#fff', fontSize: '1.7cqi', lineHeight: 1.3, marginLeft: 'auto', textAlign: 'right' as const, whiteSpace: 'nowrap' }}>
+                    <div style={{ color: '#fff', fontSize: '2.8cqi', lineHeight: 1.3, marginLeft: 'auto', textAlign: 'right' as const, whiteSpace: 'nowrap' }}>
                       <div style={{ fontWeight: 700 }}>Call for support:</div>
                       <div>+44 (0) 75.49.88.48.50</div>
                     </div>
