@@ -421,13 +421,13 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
 
       // Label ID top-right
       pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(7);
+      pdf.setFontSize(8);
       pdf.setTextColor(80, 80, 80);
-      pdf.text(label.labelId, W - 6, 8, { align: "right" });
+      pdf.text(label.labelId, W - 15, 8, { align: "right" });
 
       // QR Code (right side)
-      const qrSize = 40;
-      pdf.addImage(label.qrDataUrl, "PNG", W - 10 - qrSize, 12, qrSize, qrSize);
+      const qrSize = 50;
+      pdf.addImage(label.qrDataUrl, "PNG", W - 4 - qrSize, 10, qrSize, qrSize);
 
       // Barcode in black bar
       const barcodeW = 55, barcodeH = 14;
