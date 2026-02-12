@@ -372,6 +372,17 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
     });
   };
 
+  const loadFontAsBase64 = async (url: string): Promise<string> => {
+    const response = await fetch(url);
+    const buffer = await response.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  };
+
   const handleDownloadPDF = async () => {
     const { default: jsPDF } = await import("jspdf");
 
@@ -382,10 +393,25 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
     } catch (e) {
       console.warn("Could not load logo for PDF:", e);
     }
+
+    // Load Inter font files
+    const [interRegular, interBold, interItalic] = await Promise.all([
+      loadFontAsBase64('/fonts/Inter-Regular.ttf'),
+      loadFontAsBase64('/fonts/Inter-Bold.ttf'),
+      loadFontAsBase64('/fonts/Inter-Italic.ttf'),
+    ]);
     
     // Label dimensions in mm
     const W = 130, H = 82;
     const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [H, W] });
+
+    // Register Inter fonts
+    pdf.addFileToVFS("Inter-Regular.ttf", interRegular);
+    pdf.addFont("Inter-Regular.ttf", "Inter", "normal");
+    pdf.addFileToVFS("Inter-Bold.ttf", interBold);
+    pdf.addFont("Inter-Bold.ttf", "Inter", "bold");
+    pdf.addFileToVFS("Inter-Italic.ttf", interItalic);
+    pdf.addFont("Inter-Italic.ttf", "Inter", "italic");
 
     for (let i = 0; i < generatedLabels.length; i++) {
       const label = generatedLabels[i];
@@ -401,7 +427,7 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       pdf.rect(0, H - barH, W, barH, "F");
 
       // Heading text
-      pdf.setFont("helvetica", "bold");
+      pdf.setFont("Inter", "bold");
       pdf.setFontSize(28);
       pdf.setTextColor(0, 0, 0);
       pdf.text("Start your", 8, 28);
@@ -415,12 +441,12 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
         pdf.addImage(logoDataUrl, "PNG", 8 + returnTextWidth + 2, 40 - logoH + 1, logoW, logoH);
       }
       
-      pdf.setFont("helvetica", "italic");
+      pdf.setFont("Inter", "italic");
       pdf.setFontSize(26);
       pdf.text("with one tap", 8, 54);
 
       // Label ID top-right
-      pdf.setFont("helvetica", "normal");
+      pdf.setFont("Inter", "normal");
       pdf.setFontSize(8);
       pdf.setTextColor(80, 80, 80);
       pdf.text(label.labelId, W - 15, 8, { align: "right" });
@@ -434,11 +460,11 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       pdf.addImage(label.barcodeDataUrl, "PNG", 8, H - barH + (barH - barcodeH) / 2, barcodeW, barcodeH);
 
       // Support text
-      pdf.setFont("helvetica", "bold");
+      pdf.setFont("Inter", "bold");
       pdf.setFontSize(9);
       pdf.setTextColor(255, 255, 255);
       pdf.text("Call for support:", W - 6, H - barH + 9, { align: "right" });
-      pdf.setFont("helvetica", "normal");
+      pdf.setFont("Inter", "normal");
       pdf.text("+44 (0) 75.49.88.48.50", W - 6, H - barH + 14, { align: "right" });
     }
 
