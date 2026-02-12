@@ -84,7 +84,7 @@ function SupportFooter() {
       <div className="flex flex-col" style={{ fontSize: '26px', lineHeight: '1.45' }}>
         <p>
           <span className="font-semibold font-sans">email:</span>{"   "}
-          <span className="font-light"> returns@kvatt.com</span>
+          <span className="font-light text-[#918d8d]"> returns@kvatt.com</span>
         </p>
         <p>
           <span className="font-semibold font-sans">whatsapp:</span>{"   "}
