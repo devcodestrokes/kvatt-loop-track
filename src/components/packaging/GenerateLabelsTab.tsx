@@ -473,7 +473,6 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                       </div>
                     </div>
                     <div className="flex flex-col items-center flex-shrink-0">
-                      <span style={{ fontSize: '7px', color: '#888', letterSpacing: '0.03em' }}>QRCode</span>
                       <span style={{ fontSize: '7px', fontWeight: 500, color: '#333', marginBottom: '3px' }}>{label.labelId}</span>
                       <img src={label.qrDataUrl} alt="QR Code" className="block" style={{ width: '100px', height: '100px' }} />
                     </div>
