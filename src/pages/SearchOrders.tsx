@@ -426,8 +426,10 @@ export default function SearchOrders() {
         )}
       </div>
 
-      {/* Fixed Footer at bottom */}
-      <SupportFooter />
+      {/* Fixed Footer at bottom-left */}
+      <div className="fixed bottom-0 left-0">
+        <SupportFooter />
+      </div>
     </div>
   );
 }
