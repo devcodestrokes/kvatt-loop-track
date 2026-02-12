@@ -75,8 +75,8 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
     const canvas = document.createElement("canvas");
     JsBarcode(canvas, labelId, {
       format: "CODE128",
-      width: 2,
-      height: 50,
+      width: 3,
+      height: 100,
       displayValue: false,
       margin: 0,
       background: "#000000",
@@ -294,10 +294,10 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
               background: #000;
               display: flex;
               align-items: center;
-              padding: 12px 32px;
+              padding: 16px 32px;
               gap: 24px;
             }
-            .barcode-img { height: 40px; width: auto; }
+            .barcode-img { height: 56px; width: auto; }
             .support-text { color: #fff; font-size: 14px; line-height: 1.4; }
             .support-title { font-weight: 600; }
             .support-number { font-weight: 400; }
@@ -479,9 +479,9 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                     </div>
                   </div>
                   {/* Lower black bar */}
-                  <div className="flex items-center gap-4 px-5 py-2" style={{ backgroundColor: '#000' }}>
-                    <img src={label.barcodeDataUrl} alt="Barcode" style={{ height: '28px', width: 'auto' }} />
-                    <div style={{ color: '#fff', fontSize: '9px', lineHeight: 1.4 }}>
+                  <div className="flex items-center gap-3 px-4 py-2" style={{ backgroundColor: '#000' }}>
+                    <img src={label.barcodeDataUrl} alt="Barcode" style={{ height: '32px', width: 'auto', maxWidth: '55%' }} />
+                    <div style={{ color: '#fff', fontSize: '8px', lineHeight: 1.4, whiteSpace: 'nowrap' }}>
                       <div style={{ fontWeight: 600 }}>Call for support:</div>
                       <div>+44 (0) 75.49.88.48.50</div>
                     </div>
