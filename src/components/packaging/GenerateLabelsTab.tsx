@@ -538,27 +538,29 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                   style={{ aspectRatio: '130 / 82', backgroundColor: '#e6e3db', borderRadius: '6px' }}
                 >
                   {/* Upper section */}
-                  <div className="flex-1 flex items-stretch">
-                    <div className="flex-1 flex flex-col justify-center pl-5 pt-4 pb-2">
-                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '20px', fontWeight: 900, lineHeight: 1.1, color: '#000', letterSpacing: '-0.02em' }}>
+                  <div className="flex-1 flex" style={{ position: 'relative' }}>
+                    {/* Left text - vertically centered */}
+                    <div className="flex-1 flex flex-col justify-center" style={{ padding: '8px 0 8px 20px' }}>
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '22px', fontWeight: 900, lineHeight: 1.08, color: '#000', letterSpacing: '-0.02em' }}>
                         Start your
                       </div>
-                      <div className="flex items-center gap-1" style={{ fontFamily: "'Inter', sans-serif", fontSize: '20px', fontWeight: 900, lineHeight: 1.1, color: '#000', letterSpacing: '-0.02em' }}>
-                        return <img src={kvattLogo} alt="Kvatt" style={{ width: '24px', height: '20px', objectFit: 'contain', display: 'inline-block' }} />
+                      <div className="flex items-center gap-1" style={{ fontFamily: "'Inter', sans-serif", fontSize: '22px', fontWeight: 900, lineHeight: 1.08, color: '#000', letterSpacing: '-0.02em' }}>
+                        return <img src={kvattLogo} alt="Kvatt" style={{ width: '22px', height: '19px', objectFit: 'contain', display: 'inline-block' }} />
                       </div>
-                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '18px', fontWeight: 500, fontStyle: 'italic', lineHeight: 1.15, color: '#000', letterSpacing: '-0.02em', marginTop: '2px' }}>
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '19px', fontWeight: 500, fontStyle: 'italic', lineHeight: 1.15, color: '#000', letterSpacing: '-0.02em', marginTop: '2px' }}>
                         with one tap
                       </div>
                     </div>
-                    <div className="flex flex-col items-center flex-shrink-0 pt-2 pr-3">
-                      <span style={{ fontSize: '6px', fontWeight: 500, color: '#555', marginBottom: '3px', textAlign: 'center' }}>{label.labelId}</span>
-                      <img src={label.qrDataUrl} alt="QR Code" className="block" style={{ width: '75px', height: '75px' }} />
+                    {/* Right: label ID + QR */}
+                    <div className="flex flex-col items-center flex-shrink-0" style={{ padding: '6px 12px 0 0' }}>
+                      <span style={{ fontSize: '5.5px', fontWeight: 500, color: '#555', marginBottom: '2px', textAlign: 'center', whiteSpace: 'nowrap' }}>{label.labelId}</span>
+                      <img src={label.qrDataUrl} alt="QR Code" className="block" style={{ width: '68px', height: '68px' }} />
                     </div>
                   </div>
                   {/* Lower black bar */}
-                  <div className="flex items-center gap-2 px-3" style={{ backgroundColor: '#000', height: '42px', flexShrink: 0 }}>
-                    <img src={label.barcodeDataUrl} alt="Barcode" style={{ height: '28px', width: 'auto', maxWidth: '50%', flexShrink: 0 }} />
-                    <div style={{ color: '#fff', fontSize: '7px', lineHeight: 1.3, marginLeft: 'auto', textAlign: 'right' as const, whiteSpace: 'nowrap' }}>
+                  <div className="flex items-center gap-2" style={{ backgroundColor: '#000', height: '38px', flexShrink: 0, padding: '0 12px 0 16px' }}>
+                    <img src={label.barcodeDataUrl} alt="Barcode" style={{ height: '26px', width: 'auto', maxWidth: '50%', flexShrink: 0 }} />
+                    <div style={{ color: '#fff', fontSize: '6.5px', lineHeight: 1.3, marginLeft: 'auto', textAlign: 'right' as const, whiteSpace: 'nowrap' }}>
                       <div style={{ fontWeight: 600 }}>Call for support:</div>
                       <div>+44 (0) 75.49.88.48.50</div>
                     </div>
