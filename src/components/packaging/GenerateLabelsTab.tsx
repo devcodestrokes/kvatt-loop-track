@@ -217,51 +217,53 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
           <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600&display=swap" rel="stylesheet">
           <style>
             * { box-sizing: border-box; margin: 0; padding: 0; }
+            @page {
+              size: 130mm 82mm;
+              margin: 0;
+            }
             body { 
               font-family: 'Inter', sans-serif; 
-              margin: 0; padding: 24px;
-              background: #f5f5f5;
+              margin: 0; padding: 0;
+              background: white;
             }
             .labels-container {
-              display: flex; flex-wrap: wrap; gap: 24px;
-              justify-content: flex-start;
+              display: flex; flex-direction: column;
             }
             .label-card {
-               width: 585px;
-              aspect-ratio: 1950 / 1225;
+              width: 130mm;
+              height: 82mm;
               background: #e6e3db;
-              border-radius: 4px;
               overflow: hidden;
               display: flex;
               flex-direction: column;
-              page-break-inside: avoid;
+              page-break-after: always;
             }
             .label-upper {
               flex: 1;
               display: flex;
               align-items: center;
-              padding: 28px 32px 16px 32px;
-              gap: 16px;
+              padding: 6mm 8mm 4mm 8mm;
+              gap: 4mm;
             }
             .label-left { flex: 1; }
             .heading-bold {
-              font-size: 38px;
+              font-size: 32px;
               font-weight: 900;
               line-height: 1.05;
               color: #000;
               letter-spacing: -0.02em;
               display: flex;
               align-items: center;
-              gap: 6px;
+              gap: 4px;
             }
             .bird-logo {
-               width: 52px;
-               height: 44px;
+              width: 40px;
+              height: 34px;
               object-fit: contain;
               display: inline-block;
             }
             .heading-italic {
-              font-size: 36px;
+              font-size: 30px;
               font-weight: 500;
               font-style: italic;
               line-height: 1.15;
@@ -272,38 +274,32 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
             .label-right {
               display: flex;
               flex-direction: column;
-              align-items: center;
+              align-items: flex-end;
               flex-shrink: 0;
             }
-            .qr-label {
-              font-size: 10px;
-              color: #888;
-              letter-spacing: 0.03em;
-              margin-bottom: 2px;
-            }
             .label-id-top {
-              font-size: 11px;
+              font-size: 9px;
               font-weight: 500;
               color: #333;
               letter-spacing: 0.02em;
-              margin-bottom: 6px;
+              margin-bottom: 3px;
+              text-align: right;
             }
-            .qr-img { width: 160px; height: 160px; display: block; }
+            .qr-img { width: 38mm; height: 38mm; display: block; }
             .label-lower {
               background: #000;
               display: flex;
               align-items: center;
-              padding: 16px 32px;
-              gap: 24px;
+              padding: 3mm 8mm;
+              gap: 6mm;
             }
-            .barcode-img { height: 56px; width: auto; }
-            .support-text { color: #fff; font-size: 14px; line-height: 1.4; }
+            .barcode-img { height: 14mm; width: auto; flex-shrink: 0; }
+            .support-text { color: #fff; font-size: 11px; line-height: 1.3; margin-left: auto; text-align: right; }
             .support-title { font-weight: 600; }
             .support-number { font-weight: 400; }
             @media print {
-              body { margin: 0; padding: 8px; background: white; }
-              .labels-container { gap: 16px; }
-              .label-card { width: 100mm; }
+              body { margin: 0; padding: 0; background: white; }
+              .label-card { page-break-after: always; }
             }
           </style>
         </head>
@@ -451,35 +447,35 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
             <CardDescription>Preview of the first 20 generated labels</CardDescription>
           </CardHeader>
           <CardContent>
-            <div ref={printRef} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <div ref={printRef} className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {generatedLabels.slice(0, 20).map((label) => (
                 <div
                   key={label.id}
                   className="overflow-hidden flex flex-col"
-                  style={{ aspectRatio: '1950 / 1225', backgroundColor: '#e6e3db', borderRadius: '6px' }}
+                  style={{ aspectRatio: '130 / 82', backgroundColor: '#e6e3db', borderRadius: '6px' }}
                 >
                   {/* Upper section */}
-                  <div className="flex-1 flex items-center px-5 pt-5 pb-3 gap-3">
+                  <div className="flex-1 flex items-center px-5 pt-4 pb-2 gap-3">
                     <div className="flex-1">
-                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '24px', fontWeight: 900, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em' }}>
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '22px', fontWeight: 900, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em' }}>
                         Start your
                       </div>
-                      <div className="flex items-center gap-1" style={{ fontFamily: "'Inter', sans-serif", fontSize: '24px', fontWeight: 900, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em' }}>
-                        return <img src={kvattLogo} alt="Kvatt" style={{ width: '32px', height: '27px', objectFit: 'contain', display: 'inline-block' }} />
+                      <div className="flex items-center gap-1" style={{ fontFamily: "'Inter', sans-serif", fontSize: '22px', fontWeight: 900, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em' }}>
+                        return <img src={kvattLogo} alt="Kvatt" style={{ width: '28px', height: '24px', objectFit: 'contain', display: 'inline-block' }} />
                       </div>
-                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '22px', fontWeight: 500, fontStyle: 'italic', lineHeight: 1.15, color: '#000', letterSpacing: '-0.02em', marginTop: '2px' }}>
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '20px', fontWeight: 500, fontStyle: 'italic', lineHeight: 1.15, color: '#000', letterSpacing: '-0.02em', marginTop: '2px' }}>
                         with one tap
                       </div>
                     </div>
-                    <div className="flex flex-col items-center flex-shrink-0">
+                    <div className="flex flex-col items-end flex-shrink-0">
                       <span style={{ fontSize: '7px', fontWeight: 500, color: '#333', marginBottom: '3px' }}>{label.labelId}</span>
-                      <img src={label.qrDataUrl} alt="QR Code" className="block" style={{ width: '100px', height: '100px' }} />
+                      <img src={label.qrDataUrl} alt="QR Code" className="block" style={{ width: '90px', height: '90px' }} />
                     </div>
                   </div>
                   {/* Lower black bar */}
                   <div className="flex items-center gap-3 px-4 py-2" style={{ backgroundColor: '#000' }}>
-                    <img src={label.barcodeDataUrl} alt="Barcode" style={{ height: '32px', width: 'auto', maxWidth: '55%' }} />
-                    <div style={{ color: '#fff', fontSize: '8px', lineHeight: 1.4, whiteSpace: 'nowrap' }}>
+                    <img src={label.barcodeDataUrl} alt="Barcode" style={{ height: '28px', width: 'auto', flexShrink: 0 }} />
+                    <div style={{ color: '#fff', fontSize: '8px', lineHeight: 1.3, marginLeft: 'auto', textAlign: 'right' as const }}>
                       <div style={{ fontWeight: 600 }}>Call for support:</div>
                       <div>+44 (0) 75.49.88.48.50</div>
                     </div>
