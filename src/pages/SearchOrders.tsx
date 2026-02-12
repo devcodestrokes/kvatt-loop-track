@@ -199,7 +199,7 @@ export default function SearchOrders() {
       }
 
       {/* Fixed Logo at top */}
-      <div className="flex justify-center pt-8 pb-4">
+      <div className="flex justify-center pt-8 pb-4 py-[47px]">
         <img
           src={kvattLogo}
           alt="Kvatt"
