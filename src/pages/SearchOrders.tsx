@@ -105,6 +105,7 @@ export default function SearchOrders() {
   const [error, setError] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [step, setStep] = useState<'start' | 'search' | 'results' | 'pack'>('start');
+  const [showAllOrders, setShowAllOrders] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -116,7 +117,7 @@ export default function SearchOrders() {
     setCustomer(null);
     setSearched(true);
     setSelectedOrderId(null);
-
+    setShowAllOrders(false);
     try {
       const { data, error: fnError } = await supabase.functions.invoke('search-orders-by-email', {
         body: { email: email.trim() }
@@ -159,6 +160,7 @@ export default function SearchOrders() {
       setOrders([]);
       setCustomer(null);
       setSelectedOrderId(null);
+      setShowAllOrders(false);
     } else if (step === 'search' || step === 'pack') {
       setStep('start');
     }
@@ -362,7 +364,7 @@ export default function SearchOrders() {
                 </h1>
 
                 <div className="space-y-3 mb-5">
-                  {orders.map((order) => {
+                  {(showAllOrders ? orders : orders.slice(0, 2)).map((order) => {
                 const isSelected = selectedOrderId === order.id;
                 return (
                   <button
@@ -412,6 +414,14 @@ export default function SearchOrders() {
                       </button>);
 
               })}
+                  {orders.length > 2 && !showAllOrders && (
+                    <button
+                      onClick={() => setShowAllOrders(true)}
+                      style={{ fontSize: '15px', fontWeight: 500, letterSpacing: '-0.0425em' }}
+                      className="w-full py-3 text-stone-600 hover:text-stone-900 transition-colors underline underline-offset-4">
+                      show {orders.length - 2} more order{orders.length - 2 > 1 ? 's' : ''}
+                    </button>
+                  )}
                 </div>
 
                 <button
