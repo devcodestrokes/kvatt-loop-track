@@ -335,7 +335,7 @@ const Customers = () => {
     if (lowerStore.includes('sirplus')) {
       return `https://returnsportal.shop/sirplus?s=1&lang=&e=${encodeURIComponent(email)}&o=${encodeURIComponent(orderName)}&a=true`;
     }
-    if (lowerStore.includes('universal works')) {
+    if (lowerStore.includes('universal works') || lowerStore.includes('partht-kvatt-demo')) {
       return `https://returns.universalworks.co.uk/?s=1&lang=&e=${encodeURIComponent(email)}&o=${encodeURIComponent(orderName)}`;
     }
     if (lowerStore.includes('toast')) {
