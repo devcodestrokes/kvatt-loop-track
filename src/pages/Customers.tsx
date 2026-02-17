@@ -272,6 +272,7 @@ const Customers = () => {
             .from('imported_orders')
             .select('id, external_id, name, total_price, opt_in, payment_status, shopify_created_at, city, country, customer_id')
             .eq('customer_id', externalId)
+            .eq('hidden', false)
             .order('shopify_created_at', { ascending: false })
             .limit(50); // Limit orders per customer for performance
 

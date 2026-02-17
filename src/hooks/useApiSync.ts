@@ -79,7 +79,8 @@ export const useApiSync = (options: UseApiSyncOptions = {}) => {
   const getDbRecordCount = async (): Promise<number> => {
     const { count, error } = await supabase
       .from('imported_orders')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .eq('hidden', false);
     
     if (error) {
       console.error('Error getting DB count:', error);

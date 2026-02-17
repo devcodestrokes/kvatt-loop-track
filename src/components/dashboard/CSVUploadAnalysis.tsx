@@ -108,6 +108,7 @@ export const CSVUploadAnalysis = ({ onAnalysisComplete, onDataImported }: CSVUpl
       const { data: orders, error: fetchError } = await supabase
         .from('imported_orders')
         .select('*')
+        .eq('hidden', false)
         .limit(5000);
 
       if (fetchError) throw fetchError;
