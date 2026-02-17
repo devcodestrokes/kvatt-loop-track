@@ -48,7 +48,7 @@ const getReturnPortalUrl = (order: OrderResult, customerEmail: string): string |
     case 'SIRPLUS':
       return `https://returnsportal.shop/sirplus?s=1&lang=&e=${encodeURIComponent(customerEmail)}&o=${encodeURIComponent(orderId)}&a=true`;
     case 'Universal Works':
-    case 'partht-kvatt-demo':
+    case 'Kvatt - Demo Store':
       return `https://returns.universalworks.co.uk/?s=1&lang=&e=${encodeURIComponent(customerEmail)}&o=${encodeURIComponent(orderId)}`;
     case 'TOAST':
       return `https://toast.returns.international/`;
