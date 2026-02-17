@@ -629,6 +629,36 @@ export type Database = {
           },
         ]
       }
+      pack_sequences: {
+        Row: {
+          created_at: string
+          id: string
+          last_serial: string
+          month_code: string
+          prefix: string
+          updated_at: string
+          year_code: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_serial?: string
+          month_code: string
+          prefix: string
+          updated_at?: string
+          year_code: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_serial?: string
+          month_code?: string
+          prefix?: string
+          updated_at?: string
+          year_code?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -876,6 +906,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_pack_sequences: { Args: never; Returns: undefined }
       get_city_stats: {
         Args: { date_from?: string; date_to?: string; store_filter?: string[] }
         Returns: {
@@ -915,6 +946,15 @@ export type Database = {
           order_count: number
           total_spent: number
         }[]
+      }
+      get_next_pack_serials: {
+        Args: {
+          p_count: number
+          p_month_code: string
+          p_prefix: string
+          p_year_code: string
+        }
+        Returns: string
       }
       get_order_value_stats: {
         Args: { date_from?: string; date_to?: string; store_filter?: string[] }
