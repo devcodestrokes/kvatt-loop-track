@@ -22,41 +22,86 @@ interface GeneratedLabel {
   barcodeDataUrl: string;
   packagingType: string;
   manufacturer: string;
-  labelStyle: string;
 }
 
 const PACKAGING_TYPES = [
-  { value: "mailer-bag", label: "Mailer Bag" },
-  { value: "box", label: "Box" },
-  { value: "pouch", label: "Pouch" },
-  { value: "envelope", label: "Envelope" },
-  { value: "tote", label: "Tote Bag" },
+  { value: "M", label: "Mailer (M)" },
+  { value: "B", label: "Box (B)" },
+  { value: "P", label: "Pouch (P)" },
+  { value: "T", label: "Tote (T)" },
+  { value: "G", label: "Garment (G)" },
 ];
 
-const MANUFACTURERS = [
-  { value: "kvatt-uk", label: "Kvatt UK" },
-  { value: "kvatt-eu", label: "Kvatt EU" },
-  { value: "partner-a", label: "Partner A" },
-  { value: "partner-b", label: "Partner B" },
+const PACK_SIZES = [
+  { value: "1", label: "XS (1)" },
+  { value: "2", label: "S (2)" },
+  { value: "3", label: "M (3)" },
+  { value: "4", label: "L (4)" },
+  { value: "5", label: "XL (5)" },
 ];
 
-const LABEL_STYLES = [
-  { value: "standard", label: "Standard (QR + Barcode)" },
-  { value: "compact", label: "Compact (QR only)" },
-  { value: "detailed", label: "Detailed (QR + Barcode + Info)" },
+const SUPPLIERS = [
+  { value: "B", label: "LegoPlast Sàrl (B)" },
+  { value: "R", label: "RePack (R)" },
+  { value: "X", label: "Testing (X)" },
 ];
 
-const generateUniqueLabelId = () => {
-  const timestamp = Date.now().toString(36).toUpperCase();
-  const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-  return `KV-${timestamp}-${random}`;
+// Month encoding: lowercase letters skipping vowels (a,e,i,o,u)
+const MONTH_CODES = ['b','c','d','f','g','h','j','k','l','m','n','p'];
+
+// Year encoding: 1=2026, 2=2027 ... 9=2034, 0=2035, then b=2036, c=2037...
+const encodeYear = (year: number): string => {
+  const offset = year - 2026;
+  if (offset < 0) return '1';
+  if (offset <= 8) return String(offset + 1); // 1-9
+  if (offset === 9) return '0'; // 2035
+  // After 2035: b=2036, c=2037, etc. (skip vowels)
+  const NO_VOWEL_CHARS = 'bcdfghjklmnpqrstvwxyz';
+  const extOffset = offset - 10;
+  return extOffset < NO_VOWEL_CHARS.length ? NO_VOWEL_CHARS[extOffset] : 'z';
+};
+
+// Serial chars: alphanumeric excluding vowels (must match DB function order)
+const SERIAL_CHARS = '0123456789BCDFGHJKLMNPQRSTVWXYZ';
+const SERIAL_BASE = 31;
+
+// Convert a number to a 5-char serial string
+const numberToSerial = (num: number): string => {
+  let result = '';
+  let temp = num;
+  for (let i = 0; i < 5; i++) {
+    result = SERIAL_CHARS[temp % SERIAL_BASE] + result;
+    temp = Math.floor(temp / SERIAL_BASE);
+  }
+  return result;
+};
+
+// Convert a 5-char serial string to a number
+const serialToNumber = (serial: string): number => {
+  let num = 0;
+  for (let i = 0; i < 5; i++) {
+    num = num * SERIAL_BASE + SERIAL_CHARS.indexOf(serial[i]);
+  }
+  return num;
+};
+
+const getPrefix = (supplier: string, packType: string, size: string): { prefix: string; monthCode: string; yearCode: string } => {
+  const now = new Date();
+  const monthCode = MONTH_CODES[now.getMonth()];
+  const yearCode = encodeYear(now.getFullYear());
+  return {
+    prefix: `K${supplier}${packType}${size}${monthCode}${yearCode}`,
+    monthCode,
+    yearCode,
+  };
 };
 
 export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps) {
   const [quantity, setQuantity] = useState(10);
   const [packagingType, setPackagingType] = useState("");
-  const [manufacturer, setManufacturer] = useState("");
-  const [labelStyle, setLabelStyle] = useState("standard");
+  const [supplier, setSupplier] = useState("");
+  const [packSize, setPackSize] = useState("");
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedLabels, setGeneratedLabels] = useState<GeneratedLabel[]>([]);
   const [progress, setProgress] = useState(0);
@@ -104,10 +149,19 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       return;
     }
 
-    if (!manufacturer) {
+    if (!supplier) {
       toast({
-        title: "Manufacturer required",
-        description: "Please select a manufacturer",
+        title: "Supplier required",
+        description: "Please select a supplier",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!packSize) {
+      toast({
+        title: "Size required",
+        description: "Please select a pack size",
         variant: "destructive",
       });
       return;
@@ -120,20 +174,34 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
     try {
       const labels: GeneratedLabel[] = [];
       const batchSize = 50;
-      
+
+      // Get prefix and fetch sequential serials from DB
+      const { prefix, monthCode, yearCode } = getPrefix(supplier, packagingType, packSize);
+
+      const { data: serialData, error: serialError } = await supabase.functions.invoke('get-next-pack-serials', {
+        body: { prefix, month_code: monthCode, year_code: yearCode, count: quantity }
+      });
+
+      if (serialError || serialData?.error) {
+        throw new Error(serialData?.error || serialError?.message || 'Failed to get serial sequence');
+      }
+
+      const startSerialNum = serialToNumber(serialData.start_serial);
+
       for (let i = 0; i < quantity; i++) {
-        const labelId = generateUniqueLabelId();
-        const qrDataUrl = await generateQRCode(labelId);
+        const serial = numberToSerial(startSerialNum + i);
+        const labelId = `${prefix}${serial}`;
+        const qrUrl = `kvatt.co/r/${labelId}`;
+        const qrDataUrl = await generateQRCode(qrUrl);
         const barcodeDataUrl = generateBarcode(labelId);
-        
+
         labels.push({
           id: crypto.randomUUID(),
           labelId,
           qrDataUrl,
           barcodeDataUrl,
           packagingType,
-          manufacturer,
-          labelStyle,
+          manufacturer: supplier,
         });
 
         if ((i + 1) % 10 === 0 || i === quantity - 1) {
@@ -230,7 +298,7 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
               size: 130mm 82mm;
               margin: 0;
             }
-            body { 
+            body {
               font-family: 'Inter', sans-serif;
             }
             .labels-container {
@@ -254,8 +322,8 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
               padding: 0;
               position: relative;
             }
-            .label-left { 
-              flex: 1; 
+            .label-left {
+              flex: 1;
               display: flex;
               flex-direction: column;
               justify-content: center;
@@ -338,8 +406,8 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
 
   const handleExportCSV = () => {
     const csv = [
-      "Label ID,QR Code URL,Barcode URL",
-      ...generatedLabels.map((l) => `${l.labelId},"${l.qrDataUrl}","${l.barcodeDataUrl}"`),
+      "Pack ID,QR Code URL",
+      ...generatedLabels.map((l) => `${l.labelId},kvatt.co/r/${l.labelId}`),
     ].join("\n");
 
     const blob = new Blob([csv], { type: "text/csv" });
@@ -400,7 +468,7 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       loadFontAsBase64('/fonts/Inter-Bold.ttf'),
       loadFontAsBase64('/fonts/Inter-Italic.ttf'),
     ]);
-    
+
     // Label dimensions in mm
     const W = 130, H = 82;
     const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [H, W] });
@@ -440,7 +508,7 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
         const returnTextWidth = pdf.getTextWidth("return");
         pdf.addImage(logoDataUrl, "PNG", 8 + returnTextWidth + 2, 32 - logoH + 1, logoW, logoH);
       }
-      
+
       pdf.setFont("Inter", "italic");
       pdf.setFontSize(28);
       pdf.text("with one tap", 8, 44);
@@ -469,7 +537,7 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
     }
 
     pdf.save(`pack-labels-${new Date().toISOString().split("T")[0]}.pdf`);
-    
+
     toast({
       title: "PDF downloaded",
       description: `Downloaded ${generatedLabels.length} labels as PDF`,
@@ -522,15 +590,15 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="manufacturer">Manufacturer</Label>
-              <Select value={manufacturer} onValueChange={setManufacturer} disabled={isGenerating}>
-                <SelectTrigger id="manufacturer">
-                  <SelectValue placeholder="Select manufacturer" />
+              <Label htmlFor="supplier">Supplier</Label>
+              <Select value={supplier} onValueChange={setSupplier} disabled={isGenerating}>
+                <SelectTrigger id="supplier">
+                  <SelectValue placeholder="Select supplier" />
                 </SelectTrigger>
                 <SelectContent>
-                  {MANUFACTURERS.map((mfr) => (
-                    <SelectItem key={mfr.value} value={mfr.value}>
-                      {mfr.label}
+                  {SUPPLIERS.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -538,20 +606,21 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="labelStyle">Label Style</Label>
-              <Select value={labelStyle} onValueChange={setLabelStyle} disabled={isGenerating}>
-                <SelectTrigger id="labelStyle">
-                  <SelectValue placeholder="Select label style" />
+              <Label htmlFor="packSize">Pack Size</Label>
+              <Select value={packSize} onValueChange={setPackSize} disabled={isGenerating}>
+                <SelectTrigger id="packSize">
+                  <SelectValue placeholder="Select size" />
                 </SelectTrigger>
                 <SelectContent>
-                  {LABEL_STYLES.map((style) => (
-                    <SelectItem key={style.value} value={style.value}>
-                      {style.label}
+                  {PACK_SIZES.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+
           </div>
 
           <Button onClick={handleGenerate} disabled={isGenerating} className="w-full md:w-auto">
@@ -602,26 +671,26 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                   <div className="flex items-center" style={{ flex: '1 1 0', position: 'relative' }}>
                     {/* Left text - vertically centered */}
                     <div className="flex-1 flex flex-col justify-center" style={{ padding: '0 0 0 6cqi' }}>
-                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '6.5cqi', fontWeight: 900, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em' }}>
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '10cqi', fontWeight: 800, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em' }}>
                         Start your
                       </div>
-                      <div className="flex items-center" style={{ fontFamily: "'Inter', sans-serif", fontSize: '6.5cqi', fontWeight: 900, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em', gap: '1cqi' }}>
-                        return <img src={kvattLogo} alt="Kvatt" style={{ width: '7cqi', height: '5.5cqi', objectFit: 'contain', display: 'inline-block' }} />
+                      <div className="flex items-center" style={{ fontFamily: "'Inter', sans-serif", fontSize: '10cqi', fontWeight: 800, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em', gap: '1cqi' }}>
+                        return <img src={kvattLogo} alt="Kvatt" style={{ width: '10cqi', height: '8cqi', objectFit: 'contain', display: 'inline-block' }} />
                       </div>
-                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '5.5cqi', fontWeight: 500, fontStyle: 'italic', lineHeight: 1.15, color: '#000', letterSpacing: '-0.02em', marginTop: '0.8cqi' }}>
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '8cqi', fontWeight: 500, fontStyle: 'italic', lineHeight: 1.15, color: '#000', letterSpacing: '-0.02em', marginTop: '0.8cqi' }}>
                         with one tap
                       </div>
                     </div>
                     {/* Right: label ID + QR - vertically centered */}
-                    <div className="flex flex-col items-center justify-start flex-shrink-0" style={{ padding: '2cqi 4cqi 2cqi 0', width: '38cqi' }}>
-                      <span style={{ fontSize: '1.5cqi', fontWeight: 500, color: '#555', marginBottom: '0.8cqi', textAlign: 'center', whiteSpace: 'nowrap' }}>{label.labelId}</span>
-                      <img src={label.qrDataUrl} alt="QR Code" className="block" style={{ width: '28cqi', height: '28cqi' }} />
+                    <div className="flex flex-col items-center justify-start flex-shrink-0" style={{ padding: '2cqi 4cqi 2cqi 0', width: '42cqi' }}>
+                      <span style={{ fontSize: '2cqi', fontWeight: 500, color: '#555', marginBottom: '0.5cqi', textAlign: 'center', whiteSpace: 'nowrap' }}>{label.labelId}</span>
+                      <img src={label.qrDataUrl} alt="QR Code" className="block" style={{ width: '38cqi', height: '38cqi' }} />
                     </div>
                   </div>
                   {/* Lower black bar */}
                   <div className="flex items-center" style={{ backgroundColor: '#000', height: '24.4%', flexShrink: 0, padding: '0 4cqi 0 5cqi', gap: '2cqi' }}>
                     <img src={label.barcodeDataUrl} alt="Barcode" style={{ height: '60%', width: 'auto', maxWidth: '48%', flexShrink: 0 }} />
-                    <div style={{ color: '#fff', fontSize: '2.8cqi', lineHeight: 1.3, marginLeft: 'auto', textAlign: 'right' as const, whiteSpace: 'nowrap' }}>
+                    <div style={{ color: '#fff', fontSize: '2.8cqi', lineHeight: 1.3, marginLeft: 'auto', marginRight: '4cqi', textAlign: 'left' as const, whiteSpace: 'nowrap' }}>
                       <div style={{ fontWeight: 700 }}>Call for support:</div>
                       <div>+44 (0) 75.49.88.48.50</div>
                     </div>
