@@ -186,6 +186,7 @@ export type Database = {
           customer_id: string | null
           destination: Json | null
           external_id: string
+          hidden: boolean
           id: string
           name: string | null
           opt_in: boolean | null
@@ -205,6 +206,7 @@ export type Database = {
           customer_id?: string | null
           destination?: Json | null
           external_id: string
+          hidden?: boolean
           id?: string
           name?: string | null
           opt_in?: boolean | null
@@ -224,6 +226,7 @@ export type Database = {
           customer_id?: string | null
           destination?: Json | null
           external_id?: string
+          hidden?: boolean
           id?: string
           name?: string | null
           opt_in?: boolean | null

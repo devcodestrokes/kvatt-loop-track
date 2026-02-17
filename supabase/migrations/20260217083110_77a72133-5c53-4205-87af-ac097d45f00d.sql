@@ -1,0 +1,1 @@
+ALTER TABLE public.imported_orders ADD COLUMN hidden boolean NOT NULL DEFAULT false;
