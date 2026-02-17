@@ -90,6 +90,7 @@ export function OptInsDetailView({
         .from('imported_orders')
         .select('id, name, total_price, shopify_created_at, user_id, payment_status, destination')
         .eq('opt_in', true)
+        .eq('hidden', false)
         .order('shopify_created_at', { ascending: false })
         .limit(1000);
 

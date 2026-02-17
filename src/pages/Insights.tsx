@@ -283,7 +283,8 @@ const Insights = () => {
         const { data: orderData, error: orderError } = await supabase
           .from('imported_orders')
           .select('user_id')
-          .not('user_id', 'is', null);
+          .not('user_id', 'is', null)
+          .eq('hidden', false);
         
         if (orderError) throw orderError;
         
