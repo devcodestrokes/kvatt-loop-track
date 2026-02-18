@@ -80,20 +80,19 @@ interface CustomerInfo {
 
 function SupportFooter() {
   return (
-    <div className="mt-16 text-left" style={{ letterSpacing: '-0.0425em', fontSize: '26px', lineHeight: '1.6', color: '#1c1917' }}>
-      <p className="font-semibold mt-[83px]" style={{ fontSize: '26px', marginTop: '5px', marginBottom: '20px' }}>Need support:</p>
-      <div className="flex flex-col" style={{ fontSize: '24px', lineHeight: '1.6' }}>
+    <div className="mt-16 text-left" style={{ letterSpacing: '-0.04em', fontSize: '15px', lineHeight: '1.6', color: '#1c1917' }}>
+      <p style={{ fontSize: '15px', fontWeight: 500, marginTop: '5px', marginBottom: '12px' }}>Need support:</p>
+      <div className="flex flex-col" style={{ fontSize: '15px', lineHeight: '1.6' }}>
         <p>
-          <span className="font-semibold" style={{ marginRight: '10px' }}>email:</span>{"    "}
-          <span className="font-normal">returns@kvatt.com</span>
+          <span style={{ fontWeight: 500, marginRight: '8px' }}>email:</span>
+          <a href="mailto:returns@kvatt.com" className="font-light hover:underline">returns@kvatt.com</a>
         </p>
         <p>
-          <span className="font-semibold" style={{ marginRight: '10px' }}>whatsapp:</span>{"    "}
-          <span className="font-normal">+44 (0) 75.49.88.48.50</span>
+          <span style={{ fontWeight: 500, marginRight: '8px' }}>whatsapp:</span>
+          <a href="https://wa.me/447549884850" target="_blank" rel="noopener noreferrer" className="font-light hover:underline">+44 (0) 75.49.88.48.50</a>
         </p>
       </div>
     </div>);
-
 }
 
 export default function SearchOrders() {
@@ -206,7 +205,7 @@ export default function SearchOrders() {
           <img
             src={kvattLogo}
             alt="Kvatt"
-            style={{ width: '70px', height: '60px' }}
+            style={{ width: '50px', height: '43px' }}
             className="object-contain" />
         </div>
       </div>
@@ -218,7 +217,7 @@ export default function SearchOrders() {
         {step === 'start' &&
         <div className="w-full">
             <h1
-            style={{ fontSize: '36px', fontWeight: 700, lineHeight: '105%', letterSpacing: '-0.0425em' }}
+            style={{ fontSize: '36px', fontWeight: 500, lineHeight: '105%', letterSpacing: '-0.04em' }}
             className="text-stone-900 mb-10">
 
               What are you<br />returning?
@@ -227,16 +226,14 @@ export default function SearchOrders() {
             <div className="space-y-4 w-full max-w-sm">
               <button
               onClick={() => setStep('search')}
-              style={{ fontSize: '17px', fontWeight: 400, letterSpacing: '-0.0425em' }}
-              className="w-full py-4 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
-
+              style={{ fontSize: '20px', fontWeight: 400, letterSpacing: '-0.04em', width: '318px', height: '52px' }}
+              className="w-full bg-black text-white rounded-xl hover:bg-stone-800 transition-colors">
                 An item from my order
               </button>
               <button
               onClick={() => setStep('pack')}
-              style={{ fontSize: '17px', fontWeight: 400, letterSpacing: '-0.0425em' }}
-              className="w-full py-4 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
-
+              style={{ fontSize: '20px', fontWeight: 400, letterSpacing: '-0.04em', width: '318px', height: '52px' }}
+              className="w-full bg-black text-white rounded-xl hover:bg-stone-800 transition-colors">
                 Just the pack (nothing inside)
               </button>
             </div>
@@ -248,7 +245,7 @@ export default function SearchOrders() {
         {step === 'pack' &&
         <div className="w-full">
             <h1
-            style={{ fontSize: '40px', fontWeight: 500, lineHeight: '100%', letterSpacing: '-0.0425em' }}
+            style={{ fontSize: '36px', fontWeight: 500, lineHeight: '100%', letterSpacing: '-0.04em' }}
             className="text-stone-900 mb-6">
 
               Thanks for returning<br />the empty pack!
@@ -266,9 +263,9 @@ export default function SearchOrders() {
             </div>
 
             <button
-            onClick={() => window.open('https://www.royalmail.com/services/find-post-office', '_blank', 'noopener,noreferrer')}
-            style={{ fontSize: '19px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
-            className="w-full py-5 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
+            onClick={() => window.open('https://www.royalmail.com/services-near-you#/', '_blank', 'noopener,noreferrer')}
+            style={{ fontSize: '20px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.04em', width: '318px', height: '52px' }}
+            className="w-full bg-black text-white rounded-xl hover:bg-stone-800 transition-colors">
 
               find a drop-off near me
             </button>
@@ -280,7 +277,7 @@ export default function SearchOrders() {
         {step === 'search' &&
         <div className="w-full">
             <h1
-            style={{ fontSize: '40px', fontWeight: 500, lineHeight: '100%', letterSpacing: '-0.0425em' }}
+            style={{ fontSize: '36px', fontWeight: 500, lineHeight: '100%', letterSpacing: '-0.04em' }}
             className="text-stone-900 mb-4">
 
               Let's find<br />your order
@@ -300,8 +297,8 @@ export default function SearchOrders() {
               <button
               type="submit"
               disabled={loading || !email.trim()}
-              style={{ fontSize: '19px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
-              className="w-full py-4 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+              style={{ fontSize: '20px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.04em', width: '318px', height: '52px' }}
+              className="w-full bg-black text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
 
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 find order
@@ -427,8 +424,8 @@ export default function SearchOrders() {
                 <button
               onClick={handleConfirmReturn}
               disabled={!selectedOrderId || !hasReturnUrl}
-              style={{ fontSize: '18px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
-              className="w-full py-4 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              style={{ fontSize: '20px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.04em', width: '318px', height: '52px' }}
+              className="w-full bg-black text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
 
                   confirm & start return
                 </button>
