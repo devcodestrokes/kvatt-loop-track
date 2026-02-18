@@ -224,7 +224,7 @@ export default function SearchOrders() {
               What are you<br />returning?
             </h1>
 
-            <div className="w-full flex flex-col gap-[44px] md:gap-[44px] md:max-w-[476px] max-w-sm">
+            <div className="w-full flex flex-col gap-[31px] md:gap-[44px] md:max-w-[476px] max-w-[318px] mx-auto">
               <button
               onClick={() => setStep('search')}
               style={{ letterSpacing: '-0.04em' }}
