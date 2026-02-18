@@ -369,20 +369,20 @@ export default function SearchOrders() {
                     onClick={() => setSelectedOrderId(order.id)}
                     className={`w-full text-left rounded-2xl transition-all ${
                     isSelected ?
-                    'border-2 border-stone-900 bg-[#ddd9d1]' :
-                    'border border-stone-300/50 bg-[#ddd9d1]/60'}`
+                    'border-2 border-stone-800 bg-white' :
+                    'border border-stone-300/40 bg-[#e0ddd6]'}`
                     }
                     style={{ padding: '16px 20px' }}>
 
                         <div className="flex items-center gap-4">
                           <div
-                        className={`flex-shrink-0 rounded-full border-2 flex items-center justify-center ${
-                        isSelected ? 'border-stone-900' : 'border-stone-400'}`
+                        className={`flex-shrink-0 rounded-full flex items-center justify-center ${
+                        isSelected ? 'bg-stone-900' : 'border-2 border-stone-400 bg-white'}`
                         }
                         style={{ width: '20px', height: '20px' }}>
 
                             {isSelected &&
-                        <div className="rounded-full bg-stone-900" style={{ width: '12px', height: '12px' }} />
+                        <div className="rounded-full bg-white" style={{ width: '8px', height: '8px' }} />
                         }
                           </div>
                           <div style={{ letterSpacing: '-0.0425em' }}>
