@@ -463,8 +463,10 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
     }
 
     // Load Inter font files
-    const [interRegular, interBold, interItalic] = await Promise.all([
+    const [interRegular, interLight, interMedium, interBold, interItalic] = await Promise.all([
       loadFontAsBase64('/fonts/Inter-Regular.ttf'),
+      loadFontAsBase64('/fonts/Inter-Light.ttf'),
+      loadFontAsBase64('/fonts/Inter-Medium.ttf'),
       loadFontAsBase64('/fonts/Inter-Bold.ttf'),
       loadFontAsBase64('/fonts/Inter-Italic.ttf'),
     ]);
@@ -476,6 +478,10 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
     // Register Inter fonts
     pdf.addFileToVFS("Inter-Regular.ttf", interRegular);
     pdf.addFont("Inter-Regular.ttf", "Inter", "normal");
+    pdf.addFileToVFS("Inter-Light.ttf", interLight);
+    pdf.addFont("Inter-Light.ttf", "Inter", "light");
+    pdf.addFileToVFS("Inter-Medium.ttf", interMedium);
+    pdf.addFont("Inter-Medium.ttf", "Inter", "medium");
     pdf.addFileToVFS("Inter-Bold.ttf", interBold);
     pdf.addFont("Inter-Bold.ttf", "Inter", "bold");
     pdf.addFileToVFS("Inter-Italic.ttf", interItalic);
@@ -513,11 +519,11 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       pdf.setFontSize(28);
       pdf.text("with one tap", 8, 44);
 
-      // Label ID top-right
+      // Label ID top-right and center of the qr code
       pdf.setFont("Inter", "normal");
       pdf.setFontSize(8);
       pdf.setTextColor(80, 80, 80);
-      pdf.text(label.labelId, W - 15, 5, { align: "right" });
+      pdf.text(label.labelId, W - 20, 5, { align: "right" });
 
       // QR Code (right side)
       const qrSize = 52;
@@ -528,12 +534,12 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       pdf.addImage(label.barcodeDataUrl, "PNG", 8, H - barH + (barH - barcodeH) / 2, barcodeW, barcodeH);
 
       // Support text
-      pdf.setFont("Inter", "bold");
+      pdf.setFont("Inter", "medium");
       pdf.setFontSize(11);
       pdf.setTextColor(255, 255, 255);
-      pdf.text("Call for support:", W - 19, H - barH + 8, { align: "right" });
-      pdf.setFont("Inter", "normal");
-      pdf.text("+44 (0) 75.49.88.48.50", W - 6, H - barH + 14, { align: "right" });
+      pdf.text("Call for support:", W - 24, H - barH + 8, { align: "right" });
+      pdf.setFont("Inter", "light");
+      pdf.text("+44 (0) 75.49.88.48.50", W - 12, H - barH + 14, { align: "right" });
     }
 
     pdf.save(`pack-labels-${new Date().toISOString().split("T")[0]}.pdf`);
