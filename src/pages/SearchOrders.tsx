@@ -228,14 +228,14 @@ export default function SearchOrders() {
               <button
               onClick={() => setStep('search')}
               style={{ letterSpacing: '-0.04em' }}
-              className="w-full md:h-[72px] md:text-[20px] h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
+              className="w-full md:h-[62px] md:text-[20px] h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
 
                 An item from my order
               </button>
               <button
               onClick={() => setStep('pack')}
               style={{ letterSpacing: '-0.04em' }}
-              className="w-full md:h-[72px] md:text-[20px] h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
+              className="w-full md:h-[62px] md:text-[20px] h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
 
                 Just the pack (nothing inside)
               </button>
@@ -268,7 +268,7 @@ export default function SearchOrders() {
             <button
             onClick={() => window.open('https://www.royalmail.com/services-near-you#/', '_blank', 'noopener,noreferrer')}
             style={{ letterSpacing: '-0.04em' }}
-            className="w-full md:h-[72px] md:text-[20px] md:max-w-[476px] h-[52px] max-w-[318px] mx-auto text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors flex items-center justify-center">
+            className="w-full md:text-[20px] md:max-w-[476px] h-[52px] max-w-[318px] mx-auto text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors flex items-center justify-center">
 
               find a drop-off near me
             </button>
@@ -301,7 +301,7 @@ export default function SearchOrders() {
               type="submit"
               disabled={loading || !email.trim()}
               style={{ letterSpacing: '-0.04em' }}
-              className="w-full md:py-4 md:text-[19px] md:h-auto h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+              className="w-full md:py-4 md:text-[20px] md:h-auto h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
 
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 find order
@@ -428,7 +428,7 @@ export default function SearchOrders() {
               onClick={handleConfirmReturn}
               disabled={!selectedOrderId || !hasReturnUrl}
               style={{ letterSpacing: '-0.04em' }}
-              className="w-full md:py-4 md:text-[18px] md:h-auto h-[52px] max-w-[318px] mx-auto text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              className="w-full md:py-4 md:text-[20px] md:h-auto h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
 
                   confirm & start return
                 </button>
