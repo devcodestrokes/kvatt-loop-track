@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Loader2, ChevronLeft, Mail, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import kvattLogo from "@/assets/kvatt-logo.jpeg";
+import kvattLogo from "@/assets/kvatt-bird-logo.png";
 
 // Store mapping from CSV data
 const STORE_MAPPINGS: Record<string, string> = {
@@ -80,17 +80,17 @@ interface CustomerInfo {
 
 function SupportFooter() {
   return (
-    <div className="mt-16 text-left" style={{ letterSpacing: '-0.04em', lineHeight: '1.6', color: '#1c1917' }}>
-      <p className="font-medium" style={{ fontSize: '26px', marginTop: '5px', marginBottom: '20px' }}>
-        <span className="md:inline hidden" style={{ fontSize: '26px' }}>Need support:</span>
+    <div className="mt-24 text-left" style={{ letterSpacing: '-0.04em', lineHeight: '1.6', color: '#1c1917' }}>
+      <p className="font-medium" style={{ fontSize: '24px', marginTop: '5px', marginBottom: '20px' }}>
+        <span className="md:inline hidden" style={{ fontSize: '24px' }}>Need support:</span>
         <span className="md:hidden" style={{ fontSize: '15px' }}>Need support:</span>
       </p>
       <div className="flex flex-col" style={{ lineHeight: '1.6' }}>
-        <p className="md:text-[26px] text-[15px]">
+        <p className="md:text-[24px] text-[15px]">
           <span className="font-medium" style={{ marginRight: '10px' }}>email:</span>{"    "}
           <a href="mailto:returns@kvatt.com" className="font-light hover:underline">returns@kvatt.com</a>
         </p>
-        <p className="md:text-[26px] text-[15px]">
+        <p className="md:text-[25px] text-[15px]">
           <span className="font-medium" style={{ marginRight: '10px' }}>whatsapp:</span>{"    "}
           <a href="https://wa.me/447549884850" target="_blank" rel="noopener noreferrer" className="font-light hover:underline">+44 (0) 75.49.88.48.50</a>
         </p>
@@ -216,7 +216,7 @@ export default function SearchOrders() {
 
         {/* STEP 0: What are you returning? */}
         {step === 'start' &&
-        <div className="w-full">
+        <div className="w-full">  
             <h1
             style={{ lineHeight: '105%', letterSpacing: '-0.04em' }}
             className="text-stone-900 mb-10 md:text-[52px] text-[36px] md:font-medium font-medium">
@@ -352,13 +352,13 @@ export default function SearchOrders() {
           <>
                 <p
               style={{ fontSize: '26px', fontWeight: 400, letterSpacing: '-0.0425em' }}
-              className="text-black mb-1">
+              className="text-black mb-2">
 
                   We found a match!
                 </p>
                 <h1
               style={{ lineHeight: '105%', letterSpacing: '-0.04em' }}
-              className="text-stone-900 mb-5 md:text-[52px] text-[36px] md:font-bold font-medium">
+              className="text-stone-900 mb-5 md:text-[52px] text-[36px] md:font-medium font-medium">
 
                   Select your<br />order below
                 </h1>
