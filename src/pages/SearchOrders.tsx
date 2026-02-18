@@ -367,12 +367,12 @@ export default function SearchOrders() {
                   <button
                     key={order.id}
                     onClick={() => setSelectedOrderId(order.id)}
-                    className={`w-full text-left rounded-2xl transition-all ${
+                    className={`text-left rounded-2xl transition-all ${
                     isSelected ?
                     'border-2 border-stone-900 bg-[#ddd9d1]' :
                     'border border-stone-300/50 bg-[#ddd9d1]/60'}`
                     }
-                    style={{ padding: '16px 20px' }}>
+                    style={{ padding: '16px 20px', width: '318px' }}>
 
                         <div className="flex items-center gap-4">
                           <div
