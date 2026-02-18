@@ -89,7 +89,7 @@ function SupportFooter() {
         </p>
         <p>
           <span style={{ fontWeight: 500, marginRight: '8px' }}>whatsapp:</span>
-          <a href="tel:+447549884850" className="font-light hover:underline">+44 (0) 75.49.88.48.50</a>
+          <a href="https://wa.me/447549884850" target="_blank" rel="noopener noreferrer" className="font-light hover:underline">+44 (0) 75.49.88.48.50</a>
         </p>
       </div>
     </div>);
@@ -289,8 +289,8 @@ export default function SearchOrders() {
               placeholder="enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              style={{ fontSize: '16px', letterSpacing: '-0.04em', width: '318px', height: '52px' }}
-              className="my-8 px-6 rounded-full border-0 bg-white/60 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 text-center"
+              style={{ fontSize: '16px', letterSpacing: '-0.0425em' }}
+              className="w-full my-8 px-6 py-4 rounded-full border-0 bg-white/60 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 text-center"
               autoFocus />
 
 
@@ -348,13 +348,13 @@ export default function SearchOrders() {
 
           <>
                 <p
-              style={{ fontSize: '15px', fontWeight: 400, letterSpacing: '-0.04em' }}
+              style={{ fontSize: '26px', fontWeight: 400, letterSpacing: '-0.0425em' }}
               className="text-black mb-1">
 
                   We found a match!
                 </p>
                 <h1
-              style={{ fontSize: '36px', fontWeight: 500, lineHeight: '105%', letterSpacing: '-0.04em' }}
+              style={{ fontSize: '52px', fontWeight: 700, lineHeight: '105%', letterSpacing: '-0.0425em' }}
               className="text-stone-900 mb-5">
 
                   Select your<br />order below
@@ -367,12 +367,12 @@ export default function SearchOrders() {
                   <button
                     key={order.id}
                     onClick={() => setSelectedOrderId(order.id)}
-                    className={`text-left rounded-2xl transition-all ${
+                    className={`w-full text-left rounded-2xl transition-all ${
                     isSelected ?
                     'border-2 border-stone-900 bg-[#ddd9d1]' :
                     'border border-stone-300/50 bg-[#ddd9d1]/60'}`
                     }
-                    style={{ padding: '16px 20px', width: '318px' }}>
+                    style={{ padding: '16px 20px' }}>
 
                         <div className="flex items-center gap-4">
                           <div
