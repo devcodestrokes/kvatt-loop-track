@@ -120,12 +120,12 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
     const canvas = document.createElement("canvas");
     JsBarcode(canvas, labelId, {
       format: "CODE128",
-      width: 3,
-      height: 100,
+      width: 4,
+      height: 120,
       displayValue: false,
-      margin: 0,
-      background: "#000000",
-      lineColor: "#ffffff",
+      margin: 10,
+      background: "#ffffff",
+      lineColor: "#000000",
     });
     return canvas.toDataURL("image/png");
   };
