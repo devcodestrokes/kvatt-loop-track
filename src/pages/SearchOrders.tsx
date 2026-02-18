@@ -294,7 +294,7 @@ export default function SearchOrders() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               style={{ fontSize: '16px', letterSpacing: '-0.0425em' }}
-              className="w-full my-8 px-6 py-4 rounded-full border-0 bg-white/60 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 text-center max-w-[318px] mx-auto md:max-w-full"
+              className="w-full my-8 px-6 py-4 rounded-full border-0 bg-white/60 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 text-center block"
               autoFocus />
 
 
@@ -302,7 +302,7 @@ export default function SearchOrders() {
               type="submit"
               disabled={loading || !email.trim()}
               style={{ letterSpacing: '-0.04em' }}
-              className="w-full md:py-4 md:text-[19px] md:h-auto h-[52px] max-w-[318px] mx-auto text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+              className="w-full md:py-4 md:text-[19px] md:h-auto h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
 
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 find order
