@@ -32,11 +32,18 @@ serve(async (req) => {
         },
       });
 
-      const asnData = await asnResponse.json();
-      console.log('📦 ASN Raw Response received, count:', Array.isArray(asnData) ? asnData.length : 'not array');
+      const asnRaw = await asnResponse.json();
+      // Mintsoft may wrap results in a .Results or .Data property
+      const asnData = Array.isArray(asnRaw) ? asnRaw : (asnRaw?.Results || asnRaw?.Data || asnRaw?.data || []);
+      console.log('📦 ASN Raw Response keys:', Object.keys(asnRaw || {}));
+      console.log('📦 ASN records count:', Array.isArray(asnData) ? asnData.length : 'not array');
+      if (asnData.length > 0) {
+        console.log('📦 First ASN record keys:', Object.keys(asnData[0]));
+        console.log('📦 First ASN record:', JSON.stringify(asnData[0]).substring(0, 500));
+      }
 
       if (!Array.isArray(asnData)) {
-        return new Response(JSON.stringify({ error: 'Invalid ASN response' }), {
+        return new Response(JSON.stringify({ error: 'Invalid ASN response', raw_keys: Object.keys(asnRaw || {}) }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -47,18 +54,32 @@ serve(async (req) => {
 
       const asnRecords: any[] = [];
       asnData.forEach((asn: any) => {
-        if (asn.Items && Array.isArray(asn.Items)) {
-          asn.Items.forEach((item: any) => {
+        // Try to extract items - Mintsoft uses Items, ASNItems, or the ASN itself may be a flat record
+        const items = asn.Items || asn.ASNItems || asn.items || [];
+        if (Array.isArray(items) && items.length > 0) {
+          items.forEach((item: any) => {
             asnRecords.push({
-              po_reference: asn.POReference || 'N/A',
-              packaging_id: item.SerialNumber || item.BatchNumber || 'N/A',
-              product_name: item.ProductName || 'Unknown',
-              asn_status: asn.ASNStatus?.Name || 'Unknown',
-              estimated_delivery: asn.EstimatedDelivery || null,
-              booked_in_date: asn.BookedInDate || null,
-              last_updated: asn.LastUpdated || null,
+              po_reference: asn.POReference || asn.poReference || asn.Reference || 'N/A',
+              packaging_id: item.SerialNumber || item.BatchNumber || item.ProductCode || item.SKU || 'N/A',
+              product_name: item.ProductName || item.Name || item.Description || 'Unknown',
+              asn_status: asn.ASNStatus?.Name || asn.Status?.Name || asn.Status || 'Unknown',
+              estimated_delivery: asn.EstimatedDelivery || asn.ExpectedDate || null,
+              booked_in_date: asn.BookedInDate || asn.ReceivedDate || null,
+              last_updated: asn.LastUpdated || asn.UpdatedOn || null,
               synced_at: new Date().toISOString(),
             });
+          });
+        } else {
+          // Flat ASN record without nested items
+          asnRecords.push({
+            po_reference: asn.POReference || asn.poReference || asn.Reference || 'N/A',
+            packaging_id: asn.ProductCode || asn.SKU || asn.SerialNumber || asn.BatchNumber || 'N/A',
+            product_name: asn.ProductName || asn.Name || asn.Description || 'Unknown',
+            asn_status: asn.ASNStatus?.Name || asn.Status?.Name || asn.Status || 'Unknown',
+            estimated_delivery: asn.EstimatedDelivery || asn.ExpectedDate || null,
+            booked_in_date: asn.BookedInDate || asn.ReceivedDate || null,
+            last_updated: asn.LastUpdated || asn.UpdatedOn || null,
+            synced_at: new Date().toISOString(),
           });
         }
       });
@@ -91,11 +112,16 @@ serve(async (req) => {
         },
       });
 
-      const returnsData = await returnsResponse.json();
-      console.log('🔁 Returns Raw Response received, count:', Array.isArray(returnsData) ? returnsData.length : 'not array');
+      const returnsRaw = await returnsResponse.json();
+      const returnsData = Array.isArray(returnsRaw) ? returnsRaw : (returnsRaw?.Results || returnsRaw?.Data || returnsRaw?.data || []);
+      console.log('🔁 Returns Raw Response keys:', Object.keys(returnsRaw || {}));
+      console.log('🔁 Returns records count:', Array.isArray(returnsData) ? returnsData.length : 'not array');
+      if (returnsData.length > 0) {
+        console.log('🔁 First Returns record:', JSON.stringify(returnsData[0]).substring(0, 500));
+      }
 
       if (!Array.isArray(returnsData)) {
-        return new Response(JSON.stringify({ error: 'Invalid Returns response' }), {
+        return new Response(JSON.stringify({ error: 'Invalid Returns response', raw_keys: Object.keys(returnsRaw || {}) }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -106,18 +132,31 @@ serve(async (req) => {
 
       const returnsRecords: any[] = [];
       returnsData.forEach((item: any) => {
-        const items = item.Items || [];
-        items.forEach((product: any) => {
+        const items = item.Items || item.ReturnItems || item.items || [];
+        if (Array.isArray(items) && items.length > 0) {
+          items.forEach((product: any) => {
+            returnsRecords.push({
+              return_id: String(item.ID || item.Id || ''),
+              reference: item.Reference || item.OrderReference || '',
+              return_date: item.ReturnDate || item.DateReturned || null,
+              reason: item.Reason || product.Reason || '',
+              product_code: product.ProductCode || product.SKU || '',
+              qty_returned: product.QuantityReturned || product.Quantity || 0,
+              synced_at: new Date().toISOString(),
+            });
+          });
+        } else {
+          // Flat return record
           returnsRecords.push({
-            return_id: String(item.ID || ''),
-            reference: item.Reference || '',
-            return_date: item.ReturnDate || null,
+            return_id: String(item.ID || item.Id || ''),
+            reference: item.Reference || item.OrderReference || '',
+            return_date: item.ReturnDate || item.DateReturned || null,
             reason: item.Reason || '',
-            product_code: product.ProductCode || '',
-            qty_returned: product.QuantityReturned || 0,
+            product_code: item.ProductCode || item.SKU || '',
+            qty_returned: item.QuantityReturned || item.Quantity || 0,
             synced_at: new Date().toISOString(),
           });
-        });
+        }
       });
 
       if (returnsRecords.length > 0) {
