@@ -89,7 +89,7 @@ function SupportFooter() {
         </p>
         <p>
           <span style={{ fontWeight: 500, marginRight: '8px' }}>whatsapp:</span>
-          <a href="https://wa.me/447549884850" target="_blank" rel="noopener noreferrer" className="font-light hover:underline">+44 (0) 75.49.88.48.50</a>
+          <a href="tel:+447549884850" className="font-light hover:underline">+44 (0) 75.49.88.48.50</a>
         </p>
       </div>
     </div>);
