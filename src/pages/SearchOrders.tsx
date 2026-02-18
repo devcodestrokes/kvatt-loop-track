@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Loader2, ChevronLeft, Mail, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -99,6 +100,8 @@ function SupportFooter() {
 }
 
 export default function SearchOrders() {
+  const [searchParams] = useSearchParams();
+  const packId = searchParams.get('packId');
   const [email, setEmail] = useState("");
   const [orders, setOrders] = useState<OrderResult[]>([]);
   const [customer, setCustomer] = useState<CustomerInfo | null>(null);
@@ -106,7 +109,7 @@ export default function SearchOrders() {
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [step, setStep] = useState<'start' | 'search' | 'results' | 'pack'>('start');
+  const [step, setStep] = useState<'start' | 'search' | 'results' | 'pack' | 'packInfo'>(() => packId ? 'packInfo' : 'start');
   const [showAllOrders, setShowAllOrders] = useState(false);
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -163,7 +166,7 @@ export default function SearchOrders() {
       setCustomer(null);
       setSelectedOrderId(null);
       setShowAllOrders(false);
-    } else if (step === 'search' || step === 'pack') {
+    } else if (step === 'search' || step === 'pack' || step === 'packInfo') {
       setStep('start');
     }
   };
@@ -192,7 +195,7 @@ export default function SearchOrders() {
     <div className="min-h-screen flex flex-col relative" style={{ backgroundColor: '#e8e4de', fontFamily: "'Inter', sans-serif" }}>
       {/* Top section: back button then logo below it */}
       <div className="px-6 pt-6">
-        {(step === 'results' || step === 'search' || step === 'pack') ? (
+        {(step === 'results' || step === 'search' || step === 'pack' || step === 'packInfo') ? (
           <button
             onClick={handleBack}
             style={{ fontSize: '18px', fontWeight: 400, letterSpacing: '-0.0425em' }}
@@ -238,6 +241,45 @@ export default function SearchOrders() {
               className="w-full md:h-[62px] md:text-[20px] h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
 
                 Just the pack (nothing inside)
+              </button>
+            </div>
+            <SupportFooter />
+          </div>
+        }
+
+        {/* PACK INFO STEP: Show pack ID from QR scan */}
+        {step === 'packInfo' && packId &&
+        <div className="w-full">
+            <h1
+            style={{ lineHeight: '105%', letterSpacing: '-0.04em' }}
+            className="text-stone-900 mb-6 md:text-[52px] text-[36px] md:font-medium font-medium">
+              Your Pack ID
+            </h1>
+            <div className="w-full rounded-2xl bg-[#ddd9d1] p-6 mb-8">
+              <p
+                style={{ fontSize: '14px', fontWeight: 400, letterSpacing: '-0.0425em' }}
+                className="text-stone-500 mb-1">
+                Pack ID
+              </p>
+              <p
+                style={{ fontSize: '28px', fontWeight: 600, letterSpacing: '-0.04em', wordBreak: 'break-all' }}
+                className="text-stone-900">
+                {packId}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <button
+                onClick={() => setStep('search')}
+                style={{ letterSpacing: '-0.04em' }}
+                className="w-full md:h-[62px] md:text-[20px] h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
+                Return an item from my order
+              </button>
+              <button
+                onClick={() => setStep('pack')}
+                style={{ letterSpacing: '-0.04em' }}
+                className="w-full md:h-[62px] md:text-[20px] h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
+                Return just the empty pack
               </button>
             </div>
             <SupportFooter />
