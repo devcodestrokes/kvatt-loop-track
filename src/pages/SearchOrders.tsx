@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Loader2, ChevronLeft, Mail, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import kvattLogo from "@/assets/kvatt-bird-logo.png";
+import kvattLogo from "@/assets/kvatt-logo.jpeg";
 
 // Store mapping from CSV data
 const STORE_MAPPINGS: Record<string, string> = {
@@ -181,7 +181,6 @@ export default function SearchOrders() {
   const selectedOrder = orders.find((o) => o.id === selectedOrderId);
   const hasReturnUrl = selectedOrder && customer ? !!getReturnPortalUrl(selectedOrder, customer.email) : false;
 
-  // Group orders by store
   const ordersByStore = orders.reduce<Record<string, OrderResult[]>>((acc, order) => {
     const store = getStoreName(order.user_id);
     if (!acc[store]) acc[store] = [];
@@ -225,7 +224,7 @@ export default function SearchOrders() {
               What are you<br />returning?
             </h1>
 
-            <div className="space-y-5 w-full max-w-sm">
+            <div className="w-full max-w-sm flex flex-col gap-[44px] md:gap-4">
               <button
               onClick={() => setStep('search')}
               style={{ letterSpacing: '-0.04em' }}
@@ -374,15 +373,15 @@ export default function SearchOrders() {
                     className={`w-full text-left rounded-2xl transition-all ${
                     isSelected ?
                     'border-2 border-stone-900 bg-[#ddd9d1]' :
-                    'border border-stone-300/50 bg-[#ddd9d1]/60'}`
-                    }
+                    'border border-stone-300/50 bg-[#ddd9d1]/60'
+                    }`}
                     style={{ padding: '16px 20px' }}>
 
                         <div className="flex items-center gap-4">
                           <div
                         className={`flex-shrink-0 rounded-full border-2 flex items-center justify-center ${
-                        isSelected ? 'border-stone-900' : 'border-stone-400'}`
-                        }
+                        isSelected ? 'border-stone-900' : 'border-stone-400'
+                        }`}
                         style={{ width: '20px', height: '20px' }}>
 
                             {isSelected &&
