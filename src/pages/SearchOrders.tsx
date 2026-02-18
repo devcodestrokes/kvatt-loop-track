@@ -294,7 +294,7 @@ export default function SearchOrders() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               style={{ fontSize: '16px', letterSpacing: '-0.0425em' }}
-              className="w-full my-8 px-6 py-4 rounded-full border-0 bg-white/60 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 text-center"
+              className="w-full my-8 px-6 py-4 rounded-full border-0 bg-white/60 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 text-center max-w-[318px] mx-auto md:max-w-full"
               autoFocus />
 
 
