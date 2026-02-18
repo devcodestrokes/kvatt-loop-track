@@ -152,7 +152,7 @@ export function CreateGroupTab({ onGroupCreated }: CreateGroupTabProps) {
         .insert({
           group_id: groupId,
           label_count: validationResult.valid.length,
-          status: "created",
+          status: "pending",
         })
         .select()
         .single();
