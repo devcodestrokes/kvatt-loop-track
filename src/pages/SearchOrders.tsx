@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Loader2, ChevronLeft, Mail, Phone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import kvattLogo from "@/assets/kvatt-logo.jpeg";
+import kvattLogo from "@/assets/kvatt-bird-logo.png";
 
 // Store mapping from CSV data
 const STORE_MAPPINGS: Record<string, string> = {
@@ -225,7 +225,7 @@ export default function SearchOrders() {
               What are you<br />returning?
             </h1>
 
-            <div className="space-y-4 w-full max-w-sm">
+            <div className="space-y-5 w-full max-w-sm">
               <button
               onClick={() => setStep('search')}
               style={{ letterSpacing: '-0.04em' }}
