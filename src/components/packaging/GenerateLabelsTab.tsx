@@ -191,7 +191,7 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       for (let i = 0; i < quantity; i++) {
         const serial = numberToSerial(startSerialNum + i);
         const labelId = `${prefix}${serial}`;
-        const qrUrl = `https://kvatt.codestrokes.com/search-orders`;
+        const qrUrl = `https://kvatt.codestrokes.com/search-orders?packId=${encodeURIComponent(labelId)}`;
         const qrDataUrl = await generateQRCode(qrUrl);
         const barcodeDataUrl = generateBarcode(labelId);
 
@@ -407,7 +407,7 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
   const handleExportCSV = () => {
     const csv = [
       "Pack ID,QR Code URL",
-      ...generatedLabels.map((l) => `${l.labelId},https://kvatt.codestrokes.com/search-orders`),
+      ...generatedLabels.map((l) => `${l.labelId},https://kvatt.codestrokes.com/search-orders?packId=${encodeURIComponent(l.labelId)}`),
     ].join("\n");
 
     const blob = new Blob([csv], { type: "text/csv" });
