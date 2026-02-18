@@ -80,20 +80,22 @@ interface CustomerInfo {
 
 function SupportFooter() {
   return (
-    <div className="mt-16 text-left" style={{ letterSpacing: '-0.0425em', fontSize: '26px', lineHeight: '1.6', color: '#1c1917' }}>
-      <p className="font-semibold mt-[83px]" style={{ fontSize: '26px', marginTop: '5px', marginBottom: '20px' }}>Need support:</p>
-      <div className="flex flex-col" style={{ fontSize: '24px', lineHeight: '1.6' }}>
-        <p>
-          <span className="font-semibold" style={{ marginRight: '10px' }}>email:</span>{"    "}
-          <span className="font-normal">returns@kvatt.com</span>
+    <div className="mt-16 text-left" style={{ letterSpacing: '-0.04em', lineHeight: '1.6', color: '#1c1917' }}>
+      <p className="font-medium" style={{ fontSize: '26px', marginTop: '5px', marginBottom: '20px' }}>
+        <span className="md:inline hidden" style={{ fontSize: '26px' }}>Need support:</span>
+        <span className="md:hidden" style={{ fontSize: '15px' }}>Need support:</span>
+      </p>
+      <div className="flex flex-col" style={{ lineHeight: '1.6' }}>
+        <p className="md:text-[24px] text-[15px]">
+          <span className="font-medium" style={{ marginRight: '10px' }}>email:</span>{"    "}
+          <a href="mailto:returns@kvatt.com" className="font-light hover:underline">returns@kvatt.com</a>
         </p>
-        <p>
-          <span className="font-semibold" style={{ marginRight: '10px' }}>whatsapp:</span>{"    "}
-          <span className="font-normal">+44 (0) 75.49.88.48.50</span>
+        <p className="md:text-[24px] text-[15px]">
+          <span className="font-medium" style={{ marginRight: '10px' }}>whatsapp:</span>{"    "}
+          <a href="https://wa.me/447549884850" target="_blank" rel="noopener noreferrer" className="font-light hover:underline">+44 (0) 75.49.88.48.50</a>
         </p>
       </div>
     </div>);
-
 }
 
 export default function SearchOrders() {
@@ -206,8 +208,7 @@ export default function SearchOrders() {
           <img
             src={kvattLogo}
             alt="Kvatt"
-            style={{ width: '70px', height: '60px' }}
-            className="object-contain" />
+            className="object-contain md:w-[70px] md:h-[60px] w-[50px] h-[43px]" />
         </div>
       </div>
 
@@ -218,8 +219,8 @@ export default function SearchOrders() {
         {step === 'start' &&
         <div className="w-full">
             <h1
-            style={{ fontSize: '36px', fontWeight: 700, lineHeight: '105%', letterSpacing: '-0.0425em' }}
-            className="text-stone-900 mb-10">
+            style={{ lineHeight: '105%', letterSpacing: '-0.04em' }}
+            className="text-stone-900 mb-10 md:text-[36px] text-[36px] md:font-bold font-medium">
 
               What are you<br />returning?
             </h1>
@@ -227,15 +228,15 @@ export default function SearchOrders() {
             <div className="space-y-4 w-full max-w-sm">
               <button
               onClick={() => setStep('search')}
-              style={{ fontSize: '17px', fontWeight: 400, letterSpacing: '-0.0425em' }}
-              className="w-full py-4 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
+              style={{ letterSpacing: '-0.04em' }}
+              className="w-full md:py-4 md:text-[17px] md:h-auto h-[52px] max-w-[318px] mx-auto text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
 
                 An item from my order
               </button>
               <button
               onClick={() => setStep('pack')}
-              style={{ fontSize: '17px', fontWeight: 400, letterSpacing: '-0.0425em' }}
-              className="w-full py-4 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
+              style={{ letterSpacing: '-0.04em' }}
+              className="w-full md:py-4 md:text-[17px] md:h-auto h-[52px] max-w-[318px] mx-auto text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
 
                 Just the pack (nothing inside)
               </button>
@@ -248,8 +249,8 @@ export default function SearchOrders() {
         {step === 'pack' &&
         <div className="w-full">
             <h1
-            style={{ fontSize: '40px', fontWeight: 500, lineHeight: '100%', letterSpacing: '-0.0425em' }}
-            className="text-stone-900 mb-6">
+            style={{ lineHeight: '100%', letterSpacing: '-0.04em' }}
+            className="text-stone-900 mb-6 md:text-[40px] text-[36px] md:font-medium font-medium">
 
               Thanks for returning<br />the empty pack!
             </h1>
@@ -266,9 +267,9 @@ export default function SearchOrders() {
             </div>
 
             <button
-            onClick={() => window.open('https://www.royalmail.com/services/find-post-office', '_blank', 'noopener,noreferrer')}
-            style={{ fontSize: '19px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
-            className="w-full py-5 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
+            onClick={() => window.open('https://www.royalmail.com/services-near-you#/', '_blank', 'noopener,noreferrer')}
+            style={{ letterSpacing: '-0.04em' }}
+            className="w-full md:py-5 md:text-[19px] md:h-auto h-[52px] max-w-[318px] mx-auto text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors flex items-center justify-center">
 
               find a drop-off near me
             </button>
@@ -280,8 +281,8 @@ export default function SearchOrders() {
         {step === 'search' &&
         <div className="w-full">
             <h1
-            style={{ fontSize: '40px', fontWeight: 500, lineHeight: '100%', letterSpacing: '-0.0425em' }}
-            className="text-stone-900 mb-4">
+            style={{ lineHeight: '100%', letterSpacing: '-0.04em' }}
+            className="text-stone-900 mb-4 md:text-[40px] text-[36px] md:font-medium font-medium">
 
               Let's find<br />your order
             </h1>
@@ -300,8 +301,8 @@ export default function SearchOrders() {
               <button
               type="submit"
               disabled={loading || !email.trim()}
-              style={{ fontSize: '19px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
-              className="w-full py-4 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+              style={{ letterSpacing: '-0.04em' }}
+              className="w-full md:py-4 md:text-[19px] md:h-auto h-[52px] max-w-[318px] mx-auto text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
 
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 find order
@@ -357,8 +358,8 @@ export default function SearchOrders() {
                   We found a match!
                 </p>
                 <h1
-              style={{ fontSize: '52px', fontWeight: 700, lineHeight: '105%', letterSpacing: '-0.0425em' }}
-              className="text-stone-900 mb-5">
+              style={{ lineHeight: '105%', letterSpacing: '-0.04em' }}
+              className="text-stone-900 mb-5 md:text-[52px] text-[36px] md:font-bold font-medium">
 
                   Select your<br />order below
                 </h1>
@@ -427,8 +428,8 @@ export default function SearchOrders() {
                 <button
               onClick={handleConfirmReturn}
               disabled={!selectedOrderId || !hasReturnUrl}
-              style={{ fontSize: '18px', fontWeight: 400, lineHeight: '110%', letterSpacing: '-0.0425em' }}
-              className="w-full py-4 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              style={{ letterSpacing: '-0.04em' }}
+              className="w-full md:py-4 md:text-[18px] md:h-auto h-[52px] max-w-[318px] mx-auto text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
 
                   confirm & start return
                 </button>
