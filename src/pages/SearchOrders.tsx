@@ -348,13 +348,13 @@ export default function SearchOrders() {
 
           <>
                 <p
-              style={{ fontSize: '26px', fontWeight: 400, letterSpacing: '-0.0425em' }}
+              style={{ fontSize: '15px', fontWeight: 400, letterSpacing: '-0.04em' }}
               className="text-black mb-1">
 
                   We found a match!
                 </p>
                 <h1
-              style={{ fontSize: '52px', fontWeight: 700, lineHeight: '105%', letterSpacing: '-0.0425em' }}
+              style={{ fontSize: '36px', fontWeight: 500, lineHeight: '105%', letterSpacing: '-0.04em' }}
               className="text-stone-900 mb-5">
 
                   Select your<br />order below
