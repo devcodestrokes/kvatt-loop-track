@@ -268,7 +268,7 @@ export default function SearchOrders() {
             <button
             onClick={() => window.open('https://www.royalmail.com/services-near-you#/', '_blank', 'noopener,noreferrer')}
             style={{ letterSpacing: '-0.04em' }}
-            className="w-full md:py-5 md:text-[19px] md:h-auto h-[52px] max-w-[318px] mx-auto text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors flex items-center justify-center">
+            className="w-full md:h-[72px] md:text-[20px] md:max-w-[476px] h-[52px] max-w-[318px] mx-auto text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors flex items-center justify-center">
 
               find a drop-off near me
             </button>
