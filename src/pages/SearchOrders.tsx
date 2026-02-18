@@ -219,7 +219,7 @@ export default function SearchOrders() {
         <div className="w-full">
             <h1
             style={{ lineHeight: '105%', letterSpacing: '-0.04em' }}
-            className="text-stone-900 mb-10 md:text-[36px] text-[36px] md:font-bold font-medium">
+            className="text-stone-900 mb-10 md:text-[52px] text-[36px] md:font-medium font-medium">
 
               What are you<br />returning?
             </h1>
