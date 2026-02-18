@@ -224,18 +224,18 @@ export default function SearchOrders() {
               What are you<br />returning?
             </h1>
 
-            <div className="w-full flex flex-col gap-[31px] md:gap-[44px] md:max-w-[476px] max-w-[318px] mx-auto">
+            <div className="w-full flex flex-col gap-[31px] md:gap-[44px] md:max-w-[476px]">
               <button
               onClick={() => setStep('search')}
               style={{ letterSpacing: '-0.04em' }}
-              className="w-full md:h-[72px] md:text-[20px] h-[52px] max-w-[318px] md:max-w-none mx-auto text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
+              className="w-full md:h-[72px] md:text-[20px] h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
 
                 An item from my order
               </button>
               <button
               onClick={() => setStep('pack')}
               style={{ letterSpacing: '-0.04em' }}
-              className="w-full md:h-[72px] md:text-[20px] h-[52px] max-w-[318px] md:max-w-none mx-auto text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
+              className="w-full md:h-[72px] md:text-[20px] h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
 
                 Just the pack (nothing inside)
               </button>
