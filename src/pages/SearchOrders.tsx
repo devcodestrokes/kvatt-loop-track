@@ -112,6 +112,18 @@ export default function SearchOrders() {
   const [step, setStep] = useState<'start' | 'search' | 'results' | 'pack' | 'packInfo'>(() => packId ? 'packInfo' : 'start');
   const [showAllOrders, setShowAllOrders] = useState(false);
 
+  // Record QR scan when packId is present
+  useEffect(() => {
+    if (packId) {
+      supabase.functions.invoke('record-qr-scan', {
+        body: { packId }
+      }).then(({ data, error }) => {
+        if (error) console.error('Failed to record QR scan:', error);
+        else console.log('QR scan recorded for:', packId);
+      });
+    }
+  }, [packId]);
+
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
