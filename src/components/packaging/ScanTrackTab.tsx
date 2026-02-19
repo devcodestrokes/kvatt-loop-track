@@ -73,8 +73,8 @@ export function ScanTrackTab({ onStatusUpdated }: ScanTrackTabProps) {
       const { data: labelData, error: labelError } = await supabase
         .from("labels")
         .select("*, label_groups!labels_group_id_fkey(group_id, status)")
-        .eq("label_id", packId)
-        .single();
+        .ilike("label_id", packId)
+        .maybeSingle();
 
       if (labelData) {
         setPackInfo({
@@ -88,8 +88,8 @@ export function ScanTrackTab({ onStatusUpdated }: ScanTrackTabProps) {
       const { data: groupData, error: groupError } = await supabase
         .from("label_groups")
         .select("*")
-        .eq("group_id", packId)
-        .single();
+        .ilike("group_id", packId)
+        .maybeSingle();
 
       if (groupData) {
         // Found a group, get all packs in this group
