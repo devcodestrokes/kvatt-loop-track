@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.search-orders-by-email]
 verify_jwt = false
+
+[functions.record-qr-scan]
+verify_jwt = false
