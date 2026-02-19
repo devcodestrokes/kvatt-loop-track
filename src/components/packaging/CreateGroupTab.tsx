@@ -164,7 +164,6 @@ export function CreateGroupTab({ onGroupCreated }: CreateGroupTabProps) {
         .from("labels")
         .update({ 
           group_id: groupData.id,
-          status: "grouped" 
         })
         .in("label_id", validationResult.valid);
 
