@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,11 +18,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 
 interface GroupWithPacks {
   id: string;
@@ -182,95 +177,89 @@ export function GroupManagementTab() {
               </TableHeader>
               <TableBody>
                 {groups.map((group) => (
-                  <Collapsible key={group.id} asChild>
-                    <>
-                      <TableRow 
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => toggleGroup(group)}
-                      >
-                        <TableCell>
-                          <CollapsibleTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6">
-                              {loadingPacks.has(group.id) ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : expandedGroups.has(group.id) ? (
-                                <ChevronDown className="h-4 w-4" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </CollapsibleTrigger>
-                        </TableCell>
-                        <TableCell className="font-mono font-medium">
-                          {group.group_id}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Package className="h-4 w-4 text-muted-foreground" />
-                            {group.label_count}
+                  <Fragment key={group.id}>
+                    <TableRow 
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => toggleGroup(group)}
+                    >
+                      <TableCell>
+                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                          {loadingPacks.has(group.id) ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : expandedGroups.has(group.id) ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TableCell>
+                      <TableCell className="font-mono font-medium">
+                        {group.group_id}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Package className="h-4 w-4 text-muted-foreground" />
+                          {group.label_count}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={STATUS_COLORS[group.status] || "bg-gray-100 text-gray-800"}>
+                          {getStatusIcon(group.status)}
+                          <span className="ml-1 capitalize">{group.status}</span>
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(group.created_at).toLocaleDateString()}
+                      </TableCell>
+                    </TableRow>
+                    {expandedGroups.has(group.id) && group.packs && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="bg-muted/30 p-4">
+                          <div className="space-y-3">
+                            <div className="flex gap-4 text-sm">
+                              <span className="text-muted-foreground">Pack Status Summary:</span>
+                              {Object.entries(getPackStatusCounts(group.packs)).map(([status, count]) => (
+                                <Badge key={status} variant="outline">
+                                  {status}: {count}
+                                </Badge>
+                              ))}
+                            </div>
+                            <div className="max-h-60 overflow-y-auto border rounded-md">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Pack ID</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead>Uses</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {group.packs.map((pack) => (
+                                    <TableRow key={pack.id}>
+                                      <TableCell className="font-mono text-sm">
+                                        {pack.label_id}
+                                      </TableCell>
+                                      <TableCell>
+                                        <Badge variant="outline" className="capitalize">
+                                          {pack.status}
+                                        </Badge>
+                                      </TableCell>
+                                      <TableCell>
+                                        <div className="flex items-center gap-1">
+                                          <RotateCcw className="h-3 w-3 text-muted-foreground" />
+                                          {pack.previous_uses}
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <Badge className={STATUS_COLORS[group.status] || "bg-gray-100 text-gray-800"}>
-                            {getStatusIcon(group.status)}
-                            <span className="ml-1 capitalize">{group.status}</span>
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {new Date(group.created_at).toLocaleDateString()}
-                        </TableCell>
                       </TableRow>
-                      <CollapsibleContent asChild>
-                        {expandedGroups.has(group.id) && group.packs && (
-                          <TableRow>
-                            <TableCell colSpan={5} className="bg-muted/30 p-4">
-                              <div className="space-y-3">
-                                <div className="flex gap-4 text-sm">
-                                  <span className="text-muted-foreground">Pack Status Summary:</span>
-                                  {Object.entries(getPackStatusCounts(group.packs)).map(([status, count]) => (
-                                    <Badge key={status} variant="outline">
-                                      {status}: {count}
-                                    </Badge>
-                                  ))}
-                                </div>
-                                <div className="max-h-60 overflow-y-auto border rounded-md">
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow>
-                                        <TableHead>Pack ID</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Uses</TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {group.packs.map((pack) => (
-                                        <TableRow key={pack.id}>
-                                          <TableCell className="font-mono text-sm">
-                                            {pack.label_id}
-                                          </TableCell>
-                                          <TableCell>
-                                            <Badge variant="outline" className="capitalize">
-                                              {pack.status}
-                                            </Badge>
-                                          </TableCell>
-                                          <TableCell>
-                                            <div className="flex items-center gap-1">
-                                              <RotateCcw className="h-3 w-3 text-muted-foreground" />
-                                              {pack.previous_uses}
-                                            </div>
-                                          </TableCell>
-                                        </TableRow>
-                                      ))}
-                                    </TableBody>
-                                  </Table>
-                                </div>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </CollapsibleContent>
-                    </>
-                  </Collapsible>
+                    )}
+                  </Fragment>
                 ))}
               </TableBody>
             </Table>
