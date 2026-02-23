@@ -406,8 +406,8 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
 
   const handleExportCSV = () => {
     const csv = [
-      "Pack ID,QR Code URL",
-      ...generatedLabels.map((l) => `${l.labelId},https://kvatt.codestrokes.com/search-orders?packId=${encodeURIComponent(l.labelId)}`),
+      "Pack ID,Barcode,QR Code URL",
+      ...generatedLabels.map((l) => `${l.labelId},${l.labelId},https://kvatt.codestrokes.com/search-orders?packId=${encodeURIComponent(l.labelId)}`),
     ].join("\n");
 
     const blob = new Blob([csv], { type: "text/csv" });
