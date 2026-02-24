@@ -406,12 +406,14 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
         <body>
           <div class="labels-container">${labelsHtml}</div>
           <script>
+            var printed = false;
+            function doPrint() { if (!printed) { printed = true; window.print(); } }
             var images = document.querySelectorAll('img');
             var loaded = 0, total = images.length;
-            if (total === 0) { setTimeout(function() { window.print(); }, 100); }
-            function check() { loaded++; if (loaded >= total) setTimeout(function() { window.print(); }, 200); }
+            if (total === 0) { setTimeout(doPrint, 100); }
+            function check() { loaded++; if (loaded >= total) setTimeout(doPrint, 200); }
             images.forEach(function(img) { if (img.complete) check(); else { img.onload = check; img.onerror = check; } });
-            setTimeout(function() { window.print(); }, 4000);
+            setTimeout(doPrint, 4000);
           </script>
         </body>
       </html>
