@@ -318,18 +318,18 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
               padding: 0;
             }
             .label-upper {
-              flex: 1;
+              height: 62.7mm;
               display: flex;
               align-items: stretch;
               padding: 0;
               position: relative;
             }
             .label-left {
-              flex: 1;
+              width: 50%;
               display: flex;
               flex-direction: column;
               justify-content: center;
-              padding: 6mm 0 4mm 8mm;
+              padding: 4mm 0 4mm 8mm;
             }
             .heading-bold {
               font-size: 32px;
@@ -357,41 +357,44 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
               margin-top: 2px;
             }
             .label-right {
+              width: 39.3%;
               display: flex;
-              flex-direction: column;
               align-items: center;
+              justify-content: center;
               flex-shrink: 0;
-              padding: 3mm 6mm 4mm 0;
+              padding: 3mm 4mm 3mm 0;
             }
-            .qr-img { width: 36mm; height: 36mm; display: block; }
+            .qr-img { width: 100%; max-width: 51mm; max-height: 51mm; display: block; aspect-ratio: 1; }
             .label-lower {
               background: #000;
               display: flex;
               align-items: center;
-              padding: 2.5mm 6mm 2.5mm 8mm;
-              gap: 4mm;
-              height: 20mm;
+              padding: 0 4mm 0 4mm;
+              gap: 3mm;
+              height: 19.3mm;
             }
             .barcode-container {
               background: #fff;
-              border-radius: 3mm;
-              padding: 1.5mm 3mm;
+              border-radius: 2.5mm;
+              padding: 1mm 3mm;
               display: flex;
               flex-direction: column;
               align-items: center;
-              max-width: 55%;
+              justify-content: center;
+              width: 65mm;
+              height: 14.5mm;
               flex-shrink: 0;
             }
-            .barcode-img { height: 12mm; width: auto; max-width: 100%; }
+            .barcode-img { height: 9mm; width: auto; max-width: 100%; }
             .barcode-label-id {
-              font-size: 8px;
+              font-size: 7px;
               font-weight: 700;
               color: #000;
               text-align: center;
-              margin-top: 0.5mm;
+              margin-top: 0.3mm;
               letter-spacing: 0.03em;
             }
-            .support-text { color: #fff; font-size: 12px; line-height: 1.3; margin-left: auto; text-align: right; white-space: nowrap; }
+            .support-text { color: #fff; font-size: 11px; line-height: 1.3; margin-left: auto; text-align: right; white-space: nowrap; width: 37mm; }
             .support-title { font-weight: 600; }
             .support-number { font-weight: 400; }
             @media print {
@@ -507,57 +510,64 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       pdf.setFillColor(230, 227, 219);
       pdf.rect(0, 0, W, H, "F");
 
-      // Black bottom bar (bottom 20mm)
-      const barH = 20;
+      // Black bottom bar — ratio 200/850 of 82mm ≈ 19.3mm
+      const barH = 19.3;
       pdf.setFillColor(0, 0, 0);
       pdf.rect(0, H - barH, W, barH, "F");
 
-      // Heading text
+      // Upper area height
+      const upperH = H - barH; // ~62.7mm
+
+      // Heading text — left 50% area
       pdf.setFont("Inter", "bold");
       pdf.setFontSize(34);
       pdf.setTextColor(0, 0, 0);
-      pdf.text("Start your", 8, 20);
-      pdf.text("return", 8, 32);
+      const textX = 8;
+      const textCenterY = upperH / 2;
+      pdf.text("Start your", textX, textCenterY - 6);
+      pdf.text("return", textX, textCenterY + 6);
 
       // Bird logo next to "return"
       if (logoDataUrl) {
         const logoW = 12, logoH = 10;
-        // Position logo right after "return" text
         const returnTextWidth = pdf.getTextWidth("return");
-        pdf.addImage(logoDataUrl, "PNG", 8 + returnTextWidth + 2, 32 - logoH + 1, logoW, logoH);
+        pdf.addImage(logoDataUrl, "PNG", textX + returnTextWidth + 2, textCenterY + 6 - logoH + 1, logoW, logoH);
       }
 
       pdf.setFont("Inter", "italic");
       pdf.setFontSize(28);
-      pdf.text("with one tap", 8, 44);
+      pdf.text("with one tap", textX, textCenterY + 18);
 
-      // QR Code (right side) - no label ID above
-      const qrSize = 52;
-      pdf.addImage(label.qrDataUrl, "PNG", W - 4 - qrSize, 6, qrSize, qrSize);
+      // QR Code — right 39.3% area, centered vertically, square ~51mm
+      const qrAreaW = W * 0.393; // ~51mm
+      const qrSize = Math.min(qrAreaW, upperH - 6); // fit in upper area
+      const qrX = W - qrAreaW / 2 - qrSize / 2;
+      const qrY = (upperH - qrSize) / 2;
+      pdf.addImage(label.qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize);
 
-      // White rounded container for barcode + pack ID in black bar
-      const containerW = 58, containerH = 16;
-      const containerX = 8, containerY = H - barH + (barH - containerH) / 2;
+      // White rounded container for barcode + pack ID — 65mm × 14.5mm
+      const containerW = 65, containerH = 14.5;
+      const containerX = 4, containerY = H - barH + (barH - containerH) / 2;
       pdf.setFillColor(255, 255, 255);
       pdf.roundedRect(containerX, containerY, containerW, containerH, 2, 2, "F");
 
       // Barcode inside white container
-      const barcodeW = 52, barcodeH = 10;
+      const barcodeW = 58, barcodeH = 9;
       pdf.addImage(label.barcodeDataUrl, "PNG", containerX + (containerW - barcodeW) / 2, containerY + 1, barcodeW, barcodeH);
 
-      // Pack ID below barcode inside white container
+      // Pack ID below barcode
       pdf.setFont("Inter", "bold");
       pdf.setFontSize(7);
       pdf.setTextColor(0, 0, 0);
       pdf.text(label.labelId, containerX + containerW / 2, containerY + barcodeH + 3.5, { align: "center" });
 
-      // Support text
+      // Support text — right ~37mm area
       pdf.setFont("Inter", "medium");
-      pdf.setFontSize(11);
+      pdf.setFontSize(10);
       pdf.setTextColor(255, 255, 255);
-      pdf.text("Call for support:", W - 24, H - barH + 8, { align: "right" });
+      pdf.text("Call for support:", W - 8, H - barH + 7, { align: "right" });
       pdf.setFont("Inter", "light");
-      pdf.text("+44 (0) 75.49.88.48.50", W - 12, H - barH + 14, { align: "right" });
+      pdf.text("+44 (0) 75.49.88.48.50", W - 8, H - barH + 13, { align: "right" });
     }
 
     pdf.save(`pack-labels-${new Date().toISOString().split("T")[0]}.pdf`);
