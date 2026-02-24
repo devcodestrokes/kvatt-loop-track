@@ -261,12 +261,14 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                 <div class="heading-italic">with one tap</div>
               </div>
               <div class="label-right">
-                <div class="label-id-top">${label.labelId}</div>
                 <img src="${label.qrDataUrl}" alt="QR Code" class="qr-img" />
               </div>
             </div>
             <div class="label-lower">
-              <img src="${label.barcodeDataUrl}" alt="Barcode" class="barcode-img" />
+              <div class="barcode-container">
+                <img src="${label.barcodeDataUrl}" alt="Barcode" class="barcode-img" />
+                <div class="barcode-label-id">${label.labelId}</div>
+              </div>
               <div class="support-text">
                 <div class="support-title">Call for support:</div>
                 <div class="support-number">+44 (0) 75.49.88.48.50</div>
@@ -361,14 +363,6 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
               flex-shrink: 0;
               padding: 3mm 6mm 4mm 0;
             }
-            .label-id-top {
-              font-size: 9px;
-              font-weight: 500;
-              color: #333;
-              letter-spacing: 0.02em;
-              margin-bottom: 2mm;
-              text-align: center;
-            }
             .qr-img { width: 36mm; height: 36mm; display: block; }
             .label-lower {
               background: #000;
@@ -378,7 +372,25 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
               gap: 4mm;
               height: 20mm;
             }
-            .barcode-img { height: 16mm; width: auto; max-width: 55%; flex-shrink: 0; }
+            .barcode-container {
+              background: #fff;
+              border-radius: 3mm;
+              padding: 1.5mm 3mm;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              max-width: 55%;
+              flex-shrink: 0;
+            }
+            .barcode-img { height: 12mm; width: auto; max-width: 100%; }
+            .barcode-label-id {
+              font-size: 8px;
+              font-weight: 700;
+              color: #000;
+              text-align: center;
+              margin-top: 0.5mm;
+              letter-spacing: 0.03em;
+            }
             .support-text { color: #fff; font-size: 12px; line-height: 1.3; margin-left: auto; text-align: right; white-space: nowrap; }
             .support-title { font-weight: 600; }
             .support-number { font-weight: 400; }
@@ -519,19 +531,25 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       pdf.setFontSize(28);
       pdf.text("with one tap", 8, 44);
 
-      // Label ID top-right and center of the qr code
-      pdf.setFont("Inter", "normal");
-      pdf.setFontSize(8);
-      pdf.setTextColor(80, 80, 80);
-      pdf.text(label.labelId, W - 20, 5, { align: "right" });
-
-      // QR Code (right side)
+      // QR Code (right side) - no label ID above
       const qrSize = 52;
       pdf.addImage(label.qrDataUrl, "PNG", W - 4 - qrSize, 6, qrSize, qrSize);
 
-      // Barcode in black bar
-      const barcodeW = 55, barcodeH = 14;
-      pdf.addImage(label.barcodeDataUrl, "PNG", 8, H - barH + (barH - barcodeH) / 2, barcodeW, barcodeH);
+      // White rounded container for barcode + pack ID in black bar
+      const containerW = 58, containerH = 16;
+      const containerX = 8, containerY = H - barH + (barH - containerH) / 2;
+      pdf.setFillColor(255, 255, 255);
+      pdf.roundedRect(containerX, containerY, containerW, containerH, 2, 2, "F");
+
+      // Barcode inside white container
+      const barcodeW = 52, barcodeH = 10;
+      pdf.addImage(label.barcodeDataUrl, "PNG", containerX + (containerW - barcodeW) / 2, containerY + 1, barcodeW, barcodeH);
+
+      // Pack ID below barcode inside white container
+      pdf.setFont("Inter", "bold");
+      pdf.setFontSize(7);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(label.labelId, containerX + containerW / 2, containerY + barcodeH + 3.5, { align: "center" });
 
       // Support text
       pdf.setFont("Inter", "medium");
@@ -687,7 +705,7 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                         with one tap
                       </div>
                     </div>
-                    {/* Right: label ID + QR - vertically centered */}
+                    {/* Right: QR only */}
                     <div className="flex flex-col items-center justify-start flex-shrink-0" style={{ padding: '2cqi 2cqi 0 0', width: '42cqi' }}>
                       <img src={label.qrDataUrl} alt="QR Code" className="block" style={{ width: '45cqi', height: '42cqi' }} />
                     </div>
