@@ -325,15 +325,15 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
               position: relative;
             }
             .label-left {
-              width: 50%;
+              width: 60%;
               display: flex;
               flex-direction: column;
               justify-content: center;
-              padding: 4mm 0 4mm 8mm;
+              padding: 4mm 0 4mm 4mm;
             }
             .heading-bold {
-              font-size: 32px;
-              font-weight: 900;
+              font-size: 50px;
+              font-weight: 700;
               line-height: 1.05;
               color: #000;
               letter-spacing: -0.02em;
@@ -342,13 +342,13 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
               gap: 4px;
             }
             .bird-logo {
-              width: 40px;
-              height: 34px;
+              width: 50px;
+              height: 44px;
               object-fit: contain;
               display: inline-block;
             }
             .heading-italic {
-              font-size: 30px;
+              font-size: 41px;
               font-weight: 500;
               font-style: italic;
               line-height: 1.15;
@@ -357,14 +357,14 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
               margin-top: 2px;
             }
             .label-right {
-              width: 39.3%;
+              width: 45%;
               display: flex;
               align-items: center;
               justify-content: center;
               flex-shrink: 0;
-              padding: 3mm 4mm 3mm 0;
+              padding: 2mm 2mm 1mm 0;
             }
-            .qr-img { width: 100%; max-width: 51mm; max-height: 51mm; display: block; aspect-ratio: 1; }
+            .qr-img { width: 100%; max-width: 70mm; max-height: 70mm; display: block; aspect-ratio: 1; }
             .label-lower {
               background: #000;
               display: flex;
@@ -375,26 +375,26 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
             }
             .barcode-container {
               background: #fff;
-              border-radius: 2.5mm;
-              padding: 1mm 3mm;
+              border-radius: 1.5mm;
+              padding: 0mm 1mm;
               display: flex;
               flex-direction: column;
               align-items: center;
               justify-content: center;
-              width: 65mm;
+              width: 62mm;
               height: 14.5mm;
               flex-shrink: 0;
             }
-            .barcode-img { height: 9mm; width: auto; max-width: 100%; }
+            .barcode-img { height: 9mm; width: 100%; max-width: 100%; }
             .barcode-label-id {
-              font-size: 7px;
+              font-size: 10px;
               font-weight: 700;
               color: #000;
               text-align: center;
               margin-top: 0.3mm;
               letter-spacing: 0.03em;
             }
-            .support-text { color: #fff; font-size: 11px; line-height: 1.3; margin-left: auto; text-align: right; white-space: nowrap; width: 37mm; }
+            .support-text { color: #fff; font-size: 14px; line-height: 1.3; margin-left: 15px; text-align: left; white-space: nowrap; width: 37mm; }
             .support-title { font-weight: 600; }
             .support-number { font-weight: 400; }
             @media print {
