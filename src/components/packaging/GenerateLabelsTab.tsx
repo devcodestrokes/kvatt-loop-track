@@ -673,36 +673,34 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                   className="overflow-hidden flex flex-col w-full"
                   style={{ aspectRatio: '130 / 82', backgroundColor: '#e6e3db', borderRadius: '6px', containerType: 'inline-size' as any }}
                 >
-                  {/* Upper section - 76.5% height (650/850) */}
-                  <div className="flex items-stretch" style={{ flex: '650 1 0', position: 'relative' }}>
-                    {/* Left text - 50% width (700/1400) */}
-                    <div className="flex flex-col justify-center" style={{ width: '50%', padding: '0 0 0 4cqi' }}>
-                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '11cqi', fontWeight: 800, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em' }}>
+                  {/* Upper section */}
+                  <div className="flex items-center" style={{ flex: '1 1 0', position: 'relative' }}>
+                    {/* Left text - vertically centered */}
+                    <div className="flex-1 flex flex-col justify-center" style={{ padding: '0 0 0 2cqi' }}>
+                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '11cqi', fontWeight: 700, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em' }}>
                         Start your
                       </div>
-                      <div className="flex items-center" style={{ fontFamily: "'Inter', sans-serif", fontSize: '11cqi', fontWeight: 800, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em', gap: '1.5cqi' }}>
-                        return <img src={kvattLogo} alt="Kvatt" style={{ width: '8cqi', height: '7cqi', objectFit: 'contain', display: 'inline-block' }} />
+                      <div className="flex items-center" style={{ fontFamily: "'Inter', bold", fontSize: '11cqi', fontWeight: 700, lineHeight: 1.05, color: '#000', letterSpacing: '-0.02em', gap: '1cqi' }}>
+                        return <img src={kvattLogo} alt="Kvatt" style={{ width: '11cqi', height: '9cqi', objectFit: 'contain', display: 'inline-block' }} />
                       </div>
-                      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '9cqi', fontWeight: 500, fontStyle: 'italic', lineHeight: 1, color: '#000', letterSpacing: '-0.03em', marginTop: '1cqi' }}>
+                      <div style={{ fontFamily: "'Inter', bold", fontSize: '9.5cqi', fontWeight: 500, fontStyle: 'italic', lineHeight: 0.95, color: '#000', letterSpacing: '-0.03em', marginTop: '0.8cqi', marginLeft: '-3px' }}>
                         with one tap
                       </div>
                     </div>
-                    {/* Right: QR - 39% width (550/1400) */}
-                    <div className="flex items-center justify-center" style={{ width: '39%', padding: '3cqi 3cqi 1cqi 0' }}>
-                      <img src={label.qrDataUrl} alt="QR Code" className="block" style={{ width: '38cqi', height: '38cqi' }} />
+                    {/* Right: label ID + QR - vertically centered */}
+                    <div className="flex flex-col items-center justify-start flex-shrink-0" style={{ padding: '2cqi 2cqi 0 0', width: '42cqi' }}>
+                      <img src={label.qrDataUrl} alt="QR Code" className="block" style={{ width: '45cqi', height: '42cqi' }} />
                     </div>
                   </div>
-                  {/* Lower black bar - 23.5% height (200/850) */}
-                  <div className="flex items-center" style={{ backgroundColor: '#000', flex: '200 0 0', padding: '0 4cqi 0 3cqi', gap: '3cqi' }}>
-                    {/* Barcode in white container - 50% width (700/1400) */}
-                    <div className="flex flex-col items-center justify-center" style={{ backgroundColor: '#fff', borderRadius: '1.5cqi', width: '50%', height: '75%', padding: '0.5cqi 2cqi' }}>
-                      <img src={label.barcodeDataUrl} alt="Barcode" style={{ height: '65%', width: '100%', objectFit: 'contain' }} />
-                      <div style={{ color: '#000', fontSize: '2.2cqi', lineHeight: 1, textAlign: 'center' as const, whiteSpace: 'nowrap', fontFamily: "'Inter', sans-serif", fontWeight: 700, marginTop: '0.3cqi' }}>
+                  {/* Lower black bar */}
+                  <div className="flex items-center" style={{ backgroundColor: '#000', height: '24.4%', flexShrink: 0, padding: '0 5cqi 0 3cqi', gap: '2cqi' }}>
+                    <div style={{ backgroundColor: '#fff', borderRadius: '1cqi', padding: '0.2cqi', width: '55%', height: '80%' }}>
+                      <img src={label.barcodeDataUrl} alt="Barcode" style={{ height: '80%', width: '100%', flexShrink: 0 }} />
+                      <div style={{ color: '#000', fontSize: '2.5cqi', lineHeight: 1, marginLeft: 'auto', marginRight: '4cqi', textAlign: 'center' as const, whiteSpace: 'nowrap', fontFamily: 'Inter, bold', fontWeight: 700 }}>
                         {label.labelId}
                       </div>
                     </div>
-                    {/* Support text - right side (400/1400) ~29% */}
-                    <div style={{ color: '#fff', fontSize: '2.8cqi', lineHeight: 1.3, marginLeft: 'auto', textAlign: 'left' as const, whiteSpace: 'nowrap' }}>
+                    <div style={{ color: '#fff', fontSize: '2.8cqi', lineHeight: 1.3, marginLeft: 'auto', marginRight: '6cqi', textAlign: 'left' as const, whiteSpace: 'nowrap' }}>
                       <div style={{ fontWeight: 700 }}>Call for support:</div>
                       <div>+44 (0) 75.49.88.48.50</div>
                     </div>
