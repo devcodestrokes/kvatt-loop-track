@@ -520,9 +520,9 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
 
       // Heading text — left 50% area
       pdf.setFont("Inter", "bold");
-      pdf.setFontSize(34);
+      pdf.setFontSize(38);
       pdf.setTextColor(0, 0, 0);
-      const textX = 8;
+      const textX = 4;
       const textCenterY = upperH / 2;
       pdf.text("Start your", textX, textCenterY - 6);
       pdf.text("return", textX, textCenterY + 6);
@@ -535,13 +535,13 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       }
 
       pdf.setFont("Inter", "italic");
-      pdf.setFontSize(28);
+      pdf.setFontSize(31);
       pdf.text("with one tap", textX, textCenterY + 18);
 
       // QR Code — right 39.3% area, centered vertically, square ~51mm
       const qrAreaW = W * 0.393; // ~51mm
       const qrSize = Math.min(qrAreaW, upperH - 6); // fit in upper area
-      const qrX = W - qrAreaW / 2 - qrSize / 2;
+      const qrX = W - qrAreaW / 2 - qrSize / 2 - 4;
       const qrY = (upperH - qrSize) / 2;
       pdf.addImage(label.qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize);
 
@@ -549,25 +549,25 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       const containerW = 65, containerH = 14.5;
       const containerX = 4, containerY = H - barH + (barH - containerH) / 2;
       pdf.setFillColor(255, 255, 255);
-      pdf.roundedRect(containerX, containerY, containerW, containerH, 2, 2, "F");
+      pdf.roundedRect(containerX, containerY, containerW, containerH, 1, 1, "F");
 
       // Barcode inside white container
-      const barcodeW = 58, barcodeH = 9;
-      pdf.addImage(label.barcodeDataUrl, "PNG", containerX + (containerW - barcodeW) / 2, containerY + 1, barcodeW, barcodeH);
+      const barcodeW = 62, barcodeH = 11;
+      pdf.addImage(label.barcodeDataUrl, "PNG", containerX + (containerW - barcodeW) / 2, containerY + 0.5, barcodeW, barcodeH);
 
       // Pack ID below barcode
       pdf.setFont("Inter", "bold");
-      pdf.setFontSize(7);
+      pdf.setFontSize(8);
       pdf.setTextColor(0, 0, 0);
-      pdf.text(label.labelId, containerX + containerW / 2, containerY + barcodeH + 3.5, { align: "center" });
+      pdf.text(label.labelId, containerX + containerW / 2, containerY + barcodeH + 2.8, { align: "center" });
 
       // Support text — right ~37mm area
       pdf.setFont("Inter", "medium");
-      pdf.setFontSize(10);
+      pdf.setFontSize(11);
       pdf.setTextColor(255, 255, 255);
-      pdf.text("Call for support:", W - 8, H - barH + 7, { align: "right" });
+      pdf.text("Call for support:", W - 54, H - barH + 8, { align: "left" });
       pdf.setFont("Inter", "light");
-      pdf.text("+44 (0) 75.49.88.48.50", W - 8, H - barH + 13, { align: "right" });
+      pdf.text("+44 (0) 75.49.88.48.50", W - 54, H - barH + 13, { align: "left" });
     }
 
     pdf.save(`pack-labels-${new Date().toISOString().split("T")[0]}.pdf`);
