@@ -2,6 +2,29 @@ import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
+const AUTH_STORAGE_KEY = `sb-${import.meta.env.VITE_SUPABASE_PROJECT_ID}-auth-token`;
+
+const isFailedFetchError = (value: unknown): boolean => {
+  if (!(value instanceof Error)) return false;
+  return value.message.toLowerCase().includes('failed to fetch');
+};
+
+const clearCorruptedStoredSession = () => {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return;
+
+    const parsed = JSON.parse(raw);
+    const refreshToken = parsed?.currentSession?.refresh_token;
+
+    if (typeof refreshToken !== 'string' || refreshToken.length < 20) {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+    }
+  } catch {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  }
+};
+
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -10,12 +33,14 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    clearCorruptedStoredSession();
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         // Defer admin check to avoid deadlock
         if (session?.user) {
           setTimeout(() => {
@@ -30,10 +55,14 @@ export function useAuth() {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (isFailedFetchError(error)) {
+        clearCorruptedStoredSession();
+      }
+
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
         checkAdminStatus(session.user.id);
       } else {
@@ -51,7 +80,7 @@ export function useAuth() {
         .select('role')
         .eq('user_id', userId)
         .in('role', ['admin', 'super_admin']);
-      
+
       if (error) {
         console.error('Error checking admin status:', error);
         setIsAdmin(false);
@@ -70,16 +99,26 @@ export function useAuth() {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const attemptSignIn = () =>
+      supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+    let { error } = await attemptSignIn();
+
+    // One retry after clearing potentially corrupted local session token
+    if (isFailedFetchError(error)) {
+      clearCorruptedStoredSession();
+      ({ error } = await attemptSignIn());
+    }
+
     return { error };
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -109,3 +148,4 @@ export function useAuth() {
     signOut,
   };
 }
+
