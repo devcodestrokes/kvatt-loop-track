@@ -77,8 +77,27 @@ export function useABTestingAnalytics() {
       const result = await response.json();
 
       if (result.status === 200 && result.data?.length) {
-        setData(result.data);
-        return result.data;
+        const parsed: ABTestingData[] = result.data.map((item: any) => {
+          const parseAbString = (str: string): number => {
+            if (!str || str.trim() === '') return 0;
+            return str.split(',').reduce((sum, part) => {
+              const match = part.trim().match(/:(\d+)$/);
+              return sum + (match ? parseInt(match[1], 10) : 0);
+            }, 0);
+          };
+          const ab = item.ab_testing || {};
+          return {
+            store: item.store,
+            total_checkouts: item.total_checkouts || 0,
+            opt_ins: item.opt_ins || 0,
+            opt_outs: item.opt_outs || 0,
+            ab_testing_checkout: typeof ab.checkout === 'number' ? ab.checkout : parseAbString(ab.checkout || ''),
+            ab_testing_opt_in: typeof ab.opt_in === 'number' ? ab.opt_in : parseAbString(ab.opt_in || ''),
+            ab_testing_opt_out: typeof ab.opt_out === 'number' ? ab.opt_out : parseAbString(ab.opt_out || ''),
+          };
+        });
+        setData(parsed);
+        return parsed;
       } else {
         setData([]);
         return [];
