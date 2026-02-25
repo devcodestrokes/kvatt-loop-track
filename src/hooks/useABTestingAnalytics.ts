@@ -86,14 +86,25 @@ export function useABTestingAnalytics() {
             }, 0);
           };
           const ab = item.ab_testing || {};
+          const abCheckout = typeof ab.checkout === 'number'
+            ? ab.checkout
+            : parseAbString(ab.checkout || '');
+          const abOptIn = typeof ab.opt_in === 'number'
+            ? ab.opt_in
+            : parseAbString(ab.opt_in || '');
+          const abOptOut = typeof ab.opt_out === 'number'
+            ? ab.opt_out
+            : parseAbString(ab.opt_out || '');
+
           return {
             store: item.store,
             total_checkouts: item.total_checkouts || 0,
             opt_ins: item.opt_ins || 0,
             opt_outs: item.opt_outs || 0,
-            ab_testing_checkout: typeof ab.checkout === 'number' ? ab.checkout : parseAbString(ab.checkout || ''),
-            ab_testing_opt_in: typeof ab.opt_in === 'number' ? ab.opt_in : parseAbString(ab.opt_in || ''),
-            ab_testing_opt_out: typeof ab.opt_out === 'number' ? ab.opt_out : parseAbString(ab.opt_out || ''),
+            // shopify.kvatt.com may not return ab_testing; fallback to totals
+            ab_testing_checkout: abCheckout > 0 ? abCheckout : (item.ab_testing_checkout ?? item.total_checkouts ?? 0),
+            ab_testing_opt_in: abOptIn > 0 ? abOptIn : (item.ab_testing_opt_in ?? item.opt_ins ?? 0),
+            ab_testing_opt_out: abOptOut > 0 ? abOptOut : (item.ab_testing_opt_out ?? item.opt_outs ?? 0),
           };
         });
         setData(parsed);
