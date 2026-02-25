@@ -946,6 +946,7 @@ export type Database = {
         Args: { customer_ids: string[] }
         Returns: {
           customer_id: string
+          latest_order_date: string
           order_count: number
           total_spent: number
         }[]

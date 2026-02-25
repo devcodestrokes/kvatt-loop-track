@@ -43,6 +43,7 @@ interface CustomerWithOrders extends Customer {
   orders: Order[];
   orderCount: number;
   totalSpent: number;
+  latestOrderDate: string | null;
 }
 
 const Customers = () => {
@@ -188,7 +189,7 @@ const Customers = () => {
         .filter(Boolean);
 
       // Fetch aggregated order stats using RPC function (much faster than fetching all orders)
-      let statsMap = new Map<string, { orderCount: number; totalSpent: number }>();
+      let statsMap = new Map<string, { orderCount: number; totalSpent: number; latestOrderDate: string | null }>();
       
       if (customerExternalIds.length > 0) {
         const { data: statsData, error: statsError } = await supabase
@@ -199,19 +200,21 @@ const Customers = () => {
             statsMap.set(stat.customer_id, {
               orderCount: Number(stat.order_count) || 0,
               totalSpent: Number(stat.total_spent) || 0,
+              latestOrderDate: stat.latest_order_date || null,
             });
           });
         }
       }
 
       const customersWithOrders: CustomerWithOrders[] = customersData.map(customer => {
-        const stats = statsMap.get(customer.external_id || '') || { orderCount: 0, totalSpent: 0 };
+        const stats = statsMap.get(customer.external_id || '') || { orderCount: 0, totalSpent: 0, latestOrderDate: null };
         
         return {
           ...customer,
           orders: [], // Orders loaded on-demand when expanded
           orderCount: stats.orderCount,
           totalSpent: stats.totalSpent,
+          latestOrderDate: stats.latestOrderDate,
         };
       });
 
@@ -537,9 +540,9 @@ const Customers = () => {
                           </Badge>
                         </div>
 
-                        {/* Date */}
+                        {/* Date - show latest order date if available, fallback to customer created */}
                         <div className="md:col-span-1 text-sm text-muted-foreground">
-                          {formatDate(customer.shopify_created_at)}
+                          {formatDate(customer.latestOrderDate || customer.shopify_created_at)}
                         </div>
                       </div>
 
