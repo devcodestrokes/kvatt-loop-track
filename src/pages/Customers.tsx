@@ -146,77 +146,53 @@ const Customers = () => {
     }
   };
 
-  // Fetch customers from Supabase with aggregated order stats (server-side)
+  // Fetch customers sorted by latest order date using server-side RPC
   const fetchCustomers = useCallback(async (page: number = 1) => {
     if (!isInitialized) return;
     
     setIsLoading(true);
     
     try {
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
+      const offset = (page - 1) * pageSize;
 
-      let customerQuery = supabase
-        .from('imported_customers')
-        .select('*', { count: 'exact' });
+      const storeFilter = (selectedStores.length > 0 && selectedStores.length < availableStores.length)
+        ? selectedStores
+        : null;
 
-      if (selectedStores.length > 0 && selectedStores.length < availableStores.length) {
-        customerQuery = customerQuery.in('user_id', selectedStores);
-      }
+      const { data: rpcData, error: rpcError } = await supabase
+        .rpc('get_customers_by_latest_order', {
+          store_filter: storeFilter,
+          search_query: debouncedSearch || null,
+          page_offset: offset,
+          page_limit: pageSize,
+        });
 
-      if (debouncedSearch) {
-        customerQuery = customerQuery.or(`email.ilike.%${debouncedSearch}%,name.ilike.%${debouncedSearch}%`);
-      }
+      if (rpcError) throw rpcError;
 
-      customerQuery = customerQuery
-        .order('shopify_created_at', { ascending: false, nullsFirst: false })
-        .range(from, to);
-
-      const { data: customersData, error: customersError, count } = await customerQuery;
-
-      if (customersError) throw customersError;
-
-      setTotalCount(count || 0);
-
-      if (!customersData || customersData.length === 0) {
+      if (!rpcData || rpcData.length === 0) {
         setCustomers([]);
+        setTotalCount(0);
         return;
       }
 
-      // Use external_id for matching (orders.customer_id = customers.external_id)
-      const customerExternalIds = customersData
-        .map(c => c.external_id)
-        .filter(Boolean);
+      // total_matching is the same for all rows
+      setTotalCount(Number((rpcData as any[])[0]?.total_matching) || 0);
 
-      // Fetch aggregated order stats using RPC function (much faster than fetching all orders)
-      let statsMap = new Map<string, { orderCount: number; totalSpent: number; latestOrderDate: string | null }>();
-      
-      if (customerExternalIds.length > 0) {
-        const { data: statsData, error: statsError } = await supabase
-          .rpc('get_customer_order_stats', { customer_ids: customerExternalIds });
-
-        if (!statsError && statsData) {
-          statsData.forEach((stat: any) => {
-            statsMap.set(stat.customer_id, {
-              orderCount: Number(stat.order_count) || 0,
-              totalSpent: Number(stat.total_spent) || 0,
-              latestOrderDate: stat.latest_order_date || null,
-            });
-          });
-        }
-      }
-
-      const customersWithOrders: CustomerWithOrders[] = customersData.map(customer => {
-        const stats = statsMap.get(customer.external_id || '') || { orderCount: 0, totalSpent: 0, latestOrderDate: null };
-        
-        return {
-          ...customer,
-          orders: [], // Orders loaded on-demand when expanded
-          orderCount: stats.orderCount,
-          totalSpent: stats.totalSpent,
-          latestOrderDate: stats.latestOrderDate,
-        };
-      });
+      const customersWithOrders: CustomerWithOrders[] = (rpcData as any[]).map((row: any) => ({
+        id: row.customer_id,
+        external_id: row.external_id,
+        user_id: row.user_id,
+        shopify_customer_id: row.shopify_customer_id,
+        name: row.customer_name,
+        email: row.email,
+        telephone: row.telephone,
+        shopify_created_at: row.shopify_created_at,
+        created_at: row.created_at,
+        orders: [],
+        orderCount: Number(row.order_count) || 0,
+        totalSpent: Number(row.total_spent) || 0,
+        latestOrderDate: row.latest_order_date || null,
+      }));
 
       setCustomers(customersWithOrders);
     } catch (error: any) {
