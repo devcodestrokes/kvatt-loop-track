@@ -66,7 +66,7 @@ export default function Auth() {
       if (error.message.includes('Invalid login credentials')) {
         setError('Invalid email or password. Please try again.');
       } else if (error.message.toLowerCase().includes('failed to fetch')) {
-        setError('Network auth error. Please refresh once and try again. If it persists, open the published app URL and sign in there.');
+        setError('CONNECTION_ERROR');
       } else {
         setError(error.message);
       }
@@ -167,9 +167,23 @@ export default function Auth() {
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   {error && (
-                    <Alert variant="destructive">
+                    <Alert variant={error === 'CONNECTION_ERROR' ? 'default' : 'destructive'}>
                       <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>{error}</AlertDescription>
+                      <AlertDescription>
+                        {error === 'CONNECTION_ERROR' ? (
+                          <span>
+                            Could not connect. Try refreshing, or{' '}
+                            <a 
+                              href="https://kvatt.codestrokes.com/auth" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="underline font-medium text-primary"
+                            >
+                              sign in via the published app
+                            </a>.
+                          </span>
+                        ) : error}
+                      </AlertDescription>
                     </Alert>
                   )}
                   
