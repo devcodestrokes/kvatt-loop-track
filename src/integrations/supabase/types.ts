@@ -951,6 +951,29 @@ export type Database = {
           total_spent: number
         }[]
       }
+      get_customers_by_latest_order: {
+        Args: {
+          page_limit?: number
+          page_offset?: number
+          search_query?: string
+          store_filter?: string[]
+        }
+        Returns: {
+          created_at: string
+          customer_id: string
+          customer_name: string
+          email: string
+          external_id: string
+          latest_order_date: string
+          order_count: number
+          shopify_created_at: string
+          shopify_customer_id: string
+          telephone: string
+          total_matching: number
+          total_spent: number
+          user_id: string
+        }[]
+      }
       get_next_pack_serials: {
         Args: {
           p_count: number
