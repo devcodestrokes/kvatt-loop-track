@@ -65,6 +65,8 @@ export default function Auth() {
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
         setError('Invalid email or password. Please try again.');
+      } else if (error.message.toLowerCase().includes('failed to fetch')) {
+        setError('Network auth error. Please refresh once and try again. If it persists, open the published app URL and sign in there.');
       } else {
         setError(error.message);
       }

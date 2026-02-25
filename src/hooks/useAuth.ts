@@ -10,19 +10,25 @@ const isFailedFetchError = (value: unknown): boolean => {
 };
 
 const clearCorruptedStoredSession = () => {
-  try {
-    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (!raw) return;
+  const authKeys = Object.keys(localStorage).filter(
+    (key) => key === AUTH_STORAGE_KEY || (key.startsWith('sb-') && key.endsWith('-auth-token')),
+  );
 
-    const parsed = JSON.parse(raw);
-    const refreshToken = parsed?.currentSession?.refresh_token;
+  authKeys.forEach((key) => {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
 
-    if (typeof refreshToken !== 'string' || refreshToken.length < 20) {
-      localStorage.removeItem(AUTH_STORAGE_KEY);
+      const parsed = JSON.parse(raw);
+      const refreshToken = parsed?.currentSession?.refresh_token;
+
+      if (typeof refreshToken !== 'string' || refreshToken.length < 20) {
+        localStorage.removeItem(key);
+      }
+    } catch {
+      localStorage.removeItem(key);
     }
-  } catch {
-    localStorage.removeItem(AUTH_STORAGE_KEY);
-  }
+  });
 };
 
 export function useAuth() {
@@ -55,9 +61,10 @@ export function useAuth() {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       if (isFailedFetchError(error)) {
         clearCorruptedStoredSession();
+        await supabase.auth.signOut({ scope: 'local' });
       }
 
       setSession(session);
@@ -105,15 +112,22 @@ export function useAuth() {
         password,
       });
 
-    let { error } = await attemptSignIn();
+    try {
+      let { error } = await attemptSignIn();
 
-    // One retry after clearing potentially corrupted local session token
-    if (isFailedFetchError(error)) {
-      clearCorruptedStoredSession();
-      ({ error } = await attemptSignIn());
+      // One retry after clearing potentially corrupted local session token
+      if (isFailedFetchError(error)) {
+        clearCorruptedStoredSession();
+        await supabase.auth.signOut({ scope: 'local' });
+        ({ error } = await attemptSignIn());
+      }
+
+      return { error };
+    } catch (error) {
+      const normalizedError =
+        error instanceof Error ? error : new Error('Network error during sign in.');
+      return { error: normalizedError };
     }
-
-    return { error };
   };
 
   const signUp = async (email: string, password: string, fullName: string) => {
