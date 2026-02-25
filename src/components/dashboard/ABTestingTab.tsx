@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { ShoppingCart, CheckCircle, XCircle, TrendingUp, FlaskConical, RefreshCw } from 'lucide-react';
-import { useABTestingAnalytics, ABTestingData } from '@/hooks/useABTestingAnalytics';
+import { useABTestingAnalytics, ABTestingData, VariantData } from '@/hooks/useABTestingAnalytics';
 import { useStoreFilter } from '@/hooks/useStoreFilter';
 import { useUserDefaults } from '@/hooks/useUserDefaults';
 import { DateRange } from '@/types/analytics';
@@ -359,6 +359,157 @@ export function ABTestingTab() {
               </div>
             </div>
           )}
+
+          {/* Variant Breakdown */}
+          {(() => {
+            const allVariants = filteredData.flatMap(item => item.variants || []);
+            const variantMap = new Map<string, { total: number; opt_ins: number; opt_outs: number }>();
+            allVariants.forEach(v => {
+              const existing = variantMap.get(v.name) || { total: 0, opt_ins: 0, opt_outs: 0 };
+              variantMap.set(v.name, {
+                total: existing.total + v.total,
+                opt_ins: existing.opt_ins + v.opt_ins,
+                opt_outs: existing.opt_outs + v.opt_outs,
+              });
+            });
+            const aggregatedVariants = Array.from(variantMap.entries())
+              .map(([name, vals]) => ({
+                name,
+                ...vals,
+                opt_in_rate: vals.total > 0 ? (vals.opt_ins / vals.total) * 100 : 0,
+              }))
+              .sort((a, b) => b.total - a.total);
+
+            if (aggregatedVariants.length === 0) return null;
+
+            const variantChartData = aggregatedVariants.map(v => ({
+              name: v.name,
+              'Sessions': v.total,
+              'Opt-ins': v.opt_ins,
+              'Opt-outs': v.opt_outs,
+            }));
+
+            const variantPieData = aggregatedVariants.map(v => ({
+              name: v.name,
+              value: v.total,
+            }));
+
+            return (
+              <div className="space-y-6">
+                <div className="grid gap-6 lg:grid-cols-3">
+                  <div className="lg:col-span-2">
+                    <div className="chart-container">
+                      <h3 className="mb-4 text-lg font-semibold text-foreground">Variant Performance</h3>
+                      <div className="h-[350px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={variantChartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(40, 10%, 85%)" />
+                            <XAxis
+                              dataKey="name"
+                              stroke="hsl(20, 10%, 45%)"
+                              tick={{ fill: 'hsl(20, 10%, 45%)', fontSize: 12 }}
+                              angle={-45}
+                              textAnchor="end"
+                              height={80}
+                            />
+                            <YAxis stroke="hsl(20, 10%, 45%)" tick={{ fill: 'hsl(20, 10%, 45%)' }} />
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: 'hsl(40, 15%, 98%)',
+                                border: '1px solid hsl(40, 10%, 85%)',
+                                borderRadius: '8px',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                              }}
+                            />
+                            <Legend />
+                            <Bar dataKey="Sessions" fill={COLORS.abCheckout} radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="Opt-ins" fill={COLORS.abOptIn} radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="Opt-outs" fill={COLORS.abOptOut} radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="chart-container h-full">
+                      <h3 className="mb-4 text-lg font-semibold text-foreground">Sessions by Variant</h3>
+                      <div className="h-[280px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={variantPieData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={55}
+                              outerRadius={90}
+                              paddingAngle={2}
+                              dataKey="value"
+                              label={({ percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
+                              labelLine={false}
+                            >
+                              {variantPieData.map((_, index) => (
+                                <Cell key={`vcell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: 'hsl(40, 15%, 98%)',
+                                border: '1px solid hsl(40, 10%, 85%)',
+                                borderRadius: '8px',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                              }}
+                              formatter={(value: number, name: string) => [`${value} sessions`, name]}
+                            />
+                            <Legend layout="horizontal" verticalAlign="bottom" wrapperStyle={{ paddingTop: '10px' }} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="data-table">
+                  <div className="border-b border-border p-4">
+                    <h3 className="text-lg font-semibold text-foreground">Variant Details</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="hover:bg-transparent border-border">
+                          <TableHead className="text-muted-foreground">Variant</TableHead>
+                          <TableHead className="text-right text-muted-foreground">Sessions</TableHead>
+                          <TableHead className="text-right text-muted-foreground">Opt-ins</TableHead>
+                          <TableHead className="text-right text-muted-foreground">Opt-outs</TableHead>
+                          <TableHead className="text-right text-muted-foreground">Opt-in Rate</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {aggregatedVariants.map((v, index) => (
+                          <TableRow key={index} className="border-border hover:bg-secondary/50">
+                            <TableCell className="font-medium text-foreground">{v.name}</TableCell>
+                            <TableCell className="text-right font-mono text-foreground">{v.total.toLocaleString()}</TableCell>
+                            <TableCell className="text-right font-mono text-primary">{v.opt_ins.toLocaleString()}</TableCell>
+                            <TableCell className="text-right font-mono text-muted-foreground">{v.opt_outs.toLocaleString()}</TableCell>
+                            <TableCell className="text-right">
+                              <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${
+                                v.opt_in_rate >= 50
+                                  ? 'bg-primary/10 text-primary'
+                                  : v.opt_in_rate >= 25
+                                  ? 'bg-chart-total/10 text-chart-total'
+                                  : 'bg-muted text-muted-foreground'
+                              }`}>
+                                {v.opt_in_rate.toFixed(2)}%
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Data Table */}
           <div className="data-table">
