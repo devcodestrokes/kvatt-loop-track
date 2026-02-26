@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
-import { FlaskConical, RefreshCw, Download } from 'lucide-react';
-import { useABTestingAnalytics } from '@/hooks/useABTestingAnalytics';
+import { FlaskConical, RefreshCw, Download, ChevronDown, ChevronRight } from 'lucide-react';
+import { useABTestingAnalytics, ABTestingData } from '@/hooks/useABTestingAnalytics';
 import { useUserDefaults } from '@/hooks/useUserDefaults';
 import { DateRange } from '@/types/analytics';
 import { DateRangePicker } from '@/components/dashboard/DateRangePicker';
@@ -17,6 +17,88 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { format, getISOWeek } from 'date-fns';
+
+const DESIGN_LABELS = [
+  'General',
+  'Universal Work',
+  'Toast',
+  'Universal Work Collapsible',
+  'Toast Collapsible',
+  'UW 18-12-2025',
+];
+
+function StoreRow({ item }: { item: ABTestingData }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasVariants = item.variants.length > 0;
+
+  return (
+    <>
+      <TableRow
+        className={`border-border hover:bg-secondary/50 ${hasVariants ? 'cursor-pointer' : ''}`}
+        onClick={() => hasVariants && setExpanded(!expanded)}
+      >
+        <TableCell className="font-medium text-foreground">
+          <div className="flex items-center gap-2">
+            {hasVariants ? (
+              expanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <span className="w-4" />
+            )}
+            {getDisplayStoreName(item.store)}
+          </div>
+        </TableCell>
+        <TableCell className="text-right font-mono text-foreground">
+          {(item.total_checkouts || 0).toLocaleString()}
+        </TableCell>
+        <TableCell className="text-right font-mono text-primary">
+          {(item.opt_ins || 0).toLocaleString()}
+        </TableCell>
+        <TableCell className="text-right font-mono text-muted-foreground">
+          {(item.opt_outs || 0).toLocaleString()}
+        </TableCell>
+        <TableCell className="text-right font-mono text-muted-foreground">
+          {hasVariants ? `${item.variants.length} design${item.variants.length > 1 ? 's' : ''}` : '—'}
+        </TableCell>
+      </TableRow>
+      {expanded && (
+        <>
+          {/* Show all design labels, with data if available */}
+          {DESIGN_LABELS.map((designName) => {
+            const variant = item.variants.find(v => v.name === designName);
+            return (
+              <TableRow key={designName} className="border-border bg-secondary/30">
+                <TableCell className="pl-12 text-sm text-muted-foreground">
+                  <span className="inline-flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary/60" />
+                    {designName}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right font-mono text-sm text-foreground">
+                  {variant ? variant.total.toLocaleString() : '0'}
+                </TableCell>
+                <TableCell className="text-right font-mono text-sm text-primary">
+                  {variant ? variant.opt_ins.toLocaleString() : '0'}
+                </TableCell>
+                <TableCell className="text-right font-mono text-sm text-muted-foreground">
+                  {variant ? variant.opt_outs.toLocaleString() : '0'}
+                </TableCell>
+                <TableCell className="text-right font-mono text-sm">
+                  {variant && variant.total > 0 ? (
+                    <span className={variant.opt_in_rate >= 50 ? 'text-primary font-medium' : 'text-muted-foreground'}>
+                      {variant.opt_in_rate.toFixed(1)}%
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </>
+      )}
+    </>
+  );
+}
 
 export function ABTestingTab() {
   const { data, stores, isLoading, error, fetchStores, fetchAnalytics } = useABTestingAnalytics();
@@ -66,21 +148,18 @@ export function ABTestingTab() {
 
   const exportToCSV = () => {
     const today = new Date();
-    const weekNum = getISOWeek(today);
     const dateStr = dateRange?.from && dateRange?.to
       ? `${format(dateRange.from, 'yyyy-MM-dd')}_to_${format(dateRange.to, 'yyyy-MM-dd')}`
       : format(today, 'yyyy-MM-dd');
 
-    const headers = ['Store', 'Total Checkouts', 'Opt-ins', 'Opt-outs', 'AB Testing Data'];
-    const rows = data.map((item) => [
-      getDisplayStoreName(item.store),
-      item.total_checkouts || 0,
-      item.opt_ins || 0,
-      item.opt_outs || 0,
-      item.variants.length > 0
-        ? item.variants.map(v => `${v.name}: ${v.total} total / ${v.opt_ins} in / ${v.opt_outs} out`).join(' | ')
-        : 'No AB test',
-    ]);
+    const headers = ['Store', 'Design', 'Total', 'Opt-ins', 'Opt-outs', 'Opt-in Rate'];
+    const rows: string[][] = [];
+    data.forEach((item) => {
+      rows.push([getDisplayStoreName(item.store), '', String(item.total_checkouts), String(item.opt_ins), String(item.opt_outs), '']);
+      item.variants.forEach(v => {
+        rows.push(['', v.name, String(v.total), String(v.opt_ins), String(v.opt_outs), `${v.opt_in_rate.toFixed(1)}%`]);
+      });
+    });
     const csv = [headers.join(','), ...rows.map((row) => row.map(c => `"${c}"`).join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -90,7 +169,6 @@ export function ABTestingTab() {
     a.click();
   };
 
-  // Identify which stores have active AB tests
   const storesWithAB = data.filter(item => item.variants.length > 0);
   const storesWithoutAB = data.filter(item => item.variants.length === 0);
 
@@ -106,7 +184,7 @@ export function ABTestingTab() {
             <h2 className="text-2xl font-bold tracking-tight text-foreground">A/B Testing</h2>
           </div>
           <p className="text-sm text-muted-foreground">
-            See which stores have A/B tests running and their results
+            Click a store row to expand and see per-design breakdown
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -143,56 +221,23 @@ export function ABTestingTab() {
               <div className="border-b border-border p-4">
                 <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
                   <span className="inline-block w-2 h-2 rounded-full bg-primary" />
-                  Stores with A/B Tests Running ({storesWithAB.length})
+                  Stores with A/B Tests ({storesWithAB.length})
                 </h3>
               </div>
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent border-border">
-                      <TableHead className="text-muted-foreground">Store</TableHead>
-                      <TableHead className="text-right text-muted-foreground">Total Checkouts</TableHead>
+                      <TableHead className="text-muted-foreground">Store / Design</TableHead>
+                      <TableHead className="text-right text-muted-foreground">Total</TableHead>
                       <TableHead className="text-right text-muted-foreground">Opt-ins</TableHead>
                       <TableHead className="text-right text-muted-foreground">Opt-outs</TableHead>
-                      <TableHead className="text-muted-foreground">Variants</TableHead>
+                      <TableHead className="text-right text-muted-foreground">Designs / Rate</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {storesWithAB.map((item, index) => (
-                      <TableRow key={index} className="border-border hover:bg-secondary/50">
-                        <TableCell className="font-medium text-foreground">
-                          {getDisplayStoreName(item.store)}
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-foreground">
-                          {(item.total_checkouts || 0).toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-primary">
-                          {(item.opt_ins || 0).toLocaleString()}
-                        </TableCell>
-                        <TableCell className="text-right font-mono text-muted-foreground">
-                          {(item.opt_outs || 0).toLocaleString()}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1.5">
-                            {item.variants.map((v, vi) => (
-                              <span
-                                key={vi}
-                                className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-xs"
-                              >
-                                <span className="font-medium text-foreground">{v.name}</span>
-                                <span className="text-muted-foreground">
-                                  {v.total} total · {v.opt_ins} in · {v.opt_outs} out
-                                  {v.total > 0 && (
-                                    <span className={v.opt_in_rate >= 50 ? ' text-primary font-medium' : ''}>
-                                      {' '}({v.opt_in_rate.toFixed(1)}%)
-                                    </span>
-                                  )}
-                                </span>
-                              </span>
-                            ))}
-                          </div>
-                        </TableCell>
-                      </TableRow>
+                      <StoreRow key={index} item={item} />
                     ))}
                   </TableBody>
                 </Table>
@@ -223,7 +268,10 @@ export function ABTestingTab() {
                     {storesWithoutAB.map((item, index) => (
                       <TableRow key={index} className="border-border hover:bg-secondary/50 opacity-70">
                         <TableCell className="font-medium text-foreground">
-                          {getDisplayStoreName(item.store)}
+                          <div className="flex items-center gap-2">
+                            <span className="w-4" />
+                            {getDisplayStoreName(item.store)}
+                          </div>
                         </TableCell>
                         <TableCell className="text-right font-mono text-foreground">
                           {(item.total_checkouts || 0).toLocaleString()}
