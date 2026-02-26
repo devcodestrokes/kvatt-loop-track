@@ -260,9 +260,6 @@ export function ABTestingTab() {
             </div>
             <h2 className="text-2xl font-bold tracking-tight text-foreground">A/B Testing</h2>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Click a store row to expand and see per-design breakdown
-          </p>
         </div>
         <div className="flex items-center gap-3">
           {lastUpdated && (
