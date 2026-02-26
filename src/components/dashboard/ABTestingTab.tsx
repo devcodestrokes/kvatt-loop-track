@@ -291,7 +291,7 @@ export function ABTestingTab() {
           { label: 'Checkouts', value: aggregates.totalCheckouts.toLocaleString(), icon: <ShoppingCart className="h-3.5 w-3.5" /> },
           { label: 'Opt-ins', value: aggregates.totalOptIns.toLocaleString(), icon: <ThumbsUp className="h-3.5 w-3.5" />, highlight: true },
           { label: 'Opt-outs', value: aggregates.totalOptOuts.toLocaleString(), icon: <ThumbsDown className="h-3.5 w-3.5" /> },
-          { label: 'Opt-in Rate', value: `${aggregates.optInRate.toFixed(1)}%`, icon: <Percent className="h-3.5 w-3.5" />, highlight: true },
+          
           { label: 'AB Stores', value: String(aggregates.activeStores), icon: <StoreIcon className="h-3.5 w-3.5" /> },
           { label: 'Best Design', value: aggregates.bestDesign, icon: <Trophy className="h-3.5 w-3.5" />, highlight: true },
         ].map((widget, i) => (
