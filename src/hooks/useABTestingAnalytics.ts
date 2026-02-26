@@ -3,8 +3,8 @@ import { Store, DateRange } from '@/types/analytics';
 import { format } from 'date-fns';
 import { getDisplayStoreName } from '@/hooks/useAnalytics';
 
-const STORES_API_URL = "https://kvatt-v2.deveshasolution.com/api/get-stores";
-const ANALYTICS_API_URL = "https://kvatt-v2.deveshasolution.com/api/get-alaytics";
+const STORES_API_URL = "https://shopify.kvatt.com/api/get-stores";
+const ANALYTICS_API_URL = "https://shopify.kvatt.com/api/get-alaytics";
 const AUTH_TOKEN = "Bearer %^75464tnfsdhndsfbgr54";
 
 export interface VariantData {
