@@ -1,6 +1,7 @@
-import { useEffect, useState, useRef } from 'react';
-import { FlaskConical, RefreshCw, Download, ChevronDown, ChevronRight } from 'lucide-react';
+import { useEffect, useState, useRef, useMemo } from 'react';
+import { FlaskConical, RefreshCw, Download, ChevronDown, ChevronRight, ShoppingCart, ThumbsUp, ThumbsDown, Percent, Layers, Store } from 'lucide-react';
 import { useABTestingAnalytics, ABTestingData } from '@/hooks/useABTestingAnalytics';
+import { MetricCard } from '@/components/dashboard/MetricCard';
 import { useUserDefaults } from '@/hooks/useUserDefaults';
 import { DateRange } from '@/types/analytics';
 import { DateRangePicker } from '@/components/dashboard/DateRangePicker';
@@ -172,6 +173,31 @@ export function ABTestingTab() {
   const storesWithAB = data.filter(item => item.variants.length > 0);
   const storesWithoutAB = data.filter(item => item.variants.length === 0);
 
+  const aggregates = useMemo(() => {
+    const totalCheckouts = data.reduce((sum, d) => sum + (d.total_checkouts || 0), 0);
+    const totalOptIns = data.reduce((sum, d) => sum + (d.opt_ins || 0), 0);
+    const totalOptOuts = data.reduce((sum, d) => sum + (d.opt_outs || 0), 0);
+    const optInRate = totalCheckouts > 0 ? (totalOptIns / totalCheckouts) * 100 : 0;
+    const activeStores = storesWithAB.length;
+    const totalDesigns = new Set(data.flatMap(d => d.variants.map(v => v.name))).size;
+
+    // Best performing design
+    const designAgg: Record<string, { ins: number; total: number }> = {};
+    data.forEach(d => d.variants.forEach(v => {
+      if (!designAgg[v.name]) designAgg[v.name] = { ins: 0, total: 0 };
+      designAgg[v.name].ins += v.opt_ins;
+      designAgg[v.name].total += v.total;
+    }));
+    let bestDesign = '—';
+    let bestRate = 0;
+    Object.entries(designAgg).forEach(([name, { ins, total }]) => {
+      const rate = total > 0 ? (ins / total) * 100 : 0;
+      if (rate > bestRate) { bestRate = rate; bestDesign = name; }
+    });
+
+    return { totalCheckouts, totalOptIns, totalOptOuts, optInRate, activeStores, totalDesigns, bestDesign, bestRate };
+  }, [data, storesWithAB]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -209,6 +235,53 @@ export function ABTestingTab() {
             CSV
           </Button>
         </div>
+      </div>
+
+      {/* Aggregate Widgets */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+        <MetricCard
+          title="Total Checkouts"
+          value={aggregates.totalCheckouts.toLocaleString()}
+          icon={<ShoppingCart className="h-5 w-5" />}
+          color="coral"
+          delay={0}
+        />
+        <MetricCard
+          title="Opt-ins"
+          value={aggregates.totalOptIns.toLocaleString()}
+          icon={<ThumbsUp className="h-5 w-5" />}
+          color="coral"
+          delay={50}
+        />
+        <MetricCard
+          title="Opt-outs"
+          value={aggregates.totalOptOuts.toLocaleString()}
+          icon={<ThumbsDown className="h-5 w-5" />}
+          color="muted"
+          delay={100}
+        />
+        <MetricCard
+          title="Opt-in Rate"
+          value={`${aggregates.optInRate.toFixed(1)}%`}
+          icon={<Percent className="h-5 w-5" />}
+          color="blue"
+          delay={150}
+        />
+        <MetricCard
+          title="Active AB Stores"
+          value={aggregates.activeStores}
+          icon={<Store className="h-5 w-5" />}
+          color="brown"
+          delay={200}
+        />
+        <MetricCard
+          title="Best Design"
+          value={aggregates.bestDesign}
+          changeLabel={aggregates.bestRate > 0 ? `${aggregates.bestRate.toFixed(1)}% opt-in rate` : undefined}
+          icon={<Layers className="h-5 w-5" />}
+          color="coral"
+          delay={250}
+        />
       </div>
 
       {isLoading && data.length === 0 ? (
