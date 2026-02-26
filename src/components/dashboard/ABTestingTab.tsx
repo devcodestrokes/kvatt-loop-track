@@ -238,7 +238,7 @@ export function ABTestingTab() {
       </div>
 
       {/* Aggregate Widgets */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <MetricCard
           title="Total Checkouts"
           value={aggregates.totalCheckouts.toLocaleString()}
