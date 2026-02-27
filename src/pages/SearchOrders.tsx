@@ -147,7 +147,17 @@ export default function SearchOrders() {
       setRecordingSent(false);
 
       timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
+        setRecordingTime(prev => {
+          if (prev + 1 >= 60) {
+            // Auto-stop at 60 seconds
+            mediaRecorderRef.current?.stop();
+            setIsRecording(false);
+            setIsPaused(false);
+            if (timerRef.current) clearInterval(timerRef.current);
+            return 60;
+          }
+          return prev + 1;
+        });
       }, 1000);
     } catch (err) {
       console.error('Microphone access denied:', err);
