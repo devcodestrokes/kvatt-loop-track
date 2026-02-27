@@ -245,9 +245,12 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
     }
   };
 
+  const [isPrinting, setIsPrinting] = useState(false);
+
   const handlePrint = () => {
+    setIsPrinting(true);
     const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
+    if (!printWindow) { setIsPrinting(false); return; }
 
     // Generate labels based on selected style
     const labelsHtml = generatedLabels
@@ -418,24 +421,32 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
         </body>
       </html>
     `);
-    printWindow.document.close();
+    // Reset printing state after a delay (print dialog is in new window)
+    setTimeout(() => setIsPrinting(false), 2000);
   };
 
-  const handleExportCSV = () => {
-    const csv = [
-      "Pack ID,Barcode,QR Code URL",
-      ...generatedLabels.map((l) => `${l.labelId},${l.labelId},https://kvatt.codestrokes.com/search-orders?packId=${encodeURIComponent(l.labelId)}`),
-    ].join("\n");
+  const [isExportingCSV, setIsExportingCSV] = useState(false);
 
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `pack-labels-${new Date().toISOString().split("T")[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const handleExportCSV = () => {
+    setIsExportingCSV(true);
+    try {
+      const csv = [
+        "Pack ID,Barcode,QR Code URL",
+        ...generatedLabels.map((l) => `${l.labelId},${l.labelId},https://kvatt.codestrokes.com/search-orders?packId=${encodeURIComponent(l.labelId)}`),
+      ].join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `pack-labels-${new Date().toISOString().split("T")[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } finally {
+      setTimeout(() => setIsExportingCSV(false), 1000);
+    }
   };
 
   // Convert an image URL/import to a base64 data URL
@@ -705,13 +716,24 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
             )}
           </Button>
 
-          {generatedLabels.length > 0 && (
+          {generatedLabels.length > 0 && (() => {
+            const anyExporting = isPrinting || isDownloading || isExportingCSV;
+            return (
             <div className="flex gap-2 pt-4 border-t flex-wrap">
-              <Button variant="outline" onClick={handlePrint}>
-                <Printer className="mr-2 h-4 w-4" />
-                Print Labels
+              <Button variant="outline" onClick={handlePrint} disabled={anyExporting}>
+                {isPrinting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Preparing Print...
+                  </>
+                ) : (
+                  <>
+                    <Printer className="mr-2 h-4 w-4" />
+                    Print Labels
+                  </>
+                )}
               </Button>
-              <Button variant="outline" onClick={handleDownloadPDF} disabled={isDownloading}>
+              <Button variant="outline" onClick={handleDownloadPDF} disabled={anyExporting}>
                 {isDownloading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -724,12 +746,22 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                   </>
                 )}
               </Button>
-              <Button variant="outline" onClick={handleExportCSV}>
-                <Download className="mr-2 h-4 w-4" />
-                Export CSV
+              <Button variant="outline" onClick={handleExportCSV} disabled={anyExporting}>
+                {isExportingCSV ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export CSV
+                  </>
+                )}
               </Button>
             </div>
-          )}
+            );
+          })()}
         </CardContent>
       </Card>
 
