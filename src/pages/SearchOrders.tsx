@@ -249,7 +249,12 @@ export default function SearchOrders() {
   };
 
   const handleBack = () => {
-    if (step === 'results') {
+    if (step === 'recording') {
+      stopRecording();
+      setStep('feedback');
+    } else if (step === 'feedback') {
+      setStep('results');
+    } else if (step === 'results') {
       setStep('search');
       setSearched(false);
       setError(null);
@@ -270,6 +275,8 @@ export default function SearchOrders() {
     if (returnUrl) {
       window.open(returnUrl, '_blank', 'noopener,noreferrer');
     }
+    // Navigate to feedback step
+    setStep('feedback');
   };
 
   const selectedOrder = orders.find((o) => o.id === selectedOrderId);
