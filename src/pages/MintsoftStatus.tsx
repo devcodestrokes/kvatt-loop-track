@@ -265,7 +265,7 @@ const MintsoftStatus = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {asnRecords.map((asn, i) => (
+                      {pagedAsn.map((asn, i) => (
                         <TableRow key={i} className="border-border">
                           <TableCell className="font-mono font-medium">{asn.packaging_id || '—'}</TableCell>
                           <TableCell>{asn.product_name || '—'}</TableCell>
@@ -280,6 +280,7 @@ const MintsoftStatus = () => {
                       ))}
                     </TableBody>
                   </Table>
+                  <PaginationControls total={asnRecords.length} page={asnPage} pageSize={asnPageSize} onPageChange={setAsnPage} onPageSizeChange={setAsnPageSize} />
                 </div>
               )}
             </TabsContent>
