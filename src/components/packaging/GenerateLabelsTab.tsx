@@ -468,59 +468,42 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
     return btoa(binary);
   };
 
-  const handleDownloadPDF = async () => {
-    const { default: jsPDF } = await import("jspdf");
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
 
-    // Pre-convert logo to data URL so jsPDF can embed it
-    let logoDataUrl: string | null = null;
-    try {
-      logoDataUrl = await imageToDataUrl(kvattLogo);
-    } catch (e) {
-      console.warn("Could not load logo for PDF:", e);
-    }
-
-    // Load Inter font files
-    const [interRegular, interLight, interMedium, interBold, interItalic] = await Promise.all([
-      loadFontAsBase64('/fonts/Inter-Regular.ttf'),
-      loadFontAsBase64('/fonts/Inter-Light.ttf'),
-      loadFontAsBase64('/fonts/Inter-Medium.ttf'),
-      loadFontAsBase64('/fonts/Inter-Bold.ttf'),
-      loadFontAsBase64('/fonts/Inter-Italic.ttf'),
-    ]);
-
-    // Label dimensions in mm
+  const buildPdfForBatch = async (
+    jsPDF: any,
+    batch: GeneratedLabel[],
+    logoDataUrl: string | null,
+    fonts: { regular: string; light: string; medium: string; bold: string; italic: string }
+  ) => {
     const W = 130, H = 82;
     const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [H, W] });
 
-    // Register Inter fonts
-    pdf.addFileToVFS("Inter-Regular.ttf", interRegular);
+    pdf.addFileToVFS("Inter-Regular.ttf", fonts.regular);
     pdf.addFont("Inter-Regular.ttf", "Inter", "normal");
-    pdf.addFileToVFS("Inter-Light.ttf", interLight);
+    pdf.addFileToVFS("Inter-Light.ttf", fonts.light);
     pdf.addFont("Inter-Light.ttf", "Inter", "light");
-    pdf.addFileToVFS("Inter-Medium.ttf", interMedium);
+    pdf.addFileToVFS("Inter-Medium.ttf", fonts.medium);
     pdf.addFont("Inter-Medium.ttf", "Inter", "medium");
-    pdf.addFileToVFS("Inter-Bold.ttf", interBold);
+    pdf.addFileToVFS("Inter-Bold.ttf", fonts.bold);
     pdf.addFont("Inter-Bold.ttf", "Inter", "bold");
-    pdf.addFileToVFS("Inter-Italic.ttf", interItalic);
+    pdf.addFileToVFS("Inter-Italic.ttf", fonts.italic);
     pdf.addFont("Inter-Italic.ttf", "Inter", "italic");
 
-    for (let i = 0; i < generatedLabels.length; i++) {
-      const label = generatedLabels[i];
+    for (let i = 0; i < batch.length; i++) {
+      const label = batch[i];
       if (i > 0) pdf.addPage([H, W], "landscape");
 
-      // Stone background
       pdf.setFillColor(230, 227, 219);
       pdf.rect(0, 0, W, H, "F");
 
-      // Black bottom bar — ratio 200/850 of 82mm ≈ 19.3mm
       const barH = 19.3;
       pdf.setFillColor(0, 0, 0);
       pdf.rect(0, H - barH, W, barH, "F");
 
-      // Upper area height
-      const upperH = H - barH; // ~62.7mm
+      const upperH = H - barH;
 
-      // Heading text — left 50% area
       pdf.setFont("Inter", "bold");
       pdf.setFontSize(38);
       pdf.setTextColor(0, 0, 0);
@@ -529,7 +512,6 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       pdf.text("Start your", textX, textCenterY - 6);
       pdf.text("return", textX, textCenterY + 6);
 
-      // Bird logo next to "return"
       if (logoDataUrl) {
         const logoW = 12, logoH = 10;
         const returnTextWidth = pdf.getTextWidth("return");
@@ -540,30 +522,25 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       pdf.setFontSize(31);
       pdf.text("with one tap", textX, textCenterY + 18);
 
-      // QR Code — right 39.3% area, centered vertically, square ~51mm
-      const qrAreaW = W * 0.393; // ~51mm
-      const qrSize = Math.min(qrAreaW, upperH - 6); // fit in upper area
+      const qrAreaW = W * 0.393;
+      const qrSize = Math.min(qrAreaW, upperH - 6);
       const qrX = W - qrAreaW / 2 - qrSize / 2 - 4;
       const qrY = (upperH - qrSize) / 2;
       pdf.addImage(label.qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize);
 
-      // White rounded container for barcode + pack ID — 65mm × 14.5mm
       const containerW = 65, containerH = 14.5;
       const containerX = 4, containerY = H - barH + (barH - containerH) / 2;
       pdf.setFillColor(255, 255, 255);
       pdf.roundedRect(containerX, containerY, containerW, containerH, 1, 1, "F");
 
-      // Barcode inside white container
-      const barcodeW = 62, barcodeH = 11;
-      pdf.addImage(label.barcodeDataUrl, "PNG", containerX + (containerW - barcodeW) / 2, containerY + 0.5, barcodeW, barcodeH);
+      const barcodeW = 62, barcodeH2 = 11;
+      pdf.addImage(label.barcodeDataUrl, "PNG", containerX + (containerW - barcodeW) / 2, containerY + 0.5, barcodeW, barcodeH2);
 
-      // Pack ID below barcode
       pdf.setFont("Inter", "bold");
       pdf.setFontSize(8);
       pdf.setTextColor(0, 0, 0);
-      pdf.text(label.labelId, containerX + containerW / 2, containerY + barcodeH + 2.8, { align: "center" });
+      pdf.text(label.labelId, containerX + containerW / 2, containerY + barcodeH2 + 2.8, { align: "center" });
 
-      // Support text — right ~37mm area
       pdf.setFont("Inter", "medium");
       pdf.setFontSize(11);
       pdf.setTextColor(255, 255, 255);
@@ -572,12 +549,70 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       pdf.text("+44 (0) 75.49.88.48.50", W - 54, H - barH + 13, { align: "left" });
     }
 
-    pdf.save(`pack-labels-${new Date().toISOString().split("T")[0]}.pdf`);
+    return pdf;
+  };
 
-    toast({
-      title: "PDF downloaded",
-      description: `Downloaded ${generatedLabels.length} labels as PDF`,
-    });
+  const handleDownloadPDF = async () => {
+    const { default: jsPDF } = await import("jspdf");
+
+    setIsDownloading(true);
+    setDownloadProgress(0);
+
+    try {
+      let logoDataUrl: string | null = null;
+      try {
+        logoDataUrl = await imageToDataUrl(kvattLogo);
+      } catch (e) {
+        console.warn("Could not load logo for PDF:", e);
+      }
+
+      const [regular, light, medium, bold, italic] = await Promise.all([
+        loadFontAsBase64('/fonts/Inter-Regular.ttf'),
+        loadFontAsBase64('/fonts/Inter-Light.ttf'),
+        loadFontAsBase64('/fonts/Inter-Medium.ttf'),
+        loadFontAsBase64('/fonts/Inter-Bold.ttf'),
+        loadFontAsBase64('/fonts/Inter-Italic.ttf'),
+      ]);
+      const fonts = { regular, light, medium, bold, italic };
+
+      const BATCH_SIZE = 100;
+      const totalBatches = Math.ceil(generatedLabels.length / BATCH_SIZE);
+      const dateStr = new Date().toISOString().split("T")[0];
+
+      for (let b = 0; b < totalBatches; b++) {
+        const batch = generatedLabels.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
+        const pdf = await buildPdfForBatch(jsPDF, batch, logoDataUrl, fonts);
+
+        const fileName = totalBatches === 1
+          ? `pack-labels-${dateStr}.pdf`
+          : `pack-labels-${dateStr}-part${b + 1}.pdf`;
+        pdf.save(fileName);
+
+        setDownloadProgress(Math.round(((b + 1) / totalBatches) * 100));
+
+        // Small delay between batch downloads to prevent browser issues
+        if (b < totalBatches - 1) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+
+      toast({
+        title: "PDF downloaded",
+        description: totalBatches === 1
+          ? `Downloaded ${generatedLabels.length} labels as PDF`
+          : `Downloaded ${generatedLabels.length} labels in ${totalBatches} PDF files`,
+      });
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      toast({
+        title: "PDF download failed",
+        description: "Failed to generate PDF. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloading(false);
+      setDownloadProgress(0);
+    }
   };
 
   return (
@@ -676,9 +711,18 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                 <Printer className="mr-2 h-4 w-4" />
                 Print Labels
               </Button>
-              <Button variant="outline" onClick={handleDownloadPDF}>
-                <FileDown className="mr-2 h-4 w-4" />
-                Download PDF
+              <Button variant="outline" onClick={handleDownloadPDF} disabled={isDownloading}>
+                {isDownloading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Downloading... {downloadProgress}%
+                  </>
+                ) : (
+                  <>
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Download PDF
+                  </>
+                )}
               </Button>
               <Button variant="outline" onClick={handleExportCSV}>
                 <Download className="mr-2 h-4 w-4" />
