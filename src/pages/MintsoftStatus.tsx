@@ -1,13 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Truck, RotateCcw, Package, QrCode, Loader2, RefreshCw } from 'lucide-react';
+import { Truck, RotateCcw, QrCode, Loader2, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -15,31 +10,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import kvattLogo from '@/assets/kvatt-logo.jpeg';
 
-interface MintsoftASN {
-  id: string;
-  packaging_id: string | null;
-  product_name: string | null;
-  asn_status: string | null;
-  po_reference: string | null;
+interface ASNRecord {
+  po_reference: string;
+  packaging_id: string;
+  product_name: string;
+  asn_status: string;
   estimated_delivery: string | null;
   booked_in_date: string | null;
   last_updated: string | null;
-  synced_at: string;
 }
 
-interface MintsoftReturn {
-  id: string;
-  return_id: string | null;
-  reference: string | null;
-  product_code: string | null;
+interface ReturnRecord {
+  return_id: string;
+  reference: string;
+  product_code: string;
   return_date: string | null;
-  reason: string | null;
+  reason: string;
   qty_returned: number;
-  synced_at: string;
 }
 
 interface LabelRecord {
-  id: string;
   label_id: string;
   status: string;
   previous_uses: number;
@@ -57,33 +47,32 @@ const statusColors: Record<string, string> = {
 
 const MintsoftStatus = () => {
   const [loading, setLoading] = useState(true);
-  const [asnRecords, setAsnRecords] = useState<MintsoftASN[]>([]);
-  const [returnRecords, setReturnRecords] = useState<MintsoftReturn[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [asnRecords, setAsnRecords] = useState<ASNRecord[]>([]);
+  const [returnRecords, setReturnRecords] = useState<ReturnRecord[]>([]);
   const [labels, setLabels] = useState<LabelRecord[]>([]);
   const [stats, setStats] = useState({ packs: 0, asn: 0, returns: 0 });
 
   const loadData = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const [asnRes, returnsRes, labelsRes, packsCount, asnCount, returnsCount] = await Promise.all([
-        supabase.from('mintsoft_asn').select('*').order('synced_at', { ascending: false }).limit(200),
-        supabase.from('mintsoft_returns').select('*').order('synced_at', { ascending: false }).limit(200),
-        supabase.from('labels').select('*').order('updated_at', { ascending: false }).limit(200),
-        supabase.from('labels').select('id', { count: 'exact', head: true }),
-        supabase.from('mintsoft_asn').select('id', { count: 'exact', head: true }),
-        supabase.from('mintsoft_returns').select('id', { count: 'exact', head: true }),
-      ]);
+      const { data, error: fnError } = await supabase.functions.invoke('fetch-mintsoft-status');
+      
+      if (fnError) throw fnError;
+      if (data?.error) throw new Error(data.error);
 
-      setAsnRecords(asnRes.data || []);
-      setReturnRecords(returnsRes.data || []);
-      setLabels(labelsRes.data || []);
+      setAsnRecords(data.asn || []);
+      setReturnRecords(data.returns || []);
+      setLabels(data.labels || []);
       setStats({
-        packs: packsCount.count || 0,
-        asn: asnCount.count || 0,
-        returns: returnsCount.count || 0,
+        packs: data.stats?.packs_count || 0,
+        asn: data.stats?.asn_count || 0,
+        returns: data.stats?.returns_count || 0,
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load Mintsoft data:', err);
+      setError(err.message || 'Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -98,7 +87,6 @@ const MintsoftStatus = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <div className="border-b border-border bg-card">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -153,99 +141,23 @@ const MintsoftStatus = () => {
           </div>
         </div>
 
+        {error && (
+          <div className="rounded-xl border border-destructive/50 bg-destructive/10 p-4 text-destructive text-sm">
+            Error: {error}
+          </div>
+        )}
+
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <Tabs defaultValue="asn" className="w-full">
+          <Tabs defaultValue="packs" className="w-full">
             <TabsList>
+              <TabsTrigger value="packs">Packs ({labels.length})</TabsTrigger>
               <TabsTrigger value="asn">ASN Activity ({asnRecords.length})</TabsTrigger>
               <TabsTrigger value="returns">Returns ({returnRecords.length})</TabsTrigger>
-              <TabsTrigger value="packs">Packs ({labels.length})</TabsTrigger>
             </TabsList>
-
-            {/* ASN Tab */}
-            <TabsContent value="asn">
-              {asnRecords.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Truck className="h-12 w-12 mx-auto mb-3 opacity-40" />
-                  <p>No ASN records found</p>
-                </div>
-              ) : (
-                <div className="rounded-xl border border-border bg-card overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-border hover:bg-transparent">
-                        <TableHead>Packaging ID</TableHead>
-                        <TableHead>Product</TableHead>
-                        <TableHead>PO Reference</TableHead>
-                        <TableHead>ASN Status</TableHead>
-                        <TableHead>Est. Delivery</TableHead>
-                        <TableHead>Booked In</TableHead>
-                        <TableHead>Last Updated</TableHead>
-                        <TableHead>Synced</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {asnRecords.map((asn) => (
-                        <TableRow key={asn.id} className="border-border">
-                          <TableCell className="font-mono font-medium">{asn.packaging_id || '—'}</TableCell>
-                          <TableCell>{asn.product_name || '—'}</TableCell>
-                          <TableCell className="text-muted-foreground">{asn.po_reference || '—'}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{asn.asn_status || 'Unknown'}</Badge>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">{formatDate(asn.estimated_delivery)}</TableCell>
-                          <TableCell className="text-muted-foreground">{formatDate(asn.booked_in_date)}</TableCell>
-                          <TableCell className="text-muted-foreground">{formatDate(asn.last_updated)}</TableCell>
-                          <TableCell className="text-muted-foreground">{formatDate(asn.synced_at)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </TabsContent>
-
-            {/* Returns Tab */}
-            <TabsContent value="returns">
-              {returnRecords.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <RotateCcw className="h-12 w-12 mx-auto mb-3 opacity-40" />
-                  <p>No return records found</p>
-                </div>
-              ) : (
-                <div className="rounded-xl border border-border bg-card overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-border hover:bg-transparent">
-                        <TableHead>Return ID</TableHead>
-                        <TableHead>Reference</TableHead>
-                        <TableHead>Product Code</TableHead>
-                        <TableHead>Qty Returned</TableHead>
-                        <TableHead>Reason</TableHead>
-                        <TableHead>Return Date</TableHead>
-                        <TableHead>Synced</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {returnRecords.map((ret) => (
-                        <TableRow key={ret.id} className="border-border">
-                          <TableCell className="font-mono font-medium">{ret.return_id || '—'}</TableCell>
-                          <TableCell className="font-mono">{ret.reference || '—'}</TableCell>
-                          <TableCell>{ret.product_code || '—'}</TableCell>
-                          <TableCell>{ret.qty_returned}</TableCell>
-                          <TableCell className="text-muted-foreground">{ret.reason || '—'}</TableCell>
-                          <TableCell className="text-muted-foreground">{formatDate(ret.return_date)}</TableCell>
-                          <TableCell className="text-muted-foreground">{formatDate(ret.synced_at)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </TabsContent>
 
             {/* Packs Tab */}
             <TabsContent value="packs">
@@ -268,8 +180,8 @@ const MintsoftStatus = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {labels.map((label) => (
-                        <TableRow key={label.id} className="border-border">
+                      {labels.map((label, i) => (
+                        <TableRow key={i} className="border-border">
                           <TableCell className="font-mono font-medium">{label.label_id}</TableCell>
                           <TableCell>
                             <Badge variant="outline" className={statusColors[label.status] || 'bg-muted text-muted-foreground'}>
@@ -280,6 +192,84 @@ const MintsoftStatus = () => {
                           <TableCell className="font-mono text-muted-foreground">{label.current_order_id || '—'}</TableCell>
                           <TableCell className="text-muted-foreground">{formatDate(label.created_at)}</TableCell>
                           <TableCell className="text-muted-foreground">{formatDate(label.updated_at)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* ASN Tab */}
+            <TabsContent value="asn">
+              {asnRecords.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Truck className="h-12 w-12 mx-auto mb-3 opacity-40" />
+                  <p>No ASN records from Mintsoft</p>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-border bg-card overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border hover:bg-transparent">
+                        <TableHead>Packaging ID</TableHead>
+                        <TableHead>Product</TableHead>
+                        <TableHead>PO Reference</TableHead>
+                        <TableHead>ASN Status</TableHead>
+                        <TableHead>Est. Delivery</TableHead>
+                        <TableHead>Booked In</TableHead>
+                        <TableHead>Last Updated</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {asnRecords.map((asn, i) => (
+                        <TableRow key={i} className="border-border">
+                          <TableCell className="font-mono font-medium">{asn.packaging_id || '—'}</TableCell>
+                          <TableCell>{asn.product_name || '—'}</TableCell>
+                          <TableCell className="text-muted-foreground">{asn.po_reference || '—'}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{asn.asn_status || 'Unknown'}</Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(asn.estimated_delivery)}</TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(asn.booked_in_date)}</TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(asn.last_updated)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Returns Tab */}
+            <TabsContent value="returns">
+              {returnRecords.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <RotateCcw className="h-12 w-12 mx-auto mb-3 opacity-40" />
+                  <p>No return records from Mintsoft</p>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-border bg-card overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border hover:bg-transparent">
+                        <TableHead>Return ID</TableHead>
+                        <TableHead>Reference</TableHead>
+                        <TableHead>Product Code</TableHead>
+                        <TableHead>Qty Returned</TableHead>
+                        <TableHead>Reason</TableHead>
+                        <TableHead>Return Date</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {returnRecords.map((ret, i) => (
+                        <TableRow key={i} className="border-border">
+                          <TableCell className="font-mono font-medium">{ret.return_id || '—'}</TableCell>
+                          <TableCell className="font-mono">{ret.reference || '—'}</TableCell>
+                          <TableCell>{ret.product_code || '—'}</TableCell>
+                          <TableCell>{ret.qty_returned}</TableCell>
+                          <TableCell className="text-muted-foreground">{ret.reason || '—'}</TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(ret.return_date)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
