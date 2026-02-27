@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Truck, RotateCcw, QrCode, Loader2, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Truck, RotateCcw, QrCode, Loader2, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
