@@ -581,12 +581,15 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       pdf.addFileToVFS("Inter-Italic.ttf", italic);
       pdf.addFont("Inter-Italic.ttf", "Inter", "italic");
 
-      // Remove font data from VFS after registration to free memory
-      pdf.deleteFileFromVFS?.("Inter-Regular.ttf");
-      pdf.deleteFileFromVFS?.("Inter-Light.ttf");
-      pdf.deleteFileFromVFS?.("Inter-Medium.ttf");
-      pdf.deleteFileFromVFS?.("Inter-Bold.ttf");
-      pdf.deleteFileFromVFS?.("Inter-Italic.ttf");
+      // Cast to any to free VFS memory after font registration
+      const pdfAny = pdf as any;
+      if (pdfAny.deleteFileFromVFS) {
+        pdfAny.deleteFileFromVFS("Inter-Regular.ttf");
+        pdfAny.deleteFileFromVFS("Inter-Light.ttf");
+        pdfAny.deleteFileFromVFS("Inter-Medium.ttf");
+        pdfAny.deleteFileFromVFS("Inter-Bold.ttf");
+        pdfAny.deleteFileFromVFS("Inter-Italic.ttf");
+      }
 
       const CHUNK = 50;
       for (let i = 0; i < generatedLabels.length; i++) {
