@@ -6,7 +6,7 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
+
 import { format } from 'date-fns';
 import kvattLogo from '@/assets/kvatt-logo.jpeg';
 
