@@ -21,7 +21,7 @@ serve(async (req) => {
       fetch('https://api.mintsoft.co.uk/api/ASN/List?ClientId=82&IncludeItems=true', {
         headers: { 'Accept': 'application/json', 'ms-apikey': MINTSOFT_API_KEY! },
       }),
-      fetch('https://api.mintsoft.co.uk/api/Returns/List?ClientId=82', {
+      fetch('https://api.mintsoft.co.uk/api/Return/List?ClientId=82', {
         headers: { 'Accept': 'application/json', 'ms-apikey': MINTSOFT_API_KEY! },
       }),
     ]);
@@ -30,6 +30,8 @@ serve(async (req) => {
     const returnsRaw = await returnsResponse.json();
 
     console.log('RAW ASN keys:', Object.keys(asnRaw?.Results?.[0] || asnRaw?.[0] || asnRaw?.Data?.[0] || {}).join(', '));
+    console.log('RAW Returns response:', JSON.stringify(returnsRaw).substring(0, 2000));
+    console.log('Returns status:', returnsResponse.status, returnsResponse.statusText);
 
     const asnData = Array.isArray(asnRaw) ? asnRaw : (asnRaw?.Results || asnRaw?.Data || asnRaw?.data || []);
     const returnsData = Array.isArray(returnsRaw) ? returnsRaw : (returnsRaw?.Results || returnsRaw?.Data || returnsRaw?.data || []);
@@ -92,28 +94,24 @@ serve(async (req) => {
     const returnsRecords: any[] = [];
     if (Array.isArray(returnsData)) {
       returnsData.forEach((item: any) => {
-        const items = item.Items || item.ReturnItems || item.items || [];
-        if (Array.isArray(items) && items.length > 0) {
-          items.forEach((product: any) => {
-            returnsRecords.push({
-              return_id: String(item.ID || item.Id || ''),
-              reference: item.Reference || item.OrderReference || '',
-              return_date: item.ReturnDate || item.DateReturned || null,
-              reason: item.Reason || product.Reason || '',
-              product_code: product.ProductCode || product.SKU || '',
-              qty_returned: product.QuantityReturned || product.Quantity || 0,
-            });
-          });
-        } else {
-          returnsRecords.push({
-            return_id: String(item.ID || item.Id || ''),
-            reference: item.Reference || item.OrderReference || '',
-            return_date: item.ReturnDate || item.DateReturned || null,
-            reason: item.Reason || '',
-            product_code: item.ProductCode || item.SKU || '',
-            qty_returned: item.QuantityReturned || item.Quantity || 0,
-          });
-        }
+        returnsRecords.push({
+          return_id: String(item.ID || item.Id || ''),
+          reference: item.Reference || '',
+          order_number: item.OrderNumber || '',
+          confirmed: item.Confirmed || false,
+          refunded: item.Refunded || false,
+          exchanged: item.Exchanged || false,
+          invoiced: item.Invoiced || false,
+          last_updated: item.LastUpdated || null,
+          last_updated_by_user: item.LastUpdatedByUser || null,
+          return_items: Array.isArray(item.ReturnItems) ? item.ReturnItems.map((ri: any) => ({
+            product_code: ri.ProductCode || ri.SKU || '',
+            product_name: ri.ProductName || ri.Name || '',
+            quantity: ri.Quantity || ri.QuantityReturned || 0,
+            reason: ri.Reason || ri.ReturnReason || '',
+            condition: ri.Condition || '',
+          })) : [],
+        });
       });
     }
 
