@@ -24,6 +24,7 @@ import Settings from "./pages/Settings";
 import Help from "./pages/Help";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import MintsoftStatus from "./pages/MintsoftStatus";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/search-orders" element={<SearchOrders />} />
+            <Route path="/5dc6de10-4e17-4275-rffd-1424611332bd" element={<MintsoftStatus />} />
             <Route
               path="/*"
               element={
