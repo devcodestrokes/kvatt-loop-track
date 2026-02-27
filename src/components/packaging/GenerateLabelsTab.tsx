@@ -716,13 +716,24 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
             )}
           </Button>
 
-          {generatedLabels.length > 0 && (
+          {generatedLabels.length > 0 && (() => {
+            const anyExporting = isPrinting || isDownloading || isExportingCSV;
+            return (
             <div className="flex gap-2 pt-4 border-t flex-wrap">
-              <Button variant="outline" onClick={handlePrint}>
-                <Printer className="mr-2 h-4 w-4" />
-                Print Labels
+              <Button variant="outline" onClick={handlePrint} disabled={anyExporting}>
+                {isPrinting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Preparing Print...
+                  </>
+                ) : (
+                  <>
+                    <Printer className="mr-2 h-4 w-4" />
+                    Print Labels
+                  </>
+                )}
               </Button>
-              <Button variant="outline" onClick={handleDownloadPDF} disabled={isDownloading}>
+              <Button variant="outline" onClick={handleDownloadPDF} disabled={anyExporting}>
                 {isDownloading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -735,12 +746,22 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                   </>
                 )}
               </Button>
-              <Button variant="outline" onClick={handleExportCSV}>
-                <Download className="mr-2 h-4 w-4" />
-                Export CSV
+              <Button variant="outline" onClick={handleExportCSV} disabled={anyExporting}>
+                {isExportingCSV ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Exporting...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export CSV
+                  </>
+                )}
               </Button>
             </div>
-          )}
+            );
+          })()}
         </CardContent>
       </Card>
 
