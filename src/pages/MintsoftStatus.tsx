@@ -41,13 +41,21 @@ function PaginationControls({ total, page, pageSize, onPageChange, onPageSizeCha
 }
 
 interface ASNRecord {
+  id: number | string | null;
+  client: string | null;
+  asn_status: string;
+  warehouse: string | null;
+  supplier: string | null;
   po_reference: string;
+  estimated_delivery: string | null;
+  comments: string | null;
+  goods_in_type: string | null;
+  quantity: number | null;
+  last_updated: string | null;
+  last_updated_by_user: string | null;
+  booked_in_date: string | null;
   packaging_id: string;
   product_name: string;
-  asn_status: string;
-  estimated_delivery: string | null;
-  booked_in_date: string | null;
-  last_updated: string | null;
 }
 
 interface ReturnRecord {
@@ -251,31 +259,41 @@ const MintsoftStatus = () => {
                   <p>No ASN records from Mintsoft</p>
                 </div>
               ) : (
-                <div className="rounded-xl border border-border bg-card overflow-hidden">
+                <div className="rounded-xl border border-border bg-card overflow-hidden overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="border-border hover:bg-transparent">
-                        <TableHead>Packaging ID</TableHead>
-                        <TableHead>Product</TableHead>
-                        <TableHead>PO Reference</TableHead>
-                        <TableHead>ASN Status</TableHead>
-                        <TableHead>Est. Delivery</TableHead>
-                        <TableHead>Booked In</TableHead>
+                        <TableHead>ID</TableHead>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Warehouse</TableHead>
+                        <TableHead>Supplier</TableHead>
+                        <TableHead>POReference</TableHead>
+                        <TableHead>Estimated Delivery</TableHead>
+                        <TableHead>Comments</TableHead>
+                        <TableHead>GoodsIn Type</TableHead>
+                        <TableHead>Quantity</TableHead>
                         <TableHead>Last Updated</TableHead>
+                        <TableHead>Last Updated By User</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {pagedAsn.map((asn, i) => (
                         <TableRow key={i} className="border-border">
-                          <TableCell className="font-mono font-medium">{asn.packaging_id || '—'}</TableCell>
-                          <TableCell>{asn.product_name || '—'}</TableCell>
-                          <TableCell className="text-muted-foreground">{asn.po_reference || '—'}</TableCell>
+                          <TableCell className="font-mono font-medium">{asn.id ?? '—'}</TableCell>
+                          <TableCell>{asn.client || '—'}</TableCell>
                           <TableCell>
                             <Badge variant="outline">{asn.asn_status || 'Unknown'}</Badge>
                           </TableCell>
+                          <TableCell>{asn.warehouse || '—'}</TableCell>
+                          <TableCell>{asn.supplier || '—'}</TableCell>
+                          <TableCell className="text-muted-foreground">{asn.po_reference || '—'}</TableCell>
                           <TableCell className="text-muted-foreground">{formatDate(asn.estimated_delivery)}</TableCell>
-                          <TableCell className="text-muted-foreground">{formatDate(asn.booked_in_date)}</TableCell>
+                          <TableCell className="text-muted-foreground max-w-[200px] truncate">{asn.comments || '—'}</TableCell>
+                          <TableCell>{asn.goods_in_type || '—'}</TableCell>
+                          <TableCell>{asn.quantity ?? '—'}</TableCell>
                           <TableCell className="text-muted-foreground">{formatDate(asn.last_updated)}</TableCell>
+                          <TableCell className="text-muted-foreground">{asn.last_updated_by_user || '—'}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
