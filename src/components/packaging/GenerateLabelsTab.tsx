@@ -245,9 +245,12 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
     }
   };
 
+  const [isPrinting, setIsPrinting] = useState(false);
+
   const handlePrint = () => {
+    setIsPrinting(true);
     const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
+    if (!printWindow) { setIsPrinting(false); return; }
 
     // Generate labels based on selected style
     const labelsHtml = generatedLabels
