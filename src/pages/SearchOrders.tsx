@@ -640,7 +640,7 @@ export default function SearchOrders() {
                   <div className="w-full h-1.5 bg-stone-300 rounded-full mb-2 relative">
                     <div
                       className="h-full bg-stone-900 rounded-full transition-all relative"
-                      style={{ width: `${Math.min((recordingTime / 120) * 100, 100)}%` }}>
+                      style={{ width: `${Math.min((recordingTime / 60) * 100, 100)}%` }}>
                       <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-stone-900 rounded-full" />
                     </div>
                   </div>
