@@ -7,9 +7,8 @@ const corsHeaders = {
 };
 
 const MINTSOFT_API_KEY = Deno.env.get('MINTSOFT_API_KEY');
-// Use the original Supabase project for labels data
-const ORIGINAL_SUPABASE_URL = 'https://eftfcjjhtlzwuqmxwtnq.supabase.co';
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
