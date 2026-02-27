@@ -84,7 +84,7 @@ function SupportFooter() {
     <div className="mt-24 text-left" style={{ letterSpacing: '-0.04em', lineHeight: '1.6', color: '#1c1917' }}>
       <p className="font-medium" style={{ fontSize: '24px', marginTop: '5px', marginBottom: '20px' }}>
         <span className="md:inline hidden" style={{ fontSize: '24px' }}>Need support:</span>
-        <span className="md:hidden" style={{ fontSize: '15px' }}>Need support:</span>
+        <span className="md:hidden" style={{ fontSize: '18px' }}>Need support:</span>
       </p>
       <div className="flex flex-col" style={{ lineHeight: '1.6' }}>
         <p className="md:text-[24px] text-[15px]">
