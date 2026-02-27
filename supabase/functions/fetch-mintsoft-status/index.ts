@@ -21,7 +21,7 @@ serve(async (req) => {
       fetch('https://api.mintsoft.co.uk/api/ASN/List?ClientId=82&IncludeItems=true', {
         headers: { 'Accept': 'application/json', 'ms-apikey': MINTSOFT_API_KEY! },
       }),
-      fetch('https://api.mintsoft.co.uk/api/Return?ClientId=82', {
+      fetch('https://api.mintsoft.co.uk/api/Return/List?ClientId=82', {
         headers: { 'Accept': 'application/json', 'ms-apikey': MINTSOFT_API_KEY! },
       }),
     ]);
