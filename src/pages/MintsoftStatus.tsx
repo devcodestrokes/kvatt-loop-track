@@ -222,7 +222,7 @@ const MintsoftStatus = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {labels.map((label, i) => (
+                      {pagedLabels.map((label, i) => (
                         <TableRow key={i} className="border-border">
                           <TableCell className="font-mono font-medium">{label.label_id}</TableCell>
                           <TableCell>
@@ -238,6 +238,7 @@ const MintsoftStatus = () => {
                       ))}
                     </TableBody>
                   </Table>
+                  <PaginationControls total={labels.length} page={packsPage} pageSize={packsPageSize} onPageChange={setPacksPage} onPageSizeChange={setPacksPageSize} />
                 </div>
               )}
             </TabsContent>
