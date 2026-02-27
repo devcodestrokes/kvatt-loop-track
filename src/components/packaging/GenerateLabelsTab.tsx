@@ -546,7 +546,10 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
   };
 
   const handleDownloadPDF = async () => {
-    const { default: jsPDF } = await import("jspdf");
+    const [{ default: jsPDF }, { PDFDocument }] = await Promise.all([
+      import("jspdf"),
+      import("pdf-lib"),
+    ]);
 
     setIsDownloading(true);
     setDownloadProgress(0);
@@ -568,47 +571,45 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       ]);
 
       const W = 130, H = 82;
-      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [H, W] });
+      const BATCH_SIZE = 100;
+      const totalBatches = Math.ceil(generatedLabels.length / BATCH_SIZE);
+      const mergedPdf = await PDFDocument.create();
 
-      pdf.addFileToVFS("Inter-Regular.ttf", regular);
-      pdf.addFont("Inter-Regular.ttf", "Inter", "normal");
-      pdf.addFileToVFS("Inter-Light.ttf", light);
-      pdf.addFont("Inter-Light.ttf", "Inter", "light");
-      pdf.addFileToVFS("Inter-Medium.ttf", medium);
-      pdf.addFont("Inter-Medium.ttf", "Inter", "medium");
-      pdf.addFileToVFS("Inter-Bold.ttf", bold);
-      pdf.addFont("Inter-Bold.ttf", "Inter", "bold");
-      pdf.addFileToVFS("Inter-Italic.ttf", italic);
-      pdf.addFont("Inter-Italic.ttf", "Inter", "italic");
+      for (let b = 0; b < totalBatches; b++) {
+        const batch = generatedLabels.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
+        const batchPdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [H, W] });
 
-      // Cast to any to free VFS memory after font registration
-      const pdfAny = pdf as any;
-      if (pdfAny.deleteFileFromVFS) {
-        pdfAny.deleteFileFromVFS("Inter-Regular.ttf");
-        pdfAny.deleteFileFromVFS("Inter-Light.ttf");
-        pdfAny.deleteFileFromVFS("Inter-Medium.ttf");
-        pdfAny.deleteFileFromVFS("Inter-Bold.ttf");
-        pdfAny.deleteFileFromVFS("Inter-Italic.ttf");
-      }
+        batchPdf.addFileToVFS("Inter-Regular.ttf", regular);
+        batchPdf.addFont("Inter-Regular.ttf", "Inter", "normal");
+        batchPdf.addFileToVFS("Inter-Light.ttf", light);
+        batchPdf.addFont("Inter-Light.ttf", "Inter", "light");
+        batchPdf.addFileToVFS("Inter-Medium.ttf", medium);
+        batchPdf.addFont("Inter-Medium.ttf", "Inter", "medium");
+        batchPdf.addFileToVFS("Inter-Bold.ttf", bold);
+        batchPdf.addFont("Inter-Bold.ttf", "Inter", "bold");
+        batchPdf.addFileToVFS("Inter-Italic.ttf", italic);
+        batchPdf.addFont("Inter-Italic.ttf", "Inter", "italic");
 
-      const CHUNK = 50;
-      for (let i = 0; i < generatedLabels.length; i++) {
-        addLabelPage(pdf, generatedLabels[i], i === 0, logoDataUrl);
-
-        // Yield to UI every CHUNK pages for progress updates
-        if ((i + 1) % CHUNK === 0 || i === generatedLabels.length - 1) {
-          setDownloadProgress(Math.round(((i + 1) / generatedLabels.length) * 90));
-          await new Promise(resolve => setTimeout(resolve, 0));
+        for (let i = 0; i < batch.length; i++) {
+          addLabelPage(batchPdf, batch[i], i === 0, logoDataUrl);
         }
+
+        const batchBytes = batchPdf.output("arraybuffer") as ArrayBuffer;
+        const batchDoc = await PDFDocument.load(batchBytes);
+        const copiedPages = await mergedPdf.copyPages(batchDoc, batchDoc.getPageIndices());
+        copiedPages.forEach((page) => mergedPdf.addPage(page));
+
+        setDownloadProgress(Math.round(((b + 1) / totalBatches) * 90));
+        await new Promise((resolve) => setTimeout(resolve, 0));
       }
 
       setDownloadProgress(95);
+      const mergedBytes = await mergedPdf.save();
+      const blob = new Blob([mergedBytes], { type: "application/pdf" });
+
       const dateStr = new Date().toISOString().split("T")[0];
-      
-      // Use blob output to avoid string length limits
-      const pdfBlob = pdf.output('blob');
-      const url = URL.createObjectURL(pdfBlob);
-      const a = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
       a.href = url;
       a.download = `pack-labels-${dateStr}.pdf`;
       document.body.appendChild(a);
@@ -617,7 +618,6 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
       URL.revokeObjectURL(url);
 
       setDownloadProgress(100);
-
       toast({
         title: "PDF downloaded",
         description: `Downloaded ${generatedLabels.length} labels as a single PDF`,
