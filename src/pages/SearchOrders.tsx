@@ -644,7 +644,7 @@ export default function SearchOrders() {
                   <button
                     onClick={stopRecording}
                     disabled={!isRecording}
-                    className="flex flex-col items-center gap-2 disabled:opacity-30">
+                    className="flex flex-col items-center gap-2 disabled:opacity-30 transition-transform duration-200 active:scale-90">
                     <div className="w-12 h-12 rounded-full bg-stone-900 flex items-center justify-center">
                       <Square className="w-4 h-4 text-white fill-white" />
                     </div>
