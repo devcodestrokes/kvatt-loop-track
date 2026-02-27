@@ -84,14 +84,14 @@ function SupportFooter() {
     <div className="mt-24 text-left" style={{ letterSpacing: '-0.04em', lineHeight: '1.6', color: '#1c1917' }}>
       <p className="font-medium" style={{ fontSize: '24px', marginTop: '5px', marginBottom: '20px' }}>
         <span className="md:inline hidden" style={{ fontSize: '24px' }}>Need support:</span>
-        <span className="md:hidden" style={{ fontSize: '15px' }}>Need support:</span>
+        <span className="md:hidden" style={{ fontSize: '18px' }}>Need support:</span>
       </p>
       <div className="flex flex-col" style={{ lineHeight: '1.6' }}>
-        <p className="md:text-[24px] text-[15px]">
+        <p className="md:text-[24px] text-[18px]">
           <span className="font-medium" style={{ marginRight: '10px' }}>email:</span>{"    "}
           <a href="mailto:returns@kvatt.com" className="font-light hover:underline">returns@kvatt.com</a>
         </p>
-        <p className="md:text-[25px] text-[15px]">
+        <p className="md:text-[25px] text-[18px]">
           <span className="font-medium" style={{ marginRight: '10px' }}>whatsapp:</span>{"    "}
           <a href="https://wa.me/447549884850" target="_blank" rel="noopener noreferrer" className="font-light hover:underline">+44 (0) 75.49.88.48.50</a>
         </p>
