@@ -711,9 +711,18 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
                 <Printer className="mr-2 h-4 w-4" />
                 Print Labels
               </Button>
-              <Button variant="outline" onClick={handleDownloadPDF}>
-                <FileDown className="mr-2 h-4 w-4" />
-                Download PDF
+              <Button variant="outline" onClick={handleDownloadPDF} disabled={isDownloading}>
+                {isDownloading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Downloading... {downloadProgress}%
+                  </>
+                ) : (
+                  <>
+                    <FileDown className="mr-2 h-4 w-4" />
+                    Download PDF
+                  </>
+                )}
               </Button>
               <Button variant="outline" onClick={handleExportCSV}>
                 <Download className="mr-2 h-4 w-4" />
