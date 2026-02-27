@@ -306,7 +306,7 @@ const MintsoftStatus = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {returnRecords.map((ret, i) => (
+                      {pagedReturns.map((ret, i) => (
                         <TableRow key={i} className="border-border">
                           <TableCell className="font-mono font-medium">{ret.return_id || '—'}</TableCell>
                           <TableCell className="font-mono">{ret.reference || '—'}</TableCell>
@@ -318,6 +318,7 @@ const MintsoftStatus = () => {
                       ))}
                     </TableBody>
                   </Table>
+                  <PaginationControls total={returnRecords.length} page={returnsPage} pageSize={returnsPageSize} onPageChange={setReturnsPage} onPageSizeChange={setReturnsPageSize} />
                 </div>
               )}
             </TabsContent>
