@@ -1,14 +1,44 @@
-import { useState, useEffect } from 'react';
-import { Truck, RotateCcw, QrCode, Loader2, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Truck, RotateCcw, QrCode, Loader2, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import kvattLogo from '@/assets/kvatt-logo.jpeg';
+
+const PAGE_SIZES = [25, 50, 100, 200];
+
+function PaginationControls({ total, page, pageSize, onPageChange, onPageSizeChange }: {
+  total: number; page: number; pageSize: number;
+  onPageChange: (p: number) => void; onPageSizeChange: (s: number) => void;
+}) {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  return (
+    <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <span>Rows per page:</span>
+        <Select value={String(pageSize)} onValueChange={(v) => { onPageSizeChange(Number(v)); onPageChange(1); }}>
+          <SelectTrigger className="h-8 w-[70px]"><SelectValue /></SelectTrigger>
+          <SelectContent>{PAGE_SIZES.map(s => <SelectItem key={s} value={String(s)}>{s}</SelectItem>)}</SelectContent>
+        </Select>
+      </div>
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-muted-foreground">{((page - 1) * pageSize) + 1}–{Math.min(page * pageSize, total)} of {total}</span>
+        <Button variant="outline" size="icon" className="h-8 w-8" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 interface ASNRecord {
   po_reference: string;
@@ -53,6 +83,13 @@ const MintsoftStatus = () => {
   const [labels, setLabels] = useState<LabelRecord[]>([]);
   const [stats, setStats] = useState({ packs: 0, asn: 0, returns: 0 });
 
+  const [packsPage, setPacksPage] = useState(1);
+  const [packsPageSize, setPacksPageSize] = useState(50);
+  const [asnPage, setAsnPage] = useState(1);
+  const [asnPageSize, setAsnPageSize] = useState(50);
+  const [returnsPage, setReturnsPage] = useState(1);
+  const [returnsPageSize, setReturnsPageSize] = useState(50);
+
   const loadData = async () => {
     setLoading(true);
     setError(null);
@@ -70,6 +107,7 @@ const MintsoftStatus = () => {
         asn: data.stats?.asn_count || 0,
         returns: data.stats?.returns_count || 0,
       });
+      setPacksPage(1); setAsnPage(1); setReturnsPage(1);
     } catch (err: any) {
       console.error('Failed to load Mintsoft data:', err);
       setError(err.message || 'Failed to load data');
@@ -79,6 +117,10 @@ const MintsoftStatus = () => {
   };
 
   useEffect(() => { loadData(); }, []);
+
+  const pagedLabels = useMemo(() => labels.slice((packsPage - 1) * packsPageSize, packsPage * packsPageSize), [labels, packsPage, packsPageSize]);
+  const pagedAsn = useMemo(() => asnRecords.slice((asnPage - 1) * asnPageSize, asnPage * asnPageSize), [asnRecords, asnPage, asnPageSize]);
+  const pagedReturns = useMemo(() => returnRecords.slice((returnsPage - 1) * returnsPageSize, returnsPage * returnsPageSize), [returnRecords, returnsPage, returnsPageSize]);
 
   const formatDate = (d: string | null) => {
     if (!d) return '—';
@@ -180,7 +222,7 @@ const MintsoftStatus = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {labels.map((label, i) => (
+                      {pagedLabels.map((label, i) => (
                         <TableRow key={i} className="border-border">
                           <TableCell className="font-mono font-medium">{label.label_id}</TableCell>
                           <TableCell>
@@ -196,6 +238,7 @@ const MintsoftStatus = () => {
                       ))}
                     </TableBody>
                   </Table>
+                  <PaginationControls total={labels.length} page={packsPage} pageSize={packsPageSize} onPageChange={setPacksPage} onPageSizeChange={setPacksPageSize} />
                 </div>
               )}
             </TabsContent>
@@ -222,7 +265,7 @@ const MintsoftStatus = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {asnRecords.map((asn, i) => (
+                      {pagedAsn.map((asn, i) => (
                         <TableRow key={i} className="border-border">
                           <TableCell className="font-mono font-medium">{asn.packaging_id || '—'}</TableCell>
                           <TableCell>{asn.product_name || '—'}</TableCell>
@@ -237,6 +280,7 @@ const MintsoftStatus = () => {
                       ))}
                     </TableBody>
                   </Table>
+                  <PaginationControls total={asnRecords.length} page={asnPage} pageSize={asnPageSize} onPageChange={setAsnPage} onPageSizeChange={setAsnPageSize} />
                 </div>
               )}
             </TabsContent>
@@ -262,7 +306,7 @@ const MintsoftStatus = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {returnRecords.map((ret, i) => (
+                      {pagedReturns.map((ret, i) => (
                         <TableRow key={i} className="border-border">
                           <TableCell className="font-mono font-medium">{ret.return_id || '—'}</TableCell>
                           <TableCell className="font-mono">{ret.reference || '—'}</TableCell>
@@ -274,6 +318,7 @@ const MintsoftStatus = () => {
                       ))}
                     </TableBody>
                   </Table>
+                  <PaginationControls total={returnRecords.length} page={returnsPage} pageSize={returnsPageSize} onPageChange={setReturnsPage} onPageSizeChange={setReturnsPageSize} />
                 </div>
               )}
             </TabsContent>
