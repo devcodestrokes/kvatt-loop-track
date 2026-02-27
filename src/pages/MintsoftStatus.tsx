@@ -397,16 +397,18 @@ const MintsoftStatus = () => {
                   <p>No return records from Mintsoft</p>
                 </div>
               ) : (
-                <div className="rounded-xl border border-border bg-card overflow-hidden">
+                <div className="rounded-xl border border-border bg-card overflow-hidden overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="border-border hover:bg-transparent">
                         <TableHead>Return ID</TableHead>
                         <TableHead>Reference</TableHead>
-                        <TableHead>Product Code</TableHead>
-                        <TableHead>Qty Returned</TableHead>
-                        <TableHead>Reason</TableHead>
-                        <TableHead>Return Date</TableHead>
+                        <TableHead>Order Number</TableHead>
+                        <TableHead>Confirmed</TableHead>
+                        <TableHead>Refunded</TableHead>
+                        <TableHead>Exchanged</TableHead>
+                        <TableHead>Last Updated</TableHead>
+                        <TableHead>Last Updated By</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -414,10 +416,16 @@ const MintsoftStatus = () => {
                         <TableRow key={i} className="border-border">
                           <TableCell className="font-mono font-medium">{ret.return_id || '—'}</TableCell>
                           <TableCell className="font-mono">{ret.reference || '—'}</TableCell>
-                          <TableCell>{ret.product_code || '—'}</TableCell>
-                          <TableCell>{ret.qty_returned}</TableCell>
-                          <TableCell className="text-muted-foreground">{ret.reason || '—'}</TableCell>
-                          <TableCell className="text-muted-foreground">{formatDate(ret.return_date)}</TableCell>
+                          <TableCell>{ret.order_number || '—'}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={ret.confirmed ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}>
+                              {ret.confirmed ? 'Yes' : 'No'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{ret.refunded ? 'Yes' : 'No'}</TableCell>
+                          <TableCell>{ret.exchanged ? 'Yes' : 'No'}</TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(ret.last_updated)}</TableCell>
+                          <TableCell className="text-muted-foreground">{ret.last_updated_by_user || '—'}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
