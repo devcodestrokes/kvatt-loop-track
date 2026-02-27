@@ -94,7 +94,7 @@ serve(async (req) => {
     }
 
     // Fetch ALL labels from Supabase (paginated)
-    const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+    const supabase = createClient(ORIGINAL_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY!);
     const allLabels: any[] = [];
     let offset = 0;
     const batchSize = 1000;
