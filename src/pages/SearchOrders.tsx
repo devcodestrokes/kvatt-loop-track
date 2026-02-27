@@ -556,7 +556,110 @@ export default function SearchOrders() {
             <SupportFooter />
           </div>
         }
+
+        {/* FEEDBACK STEP: Tell us how you feel */}
+        {step === 'feedback' &&
+          <div className="w-full text-left">
+            <h1
+              style={{ lineHeight: '105%', letterSpacing: '-0.04em' }}
+              className="text-stone-900 mb-6 md:text-[52px] text-[36px] md:font-medium font-medium">
+              Tell us how your feel
+            </h1>
+            <div
+              style={{ fontSize: '18px', fontWeight: 400, lineHeight: '150%', letterSpacing: '-0.0425em' }}
+              className="text-stone-900 mb-4 space-y-4">
+              <p>Your experience matters so much as we learn how to improve our service.</p>
+              <p>If anything feels off or great, we'd love to hear about it!</p>
+              <p className="font-medium">Why are you returning? What did you enjoy? What could be better?</p>
+            </div>
+
+            <button
+              onClick={() => {
+                setStep('recording');
+                startRecording();
+              }}
+              style={{ letterSpacing: '-0.04em' }}
+              className="w-full md:h-[62px] md:text-[20px] mt-8 h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors flex items-center justify-center">
+              click to record your impression
+            </button>
+            <SupportFooter />
+          </div>
+        }
+
+        {/* RECORDING STEP: Voice recorder */}
+        {step === 'recording' &&
+          <div className="w-full text-left">
+            <h1
+              style={{ lineHeight: '105%', letterSpacing: '-0.04em' }}
+              className="text-stone-900 mb-8 md:text-[52px] text-[36px] md:font-medium font-medium">
+              {recordingSent ? 'Thank you!' : (isRecording || audioBlob) ? 'Thank you!' : 'Thank you!'}
+            </h1>
+
+            {recordingSent ? (
+              <div
+                style={{ fontSize: '18px', fontWeight: 400, lineHeight: '150%', letterSpacing: '-0.0425em' }}
+                className="text-stone-900 space-y-4">
+                <p>Your voice feedback has been received. We really appreciate you taking the time!</p>
+              </div>
+            ) : (
+              <>
+                {/* Recording status */}
+                <div className="mb-6">
+                  <p className="text-stone-900 font-medium text-[18px] mb-3" style={{ letterSpacing: '-0.04em' }}>
+                    {isRecording ? (isPaused ? 'paused...' : 'recording...') : audioBlob ? 'recorded' : 'ready'}
+                  </p>
+                  {/* Progress bar */}
+                  <div className="w-full h-1.5 bg-stone-300 rounded-full mb-2 relative">
+                    <div
+                      className="h-full bg-stone-900 rounded-full transition-all relative"
+                      style={{ width: `${Math.min((recordingTime / 120) * 100, 100)}%` }}>
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-stone-900 rounded-full" />
+                    </div>
+                  </div>
+                  <p className="text-stone-500 text-sm" style={{ letterSpacing: '-0.04em' }}>
+                    {recordingTime} sec
+                  </p>
+                </div>
+
+                {/* Controls */}
+                <div className="flex items-center justify-center gap-10 mb-8">
+                  <button
+                    onClick={stopRecording}
+                    disabled={!isRecording}
+                    className="flex flex-col items-center gap-2 disabled:opacity-30">
+                    <div className="w-12 h-12 rounded-full bg-stone-900 flex items-center justify-center">
+                      <Square className="w-4 h-4 text-white fill-white" />
+                    </div>
+                    <span className="text-xs font-medium text-stone-900 uppercase tracking-wide">Stop</span>
+                  </button>
+
+                  <button
+                    onClick={pauseRecording}
+                    disabled={!isRecording}
+                    className="flex flex-col items-center gap-2 disabled:opacity-30">
+                    <div className="w-14 h-14 rounded-full bg-stone-900 flex items-center justify-center">
+                      <Pause className="w-6 h-6 text-white fill-white" />
+                    </div>
+                    <span className="text-xs font-medium text-stone-900 uppercase tracking-wide">Pause</span>
+                  </button>
+
+                  <button
+                    onClick={sendRecording}
+                    disabled={!audioBlob || isRecording}
+                    className="flex flex-col items-center gap-2 disabled:opacity-30">
+                    <div className="w-12 h-12 rounded-full bg-stone-900 flex items-center justify-center">
+                      <Circle className="w-4 h-4 text-white fill-white" />
+                    </div>
+                    <span className="text-xs font-medium text-stone-900 uppercase tracking-wide">Send</span>
+                  </button>
+                </div>
+              </>
+            )}
+            <SupportFooter />
+          </div>
+        }
       </div>
     </div>);
+
 
 }
