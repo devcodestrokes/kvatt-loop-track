@@ -83,6 +83,13 @@ const MintsoftStatus = () => {
   const [labels, setLabels] = useState<LabelRecord[]>([]);
   const [stats, setStats] = useState({ packs: 0, asn: 0, returns: 0 });
 
+  const [packsPage, setPacksPage] = useState(1);
+  const [packsPageSize, setPacksPageSize] = useState(50);
+  const [asnPage, setAsnPage] = useState(1);
+  const [asnPageSize, setAsnPageSize] = useState(50);
+  const [returnsPage, setReturnsPage] = useState(1);
+  const [returnsPageSize, setReturnsPageSize] = useState(50);
+
   const loadData = async () => {
     setLoading(true);
     setError(null);
@@ -100,6 +107,7 @@ const MintsoftStatus = () => {
         asn: data.stats?.asn_count || 0,
         returns: data.stats?.returns_count || 0,
       });
+      setPacksPage(1); setAsnPage(1); setReturnsPage(1);
     } catch (err: any) {
       console.error('Failed to load Mintsoft data:', err);
       setError(err.message || 'Failed to load data');
@@ -109,6 +117,10 @@ const MintsoftStatus = () => {
   };
 
   useEffect(() => { loadData(); }, []);
+
+  const pagedLabels = useMemo(() => labels.slice((packsPage - 1) * packsPageSize, packsPage * packsPageSize), [labels, packsPage, packsPageSize]);
+  const pagedAsn = useMemo(() => asnRecords.slice((asnPage - 1) * asnPageSize, asnPage * asnPageSize), [asnRecords, asnPage, asnPageSize]);
+  const pagedReturns = useMemo(() => returnRecords.slice((returnsPage - 1) * returnsPageSize, returnsPage * returnsPageSize), [returnRecords, returnsPage, returnsPageSize]);
 
   const formatDate = (d: string | null) => {
     if (!d) return '—';
