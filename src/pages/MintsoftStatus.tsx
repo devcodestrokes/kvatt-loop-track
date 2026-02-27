@@ -418,33 +418,99 @@ const MintsoftStatus = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-border hover:bg-transparent">
+                        <TableHead className="w-10"></TableHead>
                         <TableHead>Return ID</TableHead>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Type</TableHead>
                         <TableHead>Reference</TableHead>
-                        <TableHead>Order Number</TableHead>
                         <TableHead>Confirmed</TableHead>
                         <TableHead>Refunded</TableHead>
                         <TableHead>Exchanged</TableHead>
+                        <TableHead>Status</TableHead>
                         <TableHead>Last Updated</TableHead>
                         <TableHead>Last Updated By</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {pagedReturns.map((ret, i) => (
-                        <TableRow key={i} className="border-border">
-                          <TableCell className="font-mono font-medium">{ret.return_id || '—'}</TableCell>
-                          <TableCell className="font-mono">{ret.reference || '—'}</TableCell>
-                          <TableCell>{ret.order_number || '—'}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={ret.confirmed ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}>
-                              {ret.confirmed ? 'Yes' : 'No'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{ret.refunded ? 'Yes' : 'No'}</TableCell>
-                          <TableCell>{ret.exchanged ? 'Yes' : 'No'}</TableCell>
-                          <TableCell className="text-muted-foreground">{formatDate(ret.last_updated)}</TableCell>
-                          <TableCell className="text-muted-foreground">{ret.last_updated_by_user || '—'}</TableCell>
-                        </TableRow>
-                      ))}
+                      {pagedReturns.map((ret, i) => {
+                        const globalIndex = (returnsPage - 1) * returnsPageSize + i;
+                        const isExpanded = expandedReturnRows.has(globalIndex);
+                        const hasItems = ret.return_items && ret.return_items.length > 0;
+                        return (
+                          <Fragment key={globalIndex}>
+                            <TableRow
+                              className={`border-border ${hasItems ? 'cursor-pointer hover:bg-muted/50' : ''}`}
+                              onClick={() => hasItems && toggleReturnRow(globalIndex)}
+                            >
+                              <TableCell className="w-10 px-2">
+                                {hasItems && (
+                                  isExpanded
+                                    ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                    : <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </TableCell>
+                              <TableCell className="font-mono font-medium">{ret.return_id || '—'}</TableCell>
+                              <TableCell>{ret.client || '—'}</TableCell>
+                              <TableCell>{ret.return_type || '—'}</TableCell>
+                              <TableCell className="font-mono">{ret.reference || '—'}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className={ret.confirmed ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}>
+                                  {ret.confirmed ? 'Yes' : 'No'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>{ret.refunded ? 'Yes' : 'No'}</TableCell>
+                              <TableCell>{ret.exchanged ? 'Yes' : 'No'}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className={ret.confirmed ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}>
+                                  {ret.confirmed ? 'Returned' : 'Pending'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">{formatDate(ret.last_updated)}</TableCell>
+                              <TableCell className="text-muted-foreground">{ret.last_updated_by_user || '—'}</TableCell>
+                            </TableRow>
+                            {isExpanded && hasItems && (
+                              <TableRow className="bg-muted/30 border-border">
+                                <TableCell colSpan={11} className="p-0">
+                                  <div className="px-6 py-3">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow className="border-border hover:bg-transparent">
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">SKU</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Name</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Quantity</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Reason</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Comments</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Expiry Date</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Batch</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Serial</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Last Updated</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Last Updated By</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {ret.return_items.map((item, j) => (
+                                          <TableRow key={j} className="border-border">
+                                            <TableCell className="font-mono text-sm">{item.product_code || '—'}</TableCell>
+                                            <TableCell className="text-sm">{item.product_name || '—'}</TableCell>
+                                            <TableCell className="text-sm">{item.quantity}</TableCell>
+                                            <TableCell className="text-sm">{item.reason || '—'}</TableCell>
+                                            <TableCell className="text-sm text-muted-foreground">{item.comments || '—'}</TableCell>
+                                            <TableCell className="text-sm text-muted-foreground">{formatDate(item.expiry_date)}</TableCell>
+                                            <TableCell className="text-sm">{item.batch || '—'}</TableCell>
+                                            <TableCell className="text-sm">{item.serial || '—'}</TableCell>
+                                            <TableCell className="text-sm text-muted-foreground">{formatDate(item.last_updated)}</TableCell>
+                                            <TableCell className="text-sm text-muted-foreground">{item.last_updated_by_user || '—'}</TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </Fragment>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                   <PaginationControls total={returnRecords.length} page={returnsPage} pageSize={returnsPageSize} onPageChange={setReturnsPage} onPageSizeChange={setReturnsPageSize} />
