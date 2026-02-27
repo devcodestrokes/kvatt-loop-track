@@ -40,6 +40,17 @@ function PaginationControls({ total, page, pageSize, onPageChange, onPageSizeCha
   );
 }
 
+interface ASNItem {
+  sku: string | null;
+  name: string | null;
+  expected_quantity: number;
+  quantity_received: number;
+  quantity_booked: number;
+  comments: string | null;
+  last_updated: string | null;
+  last_updated_by_user: string | null;
+}
+
 interface ASNRecord {
   id: number | string | null;
   client: string | null;
@@ -54,8 +65,7 @@ interface ASNRecord {
   last_updated: string | null;
   last_updated_by_user: string | null;
   booked_in_date: string | null;
-  packaging_id: string;
-  product_name: string;
+  items: ASNItem[];
 }
 
 interface ReturnRecord {
