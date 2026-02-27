@@ -29,6 +29,8 @@ serve(async (req) => {
     const asnRaw = await asnResponse.json();
     const returnsRaw = await returnsResponse.json();
 
+    console.log('RAW ASN first record:', JSON.stringify(asnRaw?.Results?.[0] || asnRaw?.[0] || asnRaw?.Data?.[0] || 'no data').substring(0, 2000));
+
     const asnData = Array.isArray(asnRaw) ? asnRaw : (asnRaw?.Results || asnRaw?.Data || asnRaw?.data || []);
     const returnsData = Array.isArray(returnsRaw) ? returnsRaw : (returnsRaw?.Results || returnsRaw?.Data || returnsRaw?.data || []);
 
