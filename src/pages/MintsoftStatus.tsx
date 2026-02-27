@@ -68,13 +68,25 @@ interface ASNRecord {
   items: ASNItem[];
 }
 
+interface ReturnItem {
+  product_code: string;
+  product_name: string;
+  quantity: number;
+  reason: string;
+  condition: string;
+}
+
 interface ReturnRecord {
   return_id: string;
   reference: string;
-  product_code: string;
-  return_date: string | null;
-  reason: string;
-  qty_returned: number;
+  order_number: string;
+  confirmed: boolean;
+  refunded: boolean;
+  exchanged: boolean;
+  invoiced: boolean;
+  last_updated: string | null;
+  last_updated_by_user: string | null;
+  return_items: ReturnItem[];
 }
 
 interface LabelRecord {
