@@ -73,13 +73,20 @@ interface ReturnItem {
   product_name: string;
   quantity: number;
   reason: string;
-  condition: string;
+  comments: string;
+  expiry_date: string | null;
+  batch: string;
+  serial: string;
+  last_updated: string | null;
+  last_updated_by_user: string | null;
 }
 
 interface ReturnRecord {
   return_id: string;
   reference: string;
   order_number: string;
+  client: string;
+  return_type: string;
   confirmed: boolean;
   refunded: boolean;
   exchanged: boolean;
