@@ -34,11 +34,23 @@ serve(async (req) => {
     const asnData = Array.isArray(asnRaw) ? asnRaw : (asnRaw?.Results || asnRaw?.Data || asnRaw?.data || []);
     const returnsData = Array.isArray(returnsRaw) ? returnsRaw : (returnsRaw?.Results || returnsRaw?.Data || returnsRaw?.data || []);
 
-    // Parse ASN records with all available fields
+    // Parse ASN records with nested items
     const asnRecords: any[] = [];
     if (Array.isArray(asnData)) {
       asnData.forEach((asn: any) => {
-        const baseFields = {
+        const rawItems = asn.Items || asn.ASNItems || asn.items || [];
+        const items = Array.isArray(rawItems) ? rawItems.map((item: any) => ({
+          sku: item.ProductCode || item.SKU || null,
+          name: item.ProductName || item.Name || item.Description || null,
+          expected_quantity: item.Quantity || item.QuantityExpected || 0,
+          quantity_received: item.QuantityReceived || item.ReceivedQuantity || 0,
+          quantity_booked: item.QuantityBooked || item.BookedQuantity || 0,
+          comments: item.Comments || item.Notes || null,
+          last_updated: item.LastUpdated || null,
+          last_updated_by_user: item.LastUpdatedByUser || null,
+        })) : [];
+
+        asnRecords.push({
           id: asn.ID || asn.Id || asn.id || null,
           client: asn.CLIENTSHORTNAME || asn.ClientShortName || asn.Client?.Name || asn.ClientName || null,
           asn_status: asn.ASNStatus?.Name || asn.Status?.Name || asn.Status || 'Unknown',
@@ -52,23 +64,8 @@ serve(async (req) => {
           last_updated: asn.LastUpdated || asn.UpdatedOn || null,
           last_updated_by_user: asn.LastUpdatedByUser || asn.UpdatedBy || null,
           booked_in_date: asn.BookedInDate || asn.ReceivedDate || null,
-          packaging_id: asn.ProductCode || asn.SKU || asn.SerialNumber || asn.BatchNumber || 'N/A',
-          product_name: asn.ProductName || asn.Name || asn.Description || 'Unknown',
-        };
-
-        const items = asn.Items || asn.ASNItems || asn.items || [];
-        if (Array.isArray(items) && items.length > 0) {
-          items.forEach((item: any) => {
-            asnRecords.push({
-              ...baseFields,
-              packaging_id: item.SerialNumber || item.BatchNumber || item.ProductCode || item.SKU || baseFields.packaging_id,
-              product_name: item.ProductName || item.Name || item.Description || baseFields.product_name,
-              quantity: item.Quantity || item.QuantityExpected || baseFields.quantity,
-            });
-          });
-        } else {
-          asnRecords.push(baseFields);
-        }
+          items,
+        });
       });
     }
 
