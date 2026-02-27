@@ -178,9 +178,27 @@ export default function SearchOrders() {
 
   const sendRecording = useCallback(async () => {
     if (!audioBlob) return;
-    // For now just mark as sent — storage integration can be added later
-    setRecordingSent(true);
-  }, [audioBlob]);
+    try {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const orderRef = selectedOrderId ? extractOrderNumber(orders.find(o => o.id === selectedOrderId)?.name || 'unknown') : 'unknown';
+      const fileName = `feedback_${orderRef}_${timestamp}.webm`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('voice-feedback')
+        .upload(fileName, audioBlob, {
+          contentType: 'audio/webm',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error('Upload failed:', uploadError);
+        return;
+      }
+      setRecordingSent(true);
+    } catch (err) {
+      console.error('Failed to send recording:', err);
+    }
+  }, [audioBlob, selectedOrderId, orders]);
 
   useEffect(() => {
     return () => {
