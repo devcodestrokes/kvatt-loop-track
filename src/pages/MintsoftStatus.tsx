@@ -57,9 +57,23 @@ const MintsoftStatus = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('fetch-mintsoft-status');
+      const response = await fetch(
+        `https://eftfcjjhtlzwuqmxwtnq.supabase.co/functions/v1/fetch-mintsoft-status`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer sb_publishable_6PTWy7Q0l7GD78GK6d6SNQ_RLA7cvh6`,
+          },
+        }
+      );
       
-      if (fnError) throw fnError;
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Edge function error: ${response.status} - ${errText}`);
+      }
+
+      const data = await response.json();
       if (data?.error) throw new Error(data.error);
 
       setAsnRecords(data.asn || []);
