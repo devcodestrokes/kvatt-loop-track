@@ -334,33 +334,45 @@ export default function SearchOrders() {
                 <Loader2 className="h-8 w-8 animate-spin text-stone-500" />
               </div> :
           error ?
-          <div className="flex flex-col items-center">
-                <h1 className="text-2xl font-bold text-stone-900 mb-2 text-center">
-                  No orders found
+          <div className="w-full text-left">
+                <h1
+                  style={{ lineHeight: '120%', letterSpacing: '-0.04em' }}
+                  className="text-stone-900 mb-6 md:text-[40px] text-[36px] md:font-medium font-medium">
+                  We can't find<br />your order.
                 </h1>
-                <p className="text-stone-500 text-sm text-center mb-6">
-                  {error}
-                </p>
+                <div
+                  style={{ fontSize: '18px', fontWeight: 400, lineHeight: '150%', letterSpacing: '-0.0425em' }}
+                  className="text-stone-900 mb-10 space-y-4">
+                  <p>This return service only works for orders delivered in returnable packaging.</p>
+                  <p>If your order arrived in standard packaging, you'll need to return it through the brand's usual process.</p>
+                  <p>Get in touch and we'll sort it out.</p>
+                </div>
                 <button
-              onClick={handleBack}
-              className="py-3 px-8 bg-stone-900 text-white rounded-full text-base font-medium hover:bg-stone-800 transition-colors">
-
-                  try again
+                  onClick={() => window.location.href = 'mailto:returns@kvatt.com'}
+                  style={{ letterSpacing: '-0.04em' }}
+                  className="w-full md:h-[62px] md:text-[20px] h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors flex items-center justify-center">
+                  contact brand
                 </button>
               </div> :
           orders.length === 0 ?
-          <div className="flex flex-col items-center">
-                <h1 className="text-2xl font-bold text-stone-900 mb-2 text-center">
-                  No orders found
+          <div className="w-full text-left">
+                <h1
+                  style={{ lineHeight: '120%', letterSpacing: '-0.04em' }}
+                  className="text-stone-900 mb-6 md:text-[40px] text-[36px] md:font-medium font-medium">
+                  We can't find<br />your order.
                 </h1>
-                <p className="text-stone-500 text-sm text-center mb-6">
-                  We couldn't find any orders for this email
-                </p>
+                <div
+                  style={{ fontSize: '18px', fontWeight: 400, lineHeight: '150%', letterSpacing: '-0.0425em' }}
+                  className="text-stone-900 mb-10 space-y-4">
+                  <p>This return service only works for orders delivered in returnable packaging.</p>
+                  <p>If your order arrived in standard packaging, you'll need to return it through the brand's usual process.</p>
+                  <p>Get in touch and we'll sort it out.</p>
+                </div>
                 <button
-              onClick={handleBack}
-              className="py-3 px-8 bg-stone-900 text-white rounded-full text-base font-medium hover:bg-stone-800 transition-colors">
-
-                  try again
+                  onClick={() => window.location.href = 'mailto:returns@kvatt.com'}
+                  style={{ letterSpacing: '-0.04em' }}
+                  className="w-full md:h-[62px] md:text-[20px] h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors flex items-center justify-center">
+                  contact brand
                 </button>
               </div> :
 
