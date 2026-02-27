@@ -605,7 +605,8 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
 
       setDownloadProgress(95);
       const mergedBytes = await mergedPdf.save();
-      const blob = new Blob([mergedBytes], { type: "application/pdf" });
+      const pdfData = new Uint8Array(mergedBytes);
+      const blob = new Blob([pdfData], { type: "application/pdf" });
 
       const dateStr = new Date().toISOString().split("T")[0];
       const url = URL.createObjectURL(blob);
