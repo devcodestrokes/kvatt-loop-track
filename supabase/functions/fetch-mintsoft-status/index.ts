@@ -90,29 +90,57 @@ serve(async (req) => {
       asnRecords.push(...results);
     }
 
-    // Parse Returns records
+    // Parse Returns records - fetch items individually for each return
     const returnsRecords: any[] = [];
     if (Array.isArray(returnsData)) {
-      returnsData.forEach((item: any) => {
-        returnsRecords.push({
-          return_id: String(item.ID || item.Id || ''),
+      const returnFetches = returnsData.map(async (item: any) => {
+        const returnId = item.ID || item.Id;
+        let returnItems: any[] = [];
+
+        if (returnId) {
+          try {
+            const detailRes = await fetch(`https://api.mintsoft.co.uk/api/Return/${returnId}`, {
+              headers: { 'Accept': 'application/json', 'ms-apikey': MINTSOFT_API_KEY! },
+            });
+            const detailData = await detailRes.json();
+            const rawItems = detailData?.ReturnItems || detailData?.Items || [];
+            if (Array.isArray(rawItems)) {
+              returnItems = rawItems.map((ri: any) => ({
+                product_code: ri.ProductCode || ri.SKU || '',
+                product_name: ri.ProductName || ri.Name || '',
+                quantity: ri.Quantity || ri.QuantityReturned || 0,
+                reason: ri.Reason || ri.ReturnReason || '',
+                comments: ri.Comments || '',
+                expiry_date: ri.ExpiryDate || null,
+                batch: ri.BatchNumber || ri.Batch || '',
+                serial: ri.SerialNumber || ri.Serial || '',
+                last_updated: ri.LastUpdated || null,
+                last_updated_by_user: ri.LastUpdatedByUser || null,
+              }));
+            }
+          } catch (e) {
+            console.error(`Failed to fetch items for Return ${returnId}:`, e);
+          }
+        }
+
+        return {
+          return_id: String(returnId || ''),
           reference: item.Reference || '',
           order_number: item.OrderNumber || '',
+          client: item.ClientShortName || item.Client || 'Kvatt',
+          return_type: item.OrderNumber === 'ExternalReturn' ? 'External Return' : (item.ReturnType || 'Return'),
           confirmed: item.Confirmed || false,
           refunded: item.Refunded || false,
           exchanged: item.Exchanged || false,
           invoiced: item.Invoiced || false,
           last_updated: item.LastUpdated || null,
           last_updated_by_user: item.LastUpdatedByUser || null,
-          return_items: Array.isArray(item.ReturnItems) ? item.ReturnItems.map((ri: any) => ({
-            product_code: ri.ProductCode || ri.SKU || '',
-            product_name: ri.ProductName || ri.Name || '',
-            quantity: ri.Quantity || ri.QuantityReturned || 0,
-            reason: ri.Reason || ri.ReturnReason || '',
-            condition: ri.Condition || '',
-          })) : [],
-        });
+          return_items: returnItems,
+        };
       });
+
+      const results = await Promise.all(returnFetches);
+      returnsRecords.push(...results);
     }
 
     // Fetch ALL labels from Supabase (paginated)
