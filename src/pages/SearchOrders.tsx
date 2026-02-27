@@ -142,21 +142,20 @@ export default function SearchOrders() {
       mediaRecorder.start();
       setIsRecording(true);
       setIsPaused(false);
-      setRecordingTime(0);
+      setRecordingTime(15);
       setAudioBlob(null);
       setRecordingSent(false);
 
       timerRef.current = setInterval(() => {
         setRecordingTime(prev => {
-          if (prev + 1 >= 60) {
-            // Auto-stop at 60 seconds
+          if (prev - 1 <= 0) {
             mediaRecorderRef.current?.stop();
             setIsRecording(false);
             setIsPaused(false);
             if (timerRef.current) clearInterval(timerRef.current);
-            return 60;
+            return 0;
           }
-          return prev + 1;
+          return prev - 1;
         });
       }, 1000);
     } catch (err) {
@@ -640,7 +639,7 @@ export default function SearchOrders() {
                   <div className="w-full h-1.5 bg-stone-300 rounded-full mb-2 relative">
                     <div
                       className="h-full bg-stone-900 rounded-full transition-all relative"
-                      style={{ width: `${Math.min((recordingTime / 60) * 100, 100)}%` }}>
+                      style={{ width: `${(recordingTime / 15) * 100}%` }}>
                       <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-stone-900 rounded-full" />
                     </div>
                   </div>
