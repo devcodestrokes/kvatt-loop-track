@@ -142,7 +142,7 @@ export default function SearchOrders() {
       mediaRecorder.start();
       setIsRecording(true);
       setIsPaused(false);
-      setRecordingTime(0);
+      setRecordingTime(15);
       setAudioBlob(null);
       setRecordingSent(false);
 
