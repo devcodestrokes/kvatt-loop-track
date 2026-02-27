@@ -32,33 +32,40 @@ serve(async (req) => {
     const asnData = Array.isArray(asnRaw) ? asnRaw : (asnRaw?.Results || asnRaw?.Data || asnRaw?.data || []);
     const returnsData = Array.isArray(returnsRaw) ? returnsRaw : (returnsRaw?.Results || returnsRaw?.Data || returnsRaw?.data || []);
 
-    // Parse ASN records
+    // Parse ASN records with all available fields
     const asnRecords: any[] = [];
     if (Array.isArray(asnData)) {
       asnData.forEach((asn: any) => {
+        const baseFields = {
+          id: asn.ID || asn.Id || asn.id || null,
+          client: asn.Client?.Name || asn.ClientName || asn.Client || null,
+          asn_status: asn.ASNStatus?.Name || asn.Status?.Name || asn.Status || 'Unknown',
+          warehouse: asn.Warehouse?.Name || asn.WarehouseName || asn.Warehouse || null,
+          supplier: asn.Supplier?.Name || asn.SupplierName || asn.Supplier || null,
+          po_reference: asn.POReference || asn.poReference || asn.Reference || 'N/A',
+          estimated_delivery: asn.EstimatedDelivery || asn.ExpectedDate || null,
+          comments: asn.Comments || asn.Notes || null,
+          goods_in_type: asn.GoodsInType?.Name || asn.GoodsInTypeName || asn.GoodsInType || null,
+          quantity: asn.TotalQuantity || asn.Quantity || null,
+          last_updated: asn.LastUpdated || asn.UpdatedOn || null,
+          last_updated_by_user: asn.LastUpdatedByUser || asn.UpdatedBy || null,
+          booked_in_date: asn.BookedInDate || asn.ReceivedDate || null,
+          packaging_id: asn.ProductCode || asn.SKU || asn.SerialNumber || asn.BatchNumber || 'N/A',
+          product_name: asn.ProductName || asn.Name || asn.Description || 'Unknown',
+        };
+
         const items = asn.Items || asn.ASNItems || asn.items || [];
         if (Array.isArray(items) && items.length > 0) {
           items.forEach((item: any) => {
             asnRecords.push({
-              po_reference: asn.POReference || asn.poReference || asn.Reference || 'N/A',
-              packaging_id: item.SerialNumber || item.BatchNumber || item.ProductCode || item.SKU || 'N/A',
-              product_name: item.ProductName || item.Name || item.Description || 'Unknown',
-              asn_status: asn.ASNStatus?.Name || asn.Status?.Name || asn.Status || 'Unknown',
-              estimated_delivery: asn.EstimatedDelivery || asn.ExpectedDate || null,
-              booked_in_date: asn.BookedInDate || asn.ReceivedDate || null,
-              last_updated: asn.LastUpdated || asn.UpdatedOn || null,
+              ...baseFields,
+              packaging_id: item.SerialNumber || item.BatchNumber || item.ProductCode || item.SKU || baseFields.packaging_id,
+              product_name: item.ProductName || item.Name || item.Description || baseFields.product_name,
+              quantity: item.Quantity || item.QuantityExpected || baseFields.quantity,
             });
           });
         } else {
-          asnRecords.push({
-            po_reference: asn.POReference || asn.poReference || asn.Reference || 'N/A',
-            packaging_id: asn.ProductCode || asn.SKU || asn.SerialNumber || asn.BatchNumber || 'N/A',
-            product_name: asn.ProductName || asn.Name || asn.Description || 'Unknown',
-            asn_status: asn.ASNStatus?.Name || asn.Status?.Name || asn.Status || 'Unknown',
-            estimated_delivery: asn.EstimatedDelivery || asn.ExpectedDate || null,
-            booked_in_date: asn.BookedInDate || asn.ReceivedDate || null,
-            last_updated: asn.LastUpdated || asn.UpdatedOn || null,
-          });
+          asnRecords.push(baseFields);
         }
       });
     }
