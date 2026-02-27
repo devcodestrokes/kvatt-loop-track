@@ -41,13 +41,21 @@ function PaginationControls({ total, page, pageSize, onPageChange, onPageSizeCha
 }
 
 interface ASNRecord {
+  id: number | string | null;
+  client: string | null;
+  asn_status: string;
+  warehouse: string | null;
+  supplier: string | null;
   po_reference: string;
+  estimated_delivery: string | null;
+  comments: string | null;
+  goods_in_type: string | null;
+  quantity: number | null;
+  last_updated: string | null;
+  last_updated_by_user: string | null;
+  booked_in_date: string | null;
   packaging_id: string;
   product_name: string;
-  asn_status: string;
-  estimated_delivery: string | null;
-  booked_in_date: string | null;
-  last_updated: string | null;
 }
 
 interface ReturnRecord {
