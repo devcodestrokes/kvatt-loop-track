@@ -110,7 +110,7 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
 
   const generateQRCode = async (labelId: string): Promise<string> => {
     return await QRCode.toDataURL(labelId, {
-      width: 400,
+      width: 200,
       margin: 1,
       color: { dark: "#000000", light: "#e6e3db" },
     });
@@ -120,14 +120,14 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
     const canvas = document.createElement("canvas");
     JsBarcode(canvas, labelId, {
       format: "CODE128",
-      width: 4,
-      height: 120,
+      width: 2,
+      height: 60,
       displayValue: false,
-      margin: 10,
+      margin: 4,
       background: "#ffffff",
       lineColor: "#000000",
     });
-    return canvas.toDataURL("image/png");
+    return canvas.toDataURL("image/jpeg", 0.85);
   };
 
   const handleGenerate = async () => {
