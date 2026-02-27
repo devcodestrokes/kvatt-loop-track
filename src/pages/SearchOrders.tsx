@@ -654,19 +654,25 @@ export default function SearchOrders() {
                   <button
                     onClick={pauseRecording}
                     disabled={!isRecording}
-                    className="flex flex-col items-center gap-2 disabled:opacity-30">
-                    <div className="w-14 h-14 rounded-full bg-stone-900 flex items-center justify-center">
-                      <Pause className="w-6 h-6 text-white fill-white" />
+                    className="flex flex-col items-center gap-2 disabled:opacity-30 transition-transform duration-200 active:scale-90">
+                    <div className="w-14 h-14 rounded-full bg-stone-900 flex items-center justify-center transition-all duration-300">
+                      {isPaused ? (
+                        <Play className="w-6 h-6 text-white fill-white ml-0.5 animate-scale-in" />
+                      ) : (
+                        <Pause className="w-6 h-6 text-white fill-white animate-scale-in" />
+                      )}
                     </div>
-                    <span className="text-xs font-medium text-stone-900 uppercase tracking-wide">Pause</span>
+                    <span className="text-xs font-medium text-stone-900 uppercase tracking-wide">
+                      {isPaused ? 'Play' : 'Pause'}
+                    </span>
                   </button>
 
                   <button
                     onClick={sendRecording}
                     disabled={!audioBlob || isRecording}
-                    className="flex flex-col items-center gap-2 disabled:opacity-30">
+                    className="flex flex-col items-center gap-2 disabled:opacity-30 transition-transform duration-200 active:scale-90">
                     <div className="w-12 h-12 rounded-full bg-stone-900 flex items-center justify-center">
-                      <Circle className="w-4 h-4 text-white fill-white" />
+                      <Send className="w-4 h-4 text-white animate-scale-in" />
                     </div>
                     <span className="text-xs font-medium text-stone-900 uppercase tracking-wide">Send</span>
                   </button>
