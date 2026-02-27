@@ -30,6 +30,8 @@ serve(async (req) => {
     const returnsRaw = await returnsResponse.json();
 
     console.log('RAW ASN keys:', Object.keys(asnRaw?.Results?.[0] || asnRaw?.[0] || asnRaw?.Data?.[0] || {}).join(', '));
+    console.log('RAW Returns response:', JSON.stringify(returnsRaw).substring(0, 2000));
+    console.log('Returns status:', returnsResponse.status, returnsResponse.statusText);
 
     const asnData = Array.isArray(asnRaw) ? asnRaw : (asnRaw?.Results || asnRaw?.Data || asnRaw?.data || []);
     const returnsData = Array.isArray(returnsRaw) ? returnsRaw : (returnsRaw?.Results || returnsRaw?.Data || returnsRaw?.data || []);
