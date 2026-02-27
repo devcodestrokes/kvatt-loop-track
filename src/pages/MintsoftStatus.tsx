@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Truck, RotateCcw, QrCode, Loader2, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useMemo, Fragment } from 'react';
+import { Truck, RotateCcw, QrCode, Loader2, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -40,6 +40,17 @@ function PaginationControls({ total, page, pageSize, onPageChange, onPageSizeCha
   );
 }
 
+interface ASNItem {
+  sku: string | null;
+  name: string | null;
+  expected_quantity: number;
+  quantity_received: number;
+  quantity_booked: number;
+  comments: string | null;
+  last_updated: string | null;
+  last_updated_by_user: string | null;
+}
+
 interface ASNRecord {
   id: number | string | null;
   client: string | null;
@@ -54,8 +65,7 @@ interface ASNRecord {
   last_updated: string | null;
   last_updated_by_user: string | null;
   booked_in_date: string | null;
-  packaging_id: string;
-  product_name: string;
+  items: ASNItem[];
 }
 
 interface ReturnRecord {
@@ -90,6 +100,16 @@ const MintsoftStatus = () => {
   const [returnRecords, setReturnRecords] = useState<ReturnRecord[]>([]);
   const [labels, setLabels] = useState<LabelRecord[]>([]);
   const [stats, setStats] = useState({ packs: 0, asn: 0, returns: 0 });
+  const [expandedAsnRows, setExpandedAsnRows] = useState<Set<number>>(new Set());
+
+  const toggleAsnRow = (index: number) => {
+    setExpandedAsnRows(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
 
   const [packsPage, setPacksPage] = useState(1);
   const [packsPageSize, setPacksPageSize] = useState(50);
@@ -263,6 +283,7 @@ const MintsoftStatus = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-border hover:bg-transparent">
+                        <TableHead className="w-10"></TableHead>
                         <TableHead>ID</TableHead>
                         <TableHead>Client</TableHead>
                         <TableHead>Status</TableHead>
@@ -278,24 +299,77 @@ const MintsoftStatus = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {pagedAsn.map((asn, i) => (
-                        <TableRow key={i} className="border-border">
-                          <TableCell className="font-mono font-medium">{asn.id ?? '—'}</TableCell>
-                          <TableCell>{asn.client || '—'}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{asn.asn_status || 'Unknown'}</Badge>
-                          </TableCell>
-                          <TableCell>{asn.warehouse || '—'}</TableCell>
-                          <TableCell>{asn.supplier || '—'}</TableCell>
-                          <TableCell className="text-muted-foreground">{asn.po_reference || '—'}</TableCell>
-                          <TableCell className="text-muted-foreground">{formatDate(asn.estimated_delivery)}</TableCell>
-                          <TableCell className="text-muted-foreground max-w-[200px] truncate">{asn.comments || '—'}</TableCell>
-                          <TableCell>{asn.goods_in_type || '—'}</TableCell>
-                          <TableCell>{asn.quantity ?? '—'}</TableCell>
-                          <TableCell className="text-muted-foreground">{formatDate(asn.last_updated)}</TableCell>
-                          <TableCell className="text-muted-foreground">{asn.last_updated_by_user || '—'}</TableCell>
-                        </TableRow>
-                      ))}
+                      {pagedAsn.map((asn, i) => {
+                        const globalIndex = (asnPage - 1) * asnPageSize + i;
+                        const isExpanded = expandedAsnRows.has(globalIndex);
+                        const hasItems = asn.items && asn.items.length > 0;
+                        return (
+                          <Fragment key={globalIndex}>
+                            <TableRow
+                              className={`border-border ${hasItems ? 'cursor-pointer hover:bg-muted/50' : ''}`}
+                              onClick={() => hasItems && toggleAsnRow(globalIndex)}
+                            >
+                              <TableCell className="w-10 px-2">
+                                {hasItems && (
+                                  isExpanded
+                                    ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                    : <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </TableCell>
+                              <TableCell className="font-mono font-medium">{asn.id ?? '—'}</TableCell>
+                              <TableCell>{asn.client || '—'}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{asn.asn_status || 'Unknown'}</Badge>
+                              </TableCell>
+                              <TableCell>{asn.warehouse || '—'}</TableCell>
+                              <TableCell>{asn.supplier || '—'}</TableCell>
+                              <TableCell className="text-muted-foreground">{asn.po_reference || '—'}</TableCell>
+                              <TableCell className="text-muted-foreground">{formatDate(asn.estimated_delivery)}</TableCell>
+                              <TableCell className="text-muted-foreground max-w-[200px] truncate">{asn.comments || '—'}</TableCell>
+                              <TableCell>{asn.goods_in_type || '—'}</TableCell>
+                              <TableCell>{asn.quantity ?? '—'}</TableCell>
+                              <TableCell className="text-muted-foreground">{formatDate(asn.last_updated)}</TableCell>
+                              <TableCell className="text-muted-foreground">{asn.last_updated_by_user || '—'}</TableCell>
+                            </TableRow>
+                            {isExpanded && hasItems && (
+                              <TableRow className="bg-muted/30 border-border">
+                                <TableCell colSpan={13} className="p-0">
+                                  <div className="px-6 py-3">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow className="border-border hover:bg-transparent">
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">SKU</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Name</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Expected Quantity</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Quantity Received</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Quantity Booked</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Comments</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Last Updated</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Last Updated By User</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {asn.items.map((item, j) => (
+                                          <TableRow key={j} className="border-border">
+                                            <TableCell className="font-mono text-sm">{item.sku || '—'}</TableCell>
+                                            <TableCell className="text-sm">{item.name || '—'}</TableCell>
+                                            <TableCell className="text-sm">{item.expected_quantity}</TableCell>
+                                            <TableCell className="text-sm">{item.quantity_received}</TableCell>
+                                            <TableCell className="text-sm">{item.quantity_booked}</TableCell>
+                                            <TableCell className="text-sm text-muted-foreground">{item.comments || '—'}</TableCell>
+                                            <TableCell className="text-sm text-muted-foreground">{formatDate(item.last_updated)}</TableCell>
+                                            <TableCell className="text-sm text-muted-foreground">{item.last_updated_by_user || '—'}</TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </Fragment>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                   <PaginationControls total={asnRecords.length} page={asnPage} pageSize={asnPageSize} onPageChange={setAsnPage} onPageSizeChange={setAsnPageSize} />
