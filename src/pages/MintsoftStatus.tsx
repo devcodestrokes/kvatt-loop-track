@@ -100,6 +100,16 @@ const MintsoftStatus = () => {
   const [returnRecords, setReturnRecords] = useState<ReturnRecord[]>([]);
   const [labels, setLabels] = useState<LabelRecord[]>([]);
   const [stats, setStats] = useState({ packs: 0, asn: 0, returns: 0 });
+  const [expandedAsnRows, setExpandedAsnRows] = useState<Set<number>>(new Set());
+
+  const toggleAsnRow = (index: number) => {
+    setExpandedAsnRows(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
 
   const [packsPage, setPacksPage] = useState(1);
   const [packsPageSize, setPacksPageSize] = useState(50);
