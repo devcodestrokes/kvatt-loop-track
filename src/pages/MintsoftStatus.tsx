@@ -222,7 +222,7 @@ const MintsoftStatus = () => {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <Tabs defaultValue="packs" className="w-full">
+          <Tabs defaultValue="asn" className="w-full">
             <TabsList>
               <TabsTrigger value="packs">Packs ({labels.length})</TabsTrigger>
               <TabsTrigger value="asn">ASN Activity ({asnRecords.length})</TabsTrigger>
