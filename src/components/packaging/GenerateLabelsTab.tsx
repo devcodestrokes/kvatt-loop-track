@@ -110,7 +110,7 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
 
   const generateQRCode = async (labelId: string): Promise<string> => {
     return await QRCode.toDataURL(labelId, {
-      width: 400,
+      width: 200,
       margin: 1,
       color: { dark: "#000000", light: "#e6e3db" },
     });
@@ -120,14 +120,14 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
     const canvas = document.createElement("canvas");
     JsBarcode(canvas, labelId, {
       format: "CODE128",
-      width: 4,
-      height: 120,
+      width: 2,
+      height: 60,
       displayValue: false,
-      margin: 10,
+      margin: 4,
       background: "#ffffff",
       lineColor: "#000000",
     });
-    return canvas.toDataURL("image/png");
+    return canvas.toDataURL("image/jpeg", 0.85);
   };
 
   const handleGenerate = async () => {
@@ -482,85 +482,67 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
 
-  const buildPdfForBatch = async (
-    jsPDF: any,
-    batch: GeneratedLabel[],
+  const addLabelPage = (
+    pdf: any,
+    label: GeneratedLabel,
+    isFirst: boolean,
     logoDataUrl: string | null,
-    fonts: { regular: string; light: string; medium: string; bold: string; italic: string }
   ) => {
     const W = 130, H = 82;
-    const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [H, W] });
+    if (!isFirst) pdf.addPage([H, W], "landscape");
 
-    pdf.addFileToVFS("Inter-Regular.ttf", fonts.regular);
-    pdf.addFont("Inter-Regular.ttf", "Inter", "normal");
-    pdf.addFileToVFS("Inter-Light.ttf", fonts.light);
-    pdf.addFont("Inter-Light.ttf", "Inter", "light");
-    pdf.addFileToVFS("Inter-Medium.ttf", fonts.medium);
-    pdf.addFont("Inter-Medium.ttf", "Inter", "medium");
-    pdf.addFileToVFS("Inter-Bold.ttf", fonts.bold);
-    pdf.addFont("Inter-Bold.ttf", "Inter", "bold");
-    pdf.addFileToVFS("Inter-Italic.ttf", fonts.italic);
-    pdf.addFont("Inter-Italic.ttf", "Inter", "italic");
+    pdf.setFillColor(230, 227, 219);
+    pdf.rect(0, 0, W, H, "F");
 
-    for (let i = 0; i < batch.length; i++) {
-      const label = batch[i];
-      if (i > 0) pdf.addPage([H, W], "landscape");
+    const barH = 19.3;
+    pdf.setFillColor(0, 0, 0);
+    pdf.rect(0, H - barH, W, barH, "F");
 
-      pdf.setFillColor(230, 227, 219);
-      pdf.rect(0, 0, W, H, "F");
+    const upperH = H - barH;
 
-      const barH = 19.3;
-      pdf.setFillColor(0, 0, 0);
-      pdf.rect(0, H - barH, W, barH, "F");
+    pdf.setFont("Inter", "bold");
+    pdf.setFontSize(38);
+    pdf.setTextColor(0, 0, 0);
+    const textX = 4;
+    const textCenterY = upperH / 2;
+    pdf.text("Start your", textX, textCenterY - 6);
+    pdf.text("return", textX, textCenterY + 6);
 
-      const upperH = H - barH;
-
-      pdf.setFont("Inter", "bold");
-      pdf.setFontSize(38);
-      pdf.setTextColor(0, 0, 0);
-      const textX = 4;
-      const textCenterY = upperH / 2;
-      pdf.text("Start your", textX, textCenterY - 6);
-      pdf.text("return", textX, textCenterY + 6);
-
-      if (logoDataUrl) {
-        const logoW = 12, logoH = 10;
-        const returnTextWidth = pdf.getTextWidth("return");
-        pdf.addImage(logoDataUrl, "PNG", textX + returnTextWidth + 2, textCenterY + 6 - logoH + 1, logoW, logoH);
-      }
-
-      pdf.setFont("Inter", "italic");
-      pdf.setFontSize(31);
-      pdf.text("with one tap", textX, textCenterY + 18);
-
-      const qrAreaW = W * 0.393;
-      const qrSize = Math.min(qrAreaW, upperH - 6);
-      const qrX = W - qrAreaW / 2 - qrSize / 2 - 4;
-      const qrY = (upperH - qrSize) / 2;
-      pdf.addImage(label.qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize);
-
-      const containerW = 65, containerH = 14.5;
-      const containerX = 4, containerY = H - barH + (barH - containerH) / 2;
-      pdf.setFillColor(255, 255, 255);
-      pdf.roundedRect(containerX, containerY, containerW, containerH, 1, 1, "F");
-
-      const barcodeW = 62, barcodeH2 = 11;
-      pdf.addImage(label.barcodeDataUrl, "PNG", containerX + (containerW - barcodeW) / 2, containerY + 0.5, barcodeW, barcodeH2);
-
-      pdf.setFont("Inter", "bold");
-      pdf.setFontSize(8);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text(label.labelId, containerX + containerW / 2, containerY + barcodeH2 + 2.8, { align: "center" });
-
-      pdf.setFont("Inter", "medium");
-      pdf.setFontSize(11);
-      pdf.setTextColor(255, 255, 255);
-      pdf.text("Call for support:", W - 54, H - barH + 8, { align: "left" });
-      pdf.setFont("Inter", "light");
-      pdf.text("+44 (0) 75.49.88.48.50", W - 54, H - barH + 13, { align: "left" });
+    if (logoDataUrl) {
+      const logoW = 12, logoH2 = 10;
+      const returnTextWidth = pdf.getTextWidth("return");
+      pdf.addImage(logoDataUrl, "PNG", textX + returnTextWidth + 2, textCenterY + 6 - logoH2 + 1, logoW, logoH2);
     }
 
-    return pdf;
+    pdf.setFont("Inter", "italic");
+    pdf.setFontSize(31);
+    pdf.text("with one tap", textX, textCenterY + 18);
+
+    const qrAreaW = W * 0.393;
+    const qrSize = Math.min(qrAreaW, upperH - 6);
+    const qrX = W - qrAreaW / 2 - qrSize / 2 - 4;
+    const qrY = (upperH - qrSize) / 2;
+    pdf.addImage(label.qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize);
+
+    const containerW = 65, containerH = 14.5;
+    const containerX = 4, containerY = H - barH + (barH - containerH) / 2;
+    pdf.setFillColor(255, 255, 255);
+    pdf.roundedRect(containerX, containerY, containerW, containerH, 1, 1, "F");
+
+    const barcodeW = 62, barcodeH2 = 11;
+    pdf.addImage(label.barcodeDataUrl, "JPEG", containerX + (containerW - barcodeW) / 2, containerY + 0.5, barcodeW, barcodeH2);
+
+    pdf.setFont("Inter", "bold");
+    pdf.setFontSize(8);
+    pdf.setTextColor(0, 0, 0);
+    pdf.text(label.labelId, containerX + containerW / 2, containerY + barcodeH2 + 2.8, { align: "center" });
+
+    pdf.setFont("Inter", "medium");
+    pdf.setFontSize(11);
+    pdf.setTextColor(255, 255, 255);
+    pdf.text("Call for support:", W - 54, H - barH + 8, { align: "left" });
+    pdf.setFont("Inter", "light");
+    pdf.text("+44 (0) 75.49.88.48.50", W - 54, H - barH + 13, { align: "left" });
   };
 
   const handleDownloadPDF = async () => {
@@ -584,34 +566,61 @@ export function GenerateLabelsTab({ onLabelsGenerated }: GenerateLabelsTabProps)
         loadFontAsBase64('/fonts/Inter-Bold.ttf'),
         loadFontAsBase64('/fonts/Inter-Italic.ttf'),
       ]);
-      const fonts = { regular, light, medium, bold, italic };
 
-      const BATCH_SIZE = 100;
-      const totalBatches = Math.ceil(generatedLabels.length / BATCH_SIZE);
-      const dateStr = new Date().toISOString().split("T")[0];
+      const W = 130, H = 82;
+      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: [H, W] });
 
-      for (let b = 0; b < totalBatches; b++) {
-        const batch = generatedLabels.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE);
-        const pdf = await buildPdfForBatch(jsPDF, batch, logoDataUrl, fonts);
+      pdf.addFileToVFS("Inter-Regular.ttf", regular);
+      pdf.addFont("Inter-Regular.ttf", "Inter", "normal");
+      pdf.addFileToVFS("Inter-Light.ttf", light);
+      pdf.addFont("Inter-Light.ttf", "Inter", "light");
+      pdf.addFileToVFS("Inter-Medium.ttf", medium);
+      pdf.addFont("Inter-Medium.ttf", "Inter", "medium");
+      pdf.addFileToVFS("Inter-Bold.ttf", bold);
+      pdf.addFont("Inter-Bold.ttf", "Inter", "bold");
+      pdf.addFileToVFS("Inter-Italic.ttf", italic);
+      pdf.addFont("Inter-Italic.ttf", "Inter", "italic");
 
-        const fileName = totalBatches === 1
-          ? `pack-labels-${dateStr}.pdf`
-          : `pack-labels-${dateStr}-part${b + 1}.pdf`;
-        pdf.save(fileName);
+      // Cast to any to free VFS memory after font registration
+      const pdfAny = pdf as any;
+      if (pdfAny.deleteFileFromVFS) {
+        pdfAny.deleteFileFromVFS("Inter-Regular.ttf");
+        pdfAny.deleteFileFromVFS("Inter-Light.ttf");
+        pdfAny.deleteFileFromVFS("Inter-Medium.ttf");
+        pdfAny.deleteFileFromVFS("Inter-Bold.ttf");
+        pdfAny.deleteFileFromVFS("Inter-Italic.ttf");
+      }
 
-        setDownloadProgress(Math.round(((b + 1) / totalBatches) * 100));
+      const CHUNK = 50;
+      for (let i = 0; i < generatedLabels.length; i++) {
+        addLabelPage(pdf, generatedLabels[i], i === 0, logoDataUrl);
 
-        // Small delay between batch downloads to prevent browser issues
-        if (b < totalBatches - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+        // Yield to UI every CHUNK pages for progress updates
+        if ((i + 1) % CHUNK === 0 || i === generatedLabels.length - 1) {
+          setDownloadProgress(Math.round(((i + 1) / generatedLabels.length) * 90));
+          await new Promise(resolve => setTimeout(resolve, 0));
         }
       }
 
+      setDownloadProgress(95);
+      const dateStr = new Date().toISOString().split("T")[0];
+      
+      // Use blob output to avoid string length limits
+      const pdfBlob = pdf.output('blob');
+      const url = URL.createObjectURL(pdfBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pack-labels-${dateStr}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setDownloadProgress(100);
+
       toast({
         title: "PDF downloaded",
-        description: totalBatches === 1
-          ? `Downloaded ${generatedLabels.length} labels as PDF`
-          : `Downloaded ${generatedLabels.length} labels in ${totalBatches} PDF files`,
+        description: `Downloaded ${generatedLabels.length} labels as a single PDF`,
       });
     } catch (error) {
       console.error("Error generating PDF:", error);
