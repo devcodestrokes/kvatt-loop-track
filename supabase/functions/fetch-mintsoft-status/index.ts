@@ -34,24 +34,40 @@ serve(async (req) => {
     const asnData = Array.isArray(asnRaw) ? asnRaw : (asnRaw?.Results || asnRaw?.Data || asnRaw?.data || []);
     const returnsData = Array.isArray(returnsRaw) ? returnsRaw : (returnsRaw?.Results || returnsRaw?.Data || returnsRaw?.data || []);
 
-    // Parse ASN records with nested items
+    // Parse ASN records - fetch items individually for each ASN
     const asnRecords: any[] = [];
     if (Array.isArray(asnData)) {
-      asnData.forEach((asn: any) => {
-        const rawItems = asn.Items || asn.ASNItems || asn.items || [];
-        const items = Array.isArray(rawItems) ? rawItems.map((item: any) => ({
-          sku: item.ProductCode || item.SKU || null,
-          name: item.ProductName || item.Name || item.Description || null,
-          expected_quantity: item.Quantity || item.QuantityExpected || 0,
-          quantity_received: item.QuantityReceived || item.ReceivedQuantity || 0,
-          quantity_booked: item.QuantityBooked || item.BookedQuantity || 0,
-          comments: item.Comments || item.Notes || null,
-          last_updated: item.LastUpdated || null,
-          last_updated_by_user: item.LastUpdatedByUser || null,
-        })) : [];
+      // Fetch items for each ASN in parallel
+      const itemFetches = asnData.map(async (asn: any) => {
+        const asnId = asn.ID || asn.Id;
+        let items: any[] = [];
+        
+        if (asnId) {
+          try {
+            const itemRes = await fetch(`https://api.mintsoft.co.uk/api/ASN/${asnId}`, {
+              headers: { 'Accept': 'application/json', 'ms-apikey': MINTSOFT_API_KEY! },
+            });
+            const itemData = await itemRes.json();
+            const rawItems = itemData?.Items || itemData?.ASNItems || [];
+            if (Array.isArray(rawItems)) {
+              items = rawItems.map((item: any) => ({
+                sku: item.ProductCode || item.SKU || null,
+                name: item.ProductName || item.Name || item.Description || null,
+                expected_quantity: item.Quantity || item.QuantityExpected || 0,
+                quantity_received: item.QuantityReceived || item.ReceivedQuantity || 0,
+                quantity_booked: item.QuantityBooked || item.BookedQuantity || 0,
+                comments: item.Comments || item.Notes || null,
+                last_updated: item.LastUpdated || null,
+                last_updated_by_user: item.LastUpdatedByUser || null,
+              }));
+            }
+          } catch (e) {
+            console.error(`Failed to fetch items for ASN ${asnId}:`, e);
+          }
+        }
 
-        asnRecords.push({
-          id: asn.ID || asn.Id || asn.id || null,
+        return {
+          id: asnId || null,
           client: asn.CLIENTSHORTNAME || asn.ClientShortName || asn.Client?.Name || asn.ClientName || null,
           asn_status: asn.ASNStatus?.Name || asn.Status?.Name || asn.Status || 'Unknown',
           warehouse: asn.Warehouse?.Name || asn.WarehouseName || (asn.WarehouseId ? `Warehouse ${asn.WarehouseId}` : null),
@@ -59,14 +75,17 @@ serve(async (req) => {
           po_reference: asn.POReference || asn.poReference || asn.Reference || 'N/A',
           estimated_delivery: asn.EstimatedDelivery || asn.ExpectedDate || null,
           comments: asn.Comments || asn.Notes || null,
-          goods_in_type: asn.GoodsInType || asn.GoodsInType?.Name || null,
+          goods_in_type: asn.GoodsInType || null,
           quantity: asn.Quantity || asn.TotalQuantity || null,
           last_updated: asn.LastUpdated || asn.UpdatedOn || null,
           last_updated_by_user: asn.LastUpdatedByUser || asn.UpdatedBy || null,
           booked_in_date: asn.BookedInDate || asn.ReceivedDate || null,
           items,
-        });
+        };
       });
+
+      const results = await Promise.all(itemFetches);
+      asnRecords.push(...results);
     }
 
     // Parse Returns records
