@@ -293,7 +293,7 @@ export default function SearchOrders() {
     <div className="min-h-screen flex flex-col relative" style={{ backgroundColor: '#e8e4de', fontFamily: "'Inter', sans-serif" }}>
       {/* Top section: back button then logo below it */}
       <div className="px-6 pt-6">
-        {(step === 'results' || step === 'search' || step === 'pack') ? (
+        {(step !== 'start') ? (
           <button
             onClick={handleBack}
             style={{ fontSize: '18px', fontWeight: 400, letterSpacing: '-0.0425em' }}
