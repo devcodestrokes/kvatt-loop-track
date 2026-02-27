@@ -20,7 +20,8 @@ const clearCorruptedStoredSession = () => {
       if (!raw) return;
 
       const parsed = JSON.parse(raw);
-      const refreshToken = parsed?.currentSession?.refresh_token;
+      // Supabase v2 stores refresh_token at the top level
+      const refreshToken = parsed?.refresh_token ?? parsed?.currentSession?.refresh_token;
 
       if (typeof refreshToken !== 'string' || refreshToken.length < 20) {
         localStorage.removeItem(key);
