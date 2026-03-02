@@ -264,6 +264,17 @@ const MintsoftStatus = () => {
               </div>
             </div>
           </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-chart-total/10 text-chart-total">
+                <ShoppingCart className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Orders</p>
+                <p className="text-2xl font-semibold">{stats.orders.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {error && (
