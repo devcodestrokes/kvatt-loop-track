@@ -58,9 +58,28 @@ serve(async (req) => {
             const itemData = await itemRes.json();
             const rawItems = itemData?.Items || itemData?.ASNItems || [];
             if (Array.isArray(rawItems)) {
+              // Fetch product names for ASN items
+              const productIds = rawItems
+                .filter((item: any) => item.ProductId && !item.ProductName && !item.Name)
+                .map((item: any) => item.ProductId);
+              const uniqueProductIds = [...new Set(productIds)] as number[];
+              const productNameMap: Record<number, string> = {};
+              if (uniqueProductIds.length > 0) {
+                const prodFetches = uniqueProductIds.map(async (pid: number) => {
+                  try {
+                    const prodRes = await fetch(`https://api.mintsoft.co.uk/api/Product/${pid}`, {
+                      headers: { 'Accept': 'application/json', 'ms-apikey': MINTSOFT_API_KEY! },
+                    });
+                    const prodData = await prodRes.json();
+                    if (prodData?.Name) productNameMap[pid] = prodData.Name;
+                  } catch (e) { /* ignore */ }
+                });
+                await Promise.all(prodFetches);
+              }
+
               items = rawItems.map((item: any) => ({
                 sku: item.ProductCode || item.SKU || null,
-                name: item.ProductName || item.Name || item.Description || null,
+                name: item.ProductName || item.Name || item.Description || (item.ProductId ? productNameMap[item.ProductId] : null) || null,
                 expected_quantity: item.Quantity || item.QuantityExpected || 0,
                 quantity_received: item.QuantityReceived || item.ReceivedQuantity || 0,
                 quantity_booked: item.QuantityBooked || item.BookedQuantity || 0,
@@ -164,9 +183,36 @@ serve(async (req) => {
             });
             const detailData = await detailRes.json();
             const rawItems = detailData?.OrderItems || detailData?.Items || [];
-            if (Array.isArray(rawItems)) {
+            if (Array.isArray(rawItems) && rawItems.length > 0) {
+              // Fetch product names for items that have ProductId but no name
+              const productIds = rawItems
+                .filter((item: any) => item.ProductId && !item.ProductName && !item.Name)
+                .map((item: any) => item.ProductId);
+              
+              const uniqueProductIds = [...new Set(productIds)] as number[];
+              const productNameMap: Record<number, string> = {};
+              
+              if (uniqueProductIds.length > 0) {
+                const productFetches = uniqueProductIds.map(async (pid: number) => {
+                  try {
+                    const prodRes = await fetch(`https://api.mintsoft.co.uk/api/Product/${pid}`, {
+                      headers: { 'Accept': 'application/json', 'ms-apikey': MINTSOFT_API_KEY! },
+                    });
+                    const prodData = await prodRes.json();
+                    if (prodData?.Name) {
+                      productNameMap[pid] = prodData.Name;
+                    }
+                  } catch (e) {
+                    console.error(`Failed to fetch product ${pid}:`, e);
+                  }
+                });
+                await Promise.all(productFetches);
+              }
+
               orderItems = rawItems.map((item: any) => {
-                // Extract nested stock/location data from ProductStockStatus or similar
+                const productName = item.ProductName || item.Name || item.Description || 
+                  (item.ProductId ? productNameMap[item.ProductId] : null) || '';
+                
                 const stockData = item.ProductStockStatus || item.StockStatus || item.StockLocations || [];
                 const locations = Array.isArray(stockData) ? stockData.map((loc: any) => ({
                   location: loc.Location || loc.LocationName || safeStr(loc.Warehouse) || '',
@@ -180,12 +226,12 @@ serve(async (req) => {
 
                 return {
                   sku: item.ProductCode || item.SKU || '',
-                  name: item.ProductName || item.Name || item.Description || '',
+                  name: productName,
                   image_url: item.ImageURL || item.Image || item.ProductImageURL || null,
                   quantity: item.Quantity || 0,
-                  quantity_committed: item.QuantityCommitted || item.CommittedQuantity || 0,
-                  quantity_allocated: item.QuantityAllocated || item.AllocatedQuantity || 0,
-                  price_ex_vat: item.PriceExVat || item.Price || 0,
+                  quantity_committed: item.QuantityCommitted || item.CommittedQuantity || item.Commited || 0,
+                  quantity_allocated: item.QuantityAllocated || item.AllocatedQuantity || item.Allocated || 0,
+                  price_ex_vat: item.PriceExVat || item.Price || item.PriceNet || 0,
                   vat: item.Vat || item.VatAmount || 0,
                   weight: item.Weight || 0,
                   batch_number: item.BatchNumber || null,
