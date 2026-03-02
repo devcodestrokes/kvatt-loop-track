@@ -231,8 +231,8 @@ export function ABTestingTab() {
     return data.filter(item => selectedStoreIds.includes(item.store));
   }, [data, selectedStoreIds]);
 
-  const storesWithAB = filteredData.filter(item => item.variants.length > 0);
-  const storesWithoutAB = filteredData.filter(item => item.variants.length === 0);
+  const storesWithAB = filteredData.filter(item => item.variants.length > 1);
+  const storesWithoutAB = filteredData.filter(item => item.variants.length <= 1);
 
   // Aggregated design data across all stores
   const { aggregates, designAggregates, rankedDesigns } = useMemo(() => {
