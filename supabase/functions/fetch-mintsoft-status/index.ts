@@ -16,30 +16,36 @@ serve(async (req) => {
   }
 
   try {
-    // Fetch Mintsoft ASN and Returns in parallel
-    const [asnResponse, returnsResponse] = await Promise.all([
+    // Fetch Mintsoft ASN, Returns, and Orders in parallel
+    const [asnResponse, returnsResponse, ordersResponse] = await Promise.all([
       fetch('https://api.mintsoft.co.uk/api/ASN/List?ClientId=82&IncludeItems=true', {
         headers: { 'Accept': 'application/json', 'ms-apikey': MINTSOFT_API_KEY! },
       }),
       fetch('https://api.mintsoft.co.uk/api/Return/List?ClientId=82', {
         headers: { 'Accept': 'application/json', 'ms-apikey': MINTSOFT_API_KEY! },
       }),
+      fetch('https://api.mintsoft.co.uk/api/Order/List?ClientId=82', {
+        headers: { 'Accept': 'application/json', 'ms-apikey': MINTSOFT_API_KEY! },
+      }),
     ]);
 
     const asnRaw = await asnResponse.json();
     const returnsRaw = await returnsResponse.json();
+    const ordersRaw = await ordersResponse.json();
 
     console.log('RAW ASN keys:', Object.keys(asnRaw?.Results?.[0] || asnRaw?.[0] || asnRaw?.Data?.[0] || {}).join(', '));
     console.log('RAW Returns response:', JSON.stringify(returnsRaw).substring(0, 2000));
     console.log('Returns status:', returnsResponse.status, returnsResponse.statusText);
+    console.log('RAW Orders keys:', Object.keys(ordersRaw?.Results?.[0] || ordersRaw?.[0] || ordersRaw?.Data?.[0] || {}).join(', '));
+    console.log('Orders status:', ordersResponse.status, ordersResponse.statusText);
 
     const asnData = Array.isArray(asnRaw) ? asnRaw : (asnRaw?.Results || asnRaw?.Data || asnRaw?.data || []);
     const returnsData = Array.isArray(returnsRaw) ? returnsRaw : (returnsRaw?.Results || returnsRaw?.Data || returnsRaw?.data || []);
+    const ordersData = Array.isArray(ordersRaw) ? ordersRaw : (ordersRaw?.Results || ordersRaw?.Data || ordersRaw?.data || []);
 
     // Parse ASN records - fetch items individually for each ASN
     const asnRecords: any[] = [];
     if (Array.isArray(asnData)) {
-      // Fetch items for each ASN in parallel
       const itemFetches = asnData.map(async (asn: any) => {
         const asnId = asn.ID || asn.Id;
         let items: any[] = [];
@@ -143,6 +149,30 @@ serve(async (req) => {
       returnsRecords.push(...results);
     }
 
+    // Parse Orders records
+    const ordersRecords: any[] = [];
+    if (Array.isArray(ordersData)) {
+      ordersRecords.push(...ordersData.map((order: any) => ({
+        id: order.ID || order.Id || null,
+        order_number: order.OrderNumber || order.ExternalOrderNumber || '',
+        client: order.CLIENTSHORTNAME || order.ClientShortName || order.Client?.Name || order.ClientName || null,
+        status: order.OrderStatus?.Name || order.Status?.Name || order.Status || 'Unknown',
+        warehouse: order.Warehouse?.Name || order.WarehouseName || null,
+        courier: order.Courier?.Name || order.CourierName || order.CourierServiceName || null,
+        tracking_number: order.TrackingNumber || order.CourierTracking || null,
+        recipient_name: order.RecipientName || order.DeliveryName || order.Name || null,
+        destination_country: order.Country || order.DeliveryCountry || order.DestinationCountry || null,
+        postcode: order.PostCode || order.DeliveryPostcode || null,
+        weight: order.Weight || order.TotalWeight || null,
+        total_items: order.TotalItems || order.ItemCount || order.Quantity || null,
+        order_date: order.OrderDate || order.CreatedDate || null,
+        dispatched_date: order.DispatchedDate || order.ShippedDate || null,
+        last_updated: order.LastUpdated || order.UpdatedOn || null,
+        last_updated_by_user: order.LastUpdatedByUser || order.UpdatedBy || null,
+        comments: order.Comments || order.Notes || null,
+      })));
+    }
+
     // Fetch ALL labels from Supabase (paginated)
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const allLabels: any[] = [];
@@ -173,10 +203,12 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       asn: asnRecords,
       returns: returnsRecords,
+      orders: ordersRecords,
       labels: allLabels,
       stats: {
         asn_count: asnRecords.length,
         returns_count: returnsRecords.length,
+        orders_count: ordersRecords.length,
         packs_count: allLabels.length,
       }
     }), {

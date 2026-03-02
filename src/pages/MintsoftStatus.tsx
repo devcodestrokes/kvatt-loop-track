@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, Fragment } from 'react';
-import { Truck, RotateCcw, QrCode, Loader2, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { Truck, RotateCcw, QrCode, Loader2, RefreshCw, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, ShoppingCart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -96,6 +96,26 @@ interface ReturnRecord {
   return_items: ReturnItem[];
 }
 
+interface OrderRecord {
+  id: number | string | null;
+  order_number: string;
+  client: string | null;
+  status: string;
+  warehouse: string | null;
+  courier: string | null;
+  tracking_number: string | null;
+  recipient_name: string | null;
+  destination_country: string | null;
+  postcode: string | null;
+  weight: number | null;
+  total_items: number | null;
+  order_date: string | null;
+  dispatched_date: string | null;
+  last_updated: string | null;
+  last_updated_by_user: string | null;
+  comments: string | null;
+}
+
 interface LabelRecord {
   label_id: string;
   status: string;
@@ -117,8 +137,9 @@ const MintsoftStatus = () => {
   const [error, setError] = useState<string | null>(null);
   const [asnRecords, setAsnRecords] = useState<ASNRecord[]>([]);
   const [returnRecords, setReturnRecords] = useState<ReturnRecord[]>([]);
+  const [orderRecords, setOrderRecords] = useState<OrderRecord[]>([]);
   const [labels, setLabels] = useState<LabelRecord[]>([]);
-  const [stats, setStats] = useState({ packs: 0, asn: 0, returns: 0 });
+  const [stats, setStats] = useState({ packs: 0, asn: 0, returns: 0, orders: 0 });
   const [expandedAsnRows, setExpandedAsnRows] = useState<Set<number>>(new Set());
   const [expandedReturnRows, setExpandedReturnRows] = useState<Set<number>>(new Set());
 
@@ -146,6 +167,8 @@ const MintsoftStatus = () => {
   const [asnPageSize, setAsnPageSize] = useState(50);
   const [returnsPage, setReturnsPage] = useState(1);
   const [returnsPageSize, setReturnsPageSize] = useState(50);
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [ordersPageSize, setOrdersPageSize] = useState(50);
 
   const loadData = async () => {
     setLoading(true);
@@ -158,13 +181,15 @@ const MintsoftStatus = () => {
 
       setAsnRecords(data.asn || []);
       setReturnRecords(data.returns || []);
+      setOrderRecords(data.orders || []);
       setLabels(data.labels || []);
       setStats({
         packs: data.stats?.packs_count || 0,
         asn: data.stats?.asn_count || 0,
         returns: data.stats?.returns_count || 0,
+        orders: data.stats?.orders_count || 0,
       });
-      setPacksPage(1); setAsnPage(1); setReturnsPage(1);
+      setPacksPage(1); setAsnPage(1); setReturnsPage(1); setOrdersPage(1);
     } catch (err: any) {
       console.error('Failed to load Mintsoft data:', err);
       setError(err.message || 'Failed to load data');
@@ -178,6 +203,7 @@ const MintsoftStatus = () => {
   const pagedLabels = useMemo(() => labels.slice((packsPage - 1) * packsPageSize, packsPage * packsPageSize), [labels, packsPage, packsPageSize]);
   const pagedAsn = useMemo(() => asnRecords.slice((asnPage - 1) * asnPageSize, asnPage * asnPageSize), [asnRecords, asnPage, asnPageSize]);
   const pagedReturns = useMemo(() => returnRecords.slice((returnsPage - 1) * returnsPageSize, returnsPage * returnsPageSize), [returnRecords, returnsPage, returnsPageSize]);
+  const pagedOrders = useMemo(() => orderRecords.slice((ordersPage - 1) * ordersPageSize, ordersPage * ordersPageSize), [orderRecords, ordersPage, ordersPageSize]);
 
   const formatDate = (d: string | null) => {
     if (!d) return '—';
@@ -204,7 +230,7 @@ const MintsoftStatus = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Stats */}
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-4">
           <div className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -238,6 +264,17 @@ const MintsoftStatus = () => {
               </div>
             </div>
           </div>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-chart-total/10 text-chart-total">
+                <ShoppingCart className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Orders</p>
+                <p className="text-2xl font-semibold">{stats.orders.toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {error && (
@@ -256,6 +293,7 @@ const MintsoftStatus = () => {
               <TabsTrigger value="packs">Packs ({labels.length})</TabsTrigger>
               <TabsTrigger value="asn">ASN Activity ({asnRecords.length})</TabsTrigger>
               <TabsTrigger value="returns">Returns ({returnRecords.length})</TabsTrigger>
+              <TabsTrigger value="orders">Orders ({orderRecords.length})</TabsTrigger>
             </TabsList>
 
             {/* Packs Tab */}
@@ -514,6 +552,64 @@ const MintsoftStatus = () => {
                     </TableBody>
                   </Table>
                   <PaginationControls total={returnRecords.length} page={returnsPage} pageSize={returnsPageSize} onPageChange={setReturnsPage} onPageSizeChange={setReturnsPageSize} />
+                </div>
+              )}
+            </TabsContent>
+
+            {/* Orders Tab */}
+            <TabsContent value="orders">
+              {orderRecords.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <ShoppingCart className="h-12 w-12 mx-auto mb-3 opacity-40" />
+                  <p>No order records from Mintsoft</p>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-border bg-card overflow-hidden overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border hover:bg-transparent">
+                        <TableHead>ID</TableHead>
+                        <TableHead>Order Number</TableHead>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Recipient</TableHead>
+                        <TableHead>Country</TableHead>
+                        <TableHead>Postcode</TableHead>
+                        <TableHead>Courier</TableHead>
+                        <TableHead>Tracking</TableHead>
+                        <TableHead>Items</TableHead>
+                        <TableHead>Weight</TableHead>
+                        <TableHead>Order Date</TableHead>
+                        <TableHead>Dispatched</TableHead>
+                        <TableHead>Last Updated</TableHead>
+                        <TableHead>Comments</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pagedOrders.map((order, i) => (
+                        <TableRow key={i} className="border-border">
+                          <TableCell className="font-mono font-medium">{order.id ?? '—'}</TableCell>
+                          <TableCell className="font-mono">{order.order_number || '—'}</TableCell>
+                          <TableCell>{order.client || '—'}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{order.status || 'Unknown'}</Badge>
+                          </TableCell>
+                          <TableCell>{order.recipient_name || '—'}</TableCell>
+                          <TableCell>{order.destination_country || '—'}</TableCell>
+                          <TableCell>{order.postcode || '—'}</TableCell>
+                          <TableCell>{order.courier || '—'}</TableCell>
+                          <TableCell className="font-mono text-xs">{order.tracking_number || '—'}</TableCell>
+                          <TableCell>{order.total_items ?? '—'}</TableCell>
+                          <TableCell>{order.weight ? `${order.weight}g` : '—'}</TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(order.order_date)}</TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(order.dispatched_date)}</TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(order.last_updated)}</TableCell>
+                          <TableCell className="text-muted-foreground max-w-[200px] truncate">{order.comments || '—'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <PaginationControls total={orderRecords.length} page={ordersPage} pageSize={ordersPageSize} onPageChange={setOrdersPage} onPageSizeChange={setOrdersPageSize} />
                 </div>
               )}
             </TabsContent>
