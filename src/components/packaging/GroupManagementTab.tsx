@@ -217,6 +217,23 @@ export function GroupManagementTab() {
                           <span className="ml-1 capitalize">{group.status}</span>
                         </Badge>
                       </TableCell>
+                      <TableCell>
+                        {group.mintsoft_asn_status ? (
+                          <Badge variant="outline" className="font-mono text-xs">
+                            {group.mintsoft_asn_status}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {group.merchant_name || <span className="text-muted-foreground text-xs">—</span>}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
+                        {group.last_synced_at 
+                          ? new Date(group.last_synced_at).toLocaleString()
+                          : '—'}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">
                         {new Date(group.created_at).toLocaleDateString()}
                       </TableCell>
