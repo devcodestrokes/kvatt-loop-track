@@ -251,19 +251,33 @@ export function ABTestingTab() {
     };
   }, [filteredData, storesWithAB]);
 
-  // Chart data
-  const chartData = useMemo(() => {
-    return designAggregates
-      .filter(d => d.total > 0)
+  // Chart data - store performance
+  const storeChartData = useMemo(() => {
+    return filteredData
+      .filter(d => d.total_checkouts > 0)
       .map(d => ({
-        name: d.name.length > 15 ? d.name.substring(0, 14) + '…' : d.name,
-        fullName: d.name,
+        name: getDisplayStoreName(d.store).length > 15 ? getDisplayStoreName(d.store).substring(0, 14) + '…' : getDisplayStoreName(d.store),
+        fullName: getDisplayStoreName(d.store),
         'Opt-ins': d.opt_ins,
         'Opt-outs': d.opt_outs,
-        Total: d.total,
-        'Opt-in Rate': Number(d.opt_in_rate.toFixed(1)),
+        Total: d.total_checkouts,
+        'Opt-in Rate': d.total_checkouts > 0 ? Number(((d.opt_ins / d.total_checkouts) * 100).toFixed(1)) : 0,
       }));
-  }, [designAggregates]);
+  }, [filteredData]);
+
+  // Store ranking by opt-in rate
+  const rankedStores = useMemo(() => {
+    return filteredData
+      .filter(d => d.total_checkouts > 0)
+      .map(d => ({
+        name: getDisplayStoreName(d.store),
+        total: d.total_checkouts,
+        opt_ins: d.opt_ins,
+        opt_outs: d.opt_outs,
+        opt_in_rate: d.total_checkouts > 0 ? (d.opt_ins / d.total_checkouts) * 100 : 0,
+      }))
+      .sort((a, b) => b.opt_in_rate - a.opt_in_rate);
+  }, [filteredData]);
 
   return (
     <div className="space-y-6">
