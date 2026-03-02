@@ -525,7 +525,7 @@ export default function SearchOrders() {
                   <p>Get in touch and we'll sort it out.</p>
                 </div>
                 <button
-                  onClick={() => window.location.href = 'mailto:returns@kvatt.com'}
+                  onClick={() => window.location.href = `mailto:${packMerchantEmail || 'returns@kvatt.com'}`}
                   style={{ letterSpacing: '-0.04em' }}
                   className="w-full md:h-[62px] md:text-[20px] h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors flex items-center justify-center">
                   contact brand
