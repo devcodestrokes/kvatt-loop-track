@@ -116,6 +116,7 @@ function SupportFooter() {
 export default function SearchOrders() {
   const [searchParams] = useSearchParams();
   const packId = searchParams.get('packId');
+  const storeId = searchParams.get('storeId');
   const [email, setEmail] = useState("");
   const [orders, setOrders] = useState<OrderResult[]>([]);
   const [customer, setCustomer] = useState<CustomerInfo | null>(null);
@@ -132,9 +133,13 @@ export default function SearchOrders() {
     supabase.functions.invoke('get-merchant-configs').then(({ data }) => {
       if (data?.success && data?.configs) {
         merchantConfigs = data.configs;
+        // If storeId is in URL, set merchant logo immediately
+        if (storeId && merchantConfigs[storeId]?.logo_url) {
+          setActiveMerchantLogo(merchantConfigs[storeId].logo_url);
+        }
       }
     }).catch(err => console.error('Failed to load merchant configs:', err));
-  }, []);
+  }, [storeId]);
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
