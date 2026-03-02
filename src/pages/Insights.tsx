@@ -28,6 +28,7 @@ import { useGlobalLoading } from '@/components/layout/DashboardLayout';
 import { useStoreFilter } from '@/hooks/useStoreFilter';
 import { useApiSync } from '@/hooks/useApiSync';
 import { Store as StoreType, DateRange } from '@/types/analytics';
+import { isDevTestStoreId } from '@/hooks/useAnalytics';
 
 const STORES_API_URL = "https://shopify.kvatt.com/api/get-stores";
 const AUTH_TOKEN = "Bearer %^75464tnfsdhndsfbgr54";

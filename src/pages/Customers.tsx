@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { MultiStoreSelector } from '@/components/dashboard/MultiStoreSelector';
 import { useStoreFilter } from '@/hooks/useStoreFilter';
 import { Store as StoreType } from '@/types/analytics';
+import { isDevTestStoreId } from '@/hooks/useAnalytics';
 
 interface Customer {
   id: string;
