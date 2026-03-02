@@ -181,13 +181,15 @@ const MintsoftStatus = () => {
 
       setAsnRecords(data.asn || []);
       setReturnRecords(data.returns || []);
+      setOrderRecords(data.orders || []);
       setLabels(data.labels || []);
       setStats({
         packs: data.stats?.packs_count || 0,
         asn: data.stats?.asn_count || 0,
         returns: data.stats?.returns_count || 0,
+        orders: data.stats?.orders_count || 0,
       });
-      setPacksPage(1); setAsnPage(1); setReturnsPage(1);
+      setPacksPage(1); setAsnPage(1); setReturnsPage(1); setOrdersPage(1);
     } catch (err: any) {
       console.error('Failed to load Mintsoft data:', err);
       setError(err.message || 'Failed to load data');
