@@ -25,6 +25,10 @@ interface GroupWithPacks {
   label_count: number;
   status: string;
   created_at: string;
+  mintsoft_asn_status?: string | null;
+  mintsoft_asn_id?: number | null;
+  merchant_name?: string | null;
+  last_synced_at?: string | null;
   packs?: {
     id: string;
     label_id: string;
