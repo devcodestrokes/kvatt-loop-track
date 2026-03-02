@@ -318,6 +318,7 @@ export default function SearchOrders() {
       setCustomer(null);
       setSelectedOrderId(null);
       setShowAllOrders(false);
+      setActiveMerchantLogo(null);
     } else if (step === 'search' || step === 'pack') {
       setStep('start');
     }
