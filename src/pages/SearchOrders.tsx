@@ -125,6 +125,7 @@ export default function SearchOrders() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [step, setStep] = useState<'start' | 'search' | 'results' | 'pack' | 'feedback' | 'recording'>('start');
   const [showAllOrders, setShowAllOrders] = useState(false);
+  const [activeMerchantLogo, setActiveMerchantLogo] = useState<string | null>(null);
 
   // Load merchant configs from DB on mount
   useEffect(() => {
