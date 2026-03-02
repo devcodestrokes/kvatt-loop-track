@@ -127,6 +127,7 @@ export default function SearchOrders() {
   const [step, setStep] = useState<'start' | 'search' | 'results' | 'pack' | 'feedback' | 'recording'>('start');
   const [showAllOrders, setShowAllOrders] = useState(false);
   const [activeMerchantLogo, setActiveMerchantLogo] = useState<string | null>(null);
+  const [packMerchantEmail, setPackMerchantEmail] = useState<string | null>(null);
 
   // Load merchant configs from DB on mount
   useEffect(() => {
@@ -137,9 +138,31 @@ export default function SearchOrders() {
         if (storeId && merchantConfigs[storeId]?.logo_url) {
           setActiveMerchantLogo(merchantConfigs[storeId].logo_url);
         }
+        if (storeId && merchantConfigs[storeId]?.contact_email) {
+          setPackMerchantEmail(merchantConfigs[storeId].contact_email);
+        }
       }
     }).catch(err => console.error('Failed to load merchant configs:', err));
   }, [storeId]);
+
+  // Resolve merchant from packId via Mintsoft product name mapping
+  useEffect(() => {
+    if (packId) {
+      supabase.functions.invoke('resolve-pack-merchant', {
+        body: { packId }
+      }).then(({ data }) => {
+        if (data?.success && data?.merchant) {
+          if (data.merchant.logo_url) {
+            setActiveMerchantLogo(data.merchant.logo_url);
+          }
+          if (data.merchant.contact_email) {
+            setPackMerchantEmail(data.merchant.contact_email);
+          }
+          console.log('Pack merchant resolved:', data.merchant.name, 'via product:', data.mintsoft_product_name);
+        }
+      }).catch(err => console.error('Failed to resolve pack merchant:', err));
+    }
+  }, [packId]);
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -502,7 +525,7 @@ export default function SearchOrders() {
                   <p>Get in touch and we'll sort it out.</p>
                 </div>
                 <button
-                  onClick={() => window.location.href = 'mailto:returns@kvatt.com'}
+                  onClick={() => window.location.href = `mailto:${packMerchantEmail || 'returns@kvatt.com'}`}
                   style={{ letterSpacing: '-0.04em' }}
                   className="w-full md:h-[62px] md:text-[20px] h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors flex items-center justify-center">
                   contact brand
@@ -523,7 +546,7 @@ export default function SearchOrders() {
                   <p>Get in touch and we'll sort it out.</p>
                 </div>
                 <button
-                  onClick={() => window.location.href = 'mailto:returns@kvatt.com'}
+                  onClick={() => window.location.href = `mailto:${packMerchantEmail || 'returns@kvatt.com'}`}
                   style={{ letterSpacing: '-0.04em' }}
                   className="w-full md:h-[62px] md:text-[20px] h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors flex items-center justify-center">
                   contact brand
