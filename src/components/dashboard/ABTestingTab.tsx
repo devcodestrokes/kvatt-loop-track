@@ -195,7 +195,16 @@ export function ABTestingTab() {
     a.click();
   };
 
-  const filteredData = showOnlyAB ? data.filter(item => item.variants.length > 0) : data;
+  // AB-enabled stores for the dropdown
+  const abStores = useMemo(() => data.filter(item => item.variants.length > 0), [data]);
+
+  // Filter data based on selected store
+  const filteredData = useMemo(() => {
+    if (selectedStore === 'all_ab') return abStores;
+    if (selectedStore === 'all') return data;
+    return data.filter(item => item.store === selectedStore);
+  }, [data, abStores, selectedStore]);
+
   const storesWithAB = filteredData.filter(item => item.variants.length > 0);
   const storesWithoutAB = filteredData.filter(item => item.variants.length === 0);
 
