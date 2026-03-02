@@ -276,6 +276,15 @@ export function ABTestingTab() {
               disabled={isLoading}
             />
           )}
+          <Button
+            variant={showOnlyAB ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowOnlyAB(!showOnlyAB)}
+            className="gap-2"
+          >
+            <Filter className="h-4 w-4" />
+            {showOnlyAB ? 'AB Only' : 'All Stores'}
+          </Button>
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading} className="gap-2">
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
