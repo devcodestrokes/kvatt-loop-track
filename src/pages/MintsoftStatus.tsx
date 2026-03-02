@@ -104,6 +104,10 @@ interface OrderItem {
   quantity_allocated: number;
   price_ex_vat: number;
   vat: number;
+  weight: number;
+  batch_number: string | null;
+  serial_number: string | null;
+  comments: string | null;
   last_updated: string | null;
   last_updated_by_user: string | null;
 }
@@ -111,21 +115,33 @@ interface OrderItem {
 interface OrderRecord {
   id: number | string | null;
   order_number: string;
+  external_order_ref: string | null;
   client: string | null;
   channel: string | null;
+  channel_id: number | null;
   status: string;
+  order_status_id: number | null;
   warehouse: string | null;
+  warehouse_id: number | null;
   courier_service_name: string | null;
+  courier_service_id: number | null;
   tracking_number: string | null;
   tracking_url: string | null;
   recipient_name: string | null;
+  title: string | null;
+  first_name: string | null;
+  last_name: string | null;
   company_name: string | null;
   email: string | null;
   phone: string | null;
+  mobile: string | null;
   address1: string | null;
+  address2: string | null;
+  address3: string | null;
   town: string | null;
   county: string | null;
   destination_country: string | null;
+  country_id: number | null;
   postcode: string | null;
   weight: number | null;
   total_items: number | null;
@@ -134,11 +150,30 @@ interface OrderRecord {
   order_value: number | null;
   currency: string | null;
   order_date: string | null;
+  source_order_date: string | null;
   dispatched_date: string | null;
+  at_new_date: string | null;
+  required_despatch_date: string | null;
+  required_delivery_date: string | null;
   source: string | null;
+  recipient_type: string | null;
   delivery_notes: string | null;
+  gift_messages: string | null;
   comments: string | null;
+  vat_number: string | null;
+  eori_number: string | null;
+  shipping_total_ex_vat: number | null;
+  shipping_total_vat: number | null;
+  shipping_gross: number | null;
+  discount_total_ex_vat: number | null;
+  discount_gross: number | null;
+  total_vat: number | null;
+  total_order_net: number | null;
+  total_order_tax: number | null;
+  total_order_gross: number | null;
+  pii_removed: boolean;
   order_lock: boolean;
+  tags: string | null;
   last_updated: string | null;
   last_updated_by_user: string | null;
   despatched_by_user: string | null;
@@ -632,15 +667,14 @@ const MintsoftStatus = () => {
                         return (
                           <Fragment key={globalIndex}>
                             <TableRow
-                              className={`border-border ${hasItems ? 'cursor-pointer hover:bg-muted/50' : ''}`}
-                              onClick={() => hasItems && toggleOrderRow(globalIndex)}
+                              className="border-border cursor-pointer hover:bg-muted/50"
+                              onClick={() => toggleOrderRow(globalIndex)}
                             >
                               <TableCell className="w-10 px-2">
-                                {hasItems && (
-                                  isExpanded
-                                    ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                                    : <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                                )}
+                                {isExpanded
+                                  ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                  : <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                }
                               </TableCell>
                               <TableCell>{order.client || '—'}</TableCell>
                               <TableCell>
@@ -663,40 +697,134 @@ const MintsoftStatus = () => {
                               <TableCell className="font-mono text-xs">{order.tracking_number || '—'}</TableCell>
                               <TableCell>{order.order_lock ? 'True' : 'False'}</TableCell>
                             </TableRow>
-                            {isExpanded && hasItems && (
+                            {isExpanded && (
                               <TableRow className="bg-muted/30 border-border">
                                 <TableCell colSpan={15} className="p-0">
-                                  <div className="px-6 py-3">
-                                    <Table>
-                                      <TableHeader>
-                                        <TableRow className="border-border hover:bg-transparent">
-                                          <TableHead className="text-xs font-semibold text-muted-foreground">SKU</TableHead>
-                                          <TableHead className="text-xs font-semibold text-muted-foreground">Name</TableHead>
-                                          <TableHead className="text-xs font-semibold text-muted-foreground">Quantity</TableHead>
-                                          <TableHead className="text-xs font-semibold text-muted-foreground">Quantity Committed</TableHead>
-                                          <TableHead className="text-xs font-semibold text-muted-foreground">Quantity Allocated</TableHead>
-                                          <TableHead className="text-xs font-semibold text-muted-foreground">Price Ex Vat</TableHead>
-                                          <TableHead className="text-xs font-semibold text-muted-foreground">Vat</TableHead>
-                                          <TableHead className="text-xs font-semibold text-muted-foreground">Last Updated</TableHead>
-                                          <TableHead className="text-xs font-semibold text-muted-foreground">Last Updated By</TableHead>
-                                        </TableRow>
-                                      </TableHeader>
-                                      <TableBody>
-                                        {order.items.map((item, j) => (
-                                          <TableRow key={j} className="border-border">
-                                            <TableCell className="font-mono text-sm">{item.sku || '—'}</TableCell>
-                                            <TableCell className="text-sm">{item.name || '—'}</TableCell>
-                                            <TableCell className="text-sm">{item.quantity}</TableCell>
-                                            <TableCell className="text-sm">{item.quantity_committed}</TableCell>
-                                            <TableCell className="text-sm">{item.quantity_allocated}</TableCell>
-                                            <TableCell className="text-sm">{item.price_ex_vat.toFixed(5)}</TableCell>
-                                            <TableCell className="text-sm">{item.vat.toFixed(5)}</TableCell>
-                                            <TableCell className="text-sm text-muted-foreground">{formatDate(item.last_updated)}</TableCell>
-                                            <TableCell className="text-sm text-muted-foreground">{item.last_updated_by_user || '—'}</TableCell>
-                                          </TableRow>
-                                        ))}
-                                      </TableBody>
-                                    </Table>
+                                  <div className="px-6 py-4 space-y-4">
+                                    {/* Order Items Table */}
+                                    {hasItems && (
+                                      <div>
+                                        <h4 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Order Items ({order.items.length})</h4>
+                                        <Table>
+                                          <TableHeader>
+                                            <TableRow className="border-border hover:bg-transparent">
+                                              <TableHead className="text-xs font-semibold text-muted-foreground">SKU</TableHead>
+                                              <TableHead className="text-xs font-semibold text-muted-foreground">Name</TableHead>
+                                              <TableHead className="text-xs font-semibold text-muted-foreground">Qty</TableHead>
+                                              <TableHead className="text-xs font-semibold text-muted-foreground">Committed</TableHead>
+                                              <TableHead className="text-xs font-semibold text-muted-foreground">Allocated</TableHead>
+                                              <TableHead className="text-xs font-semibold text-muted-foreground">Price Ex Vat</TableHead>
+                                              <TableHead className="text-xs font-semibold text-muted-foreground">Vat</TableHead>
+                                              <TableHead className="text-xs font-semibold text-muted-foreground">Weight</TableHead>
+                                              <TableHead className="text-xs font-semibold text-muted-foreground">Batch</TableHead>
+                                              <TableHead className="text-xs font-semibold text-muted-foreground">Serial</TableHead>
+                                              <TableHead className="text-xs font-semibold text-muted-foreground">Comments</TableHead>
+                                              <TableHead className="text-xs font-semibold text-muted-foreground">Last Updated</TableHead>
+                                              <TableHead className="text-xs font-semibold text-muted-foreground">Updated By</TableHead>
+                                            </TableRow>
+                                          </TableHeader>
+                                          <TableBody>
+                                            {order.items.map((item, j) => (
+                                              <TableRow key={j} className="border-border">
+                                                <TableCell className="font-mono text-sm">{item.sku || '—'}</TableCell>
+                                                <TableCell className="text-sm">{item.name || '—'}</TableCell>
+                                                <TableCell className="text-sm">{item.quantity}</TableCell>
+                                                <TableCell className="text-sm">{item.quantity_committed}</TableCell>
+                                                <TableCell className="text-sm">{item.quantity_allocated}</TableCell>
+                                                <TableCell className="text-sm">{typeof item.price_ex_vat === 'number' ? item.price_ex_vat.toFixed(2) : '—'}</TableCell>
+                                                <TableCell className="text-sm">{typeof item.vat === 'number' ? item.vat.toFixed(2) : '—'}</TableCell>
+                                                <TableCell className="text-sm">{item.weight || '—'}</TableCell>
+                                                <TableCell className="text-sm">{item.batch_number || '—'}</TableCell>
+                                                <TableCell className="text-sm">{item.serial_number || '—'}</TableCell>
+                                                <TableCell className="text-sm text-muted-foreground">{item.comments || '—'}</TableCell>
+                                                <TableCell className="text-sm text-muted-foreground">{formatDate(item.last_updated)}</TableCell>
+                                                <TableCell className="text-sm text-muted-foreground">{item.last_updated_by_user || '—'}</TableCell>
+                                              </TableRow>
+                                            ))}
+                                          </TableBody>
+                                        </Table>
+                                      </div>
+                                    )}
+
+                                    {/* Full Order Details */}
+                                    <div>
+                                      <h4 className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">Full Order Details</h4>
+                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-sm">
+                                        <div><span className="text-muted-foreground">ID:</span> <span className="font-mono">{order.id ?? '—'}</span></div>
+                                        <div><span className="text-muted-foreground">Ext Ref:</span> {order.external_order_ref || '—'}</div>
+                                        <div><span className="text-muted-foreground">Channel:</span> {order.channel || '—'}</div>
+                                        <div><span className="text-muted-foreground">Source:</span> {order.source || '—'}</div>
+                                        <div><span className="text-muted-foreground">Warehouse:</span> {order.warehouse || '—'}</div>
+                                        <div><span className="text-muted-foreground">Status:</span> {order.status || '—'}</div>
+                                        <div><span className="text-muted-foreground">Currency:</span> {order.currency || '—'}</div>
+                                        <div><span className="text-muted-foreground">Order Value:</span> {order.order_value != null ? `${order.order_value}` : '—'}</div>
+
+                                        <div className="col-span-2 md:col-span-4 border-t border-border pt-2 mt-1">
+                                          <span className="text-xs font-semibold text-muted-foreground uppercase">Recipient</span>
+                                        </div>
+                                        <div><span className="text-muted-foreground">Name:</span> {order.recipient_name || '—'}</div>
+                                        <div><span className="text-muted-foreground">Company:</span> {order.company_name || '—'}</div>
+                                        <div><span className="text-muted-foreground">Email:</span> {order.email || '—'}</div>
+                                        <div><span className="text-muted-foreground">Phone:</span> {order.phone || order.mobile || '—'}</div>
+                                        <div><span className="text-muted-foreground">Address:</span> {[order.address1, order.address2, order.address3].filter(Boolean).join(', ') || '—'}</div>
+                                        <div><span className="text-muted-foreground">Town:</span> {order.town || '—'}</div>
+                                        <div><span className="text-muted-foreground">County:</span> {order.county || '—'}</div>
+                                        <div><span className="text-muted-foreground">Postcode:</span> {order.postcode || '—'}</div>
+                                        <div><span className="text-muted-foreground">Country:</span> {order.destination_country || '—'}</div>
+                                        <div><span className="text-muted-foreground">Recipient Type:</span> {order.recipient_type || '—'}</div>
+
+                                        <div className="col-span-2 md:col-span-4 border-t border-border pt-2 mt-1">
+                                          <span className="text-xs font-semibold text-muted-foreground uppercase">Shipping & Courier</span>
+                                        </div>
+                                        <div><span className="text-muted-foreground">Courier:</span> {order.courier_service_name || '—'}</div>
+                                        <div><span className="text-muted-foreground">Tracking:</span> {order.tracking_number || '—'}</div>
+                                        <div><span className="text-muted-foreground">Parcels:</span> {order.num_parcels ?? '—'}</div>
+                                        <div><span className="text-muted-foreground">Weight:</span> {order.weight != null ? order.weight : '—'}</div>
+                                        <div><span className="text-muted-foreground">Total Items:</span> {order.total_items ?? '—'}</div>
+                                        <div><span className="text-muted-foreground">Parts:</span> {order.parts || '—'}</div>
+                                        {order.tracking_url && (
+                                          <div className="col-span-2"><span className="text-muted-foreground">Tracking URL:</span> <a href={order.tracking_url} target="_blank" rel="noopener noreferrer" className="text-primary underline break-all">{order.tracking_url}</a></div>
+                                        )}
+
+                                        <div className="col-span-2 md:col-span-4 border-t border-border pt-2 mt-1">
+                                          <span className="text-xs font-semibold text-muted-foreground uppercase">Financials</span>
+                                        </div>
+                                        <div><span className="text-muted-foreground">Shipping Ex Vat:</span> {order.shipping_total_ex_vat ?? '—'}</div>
+                                        <div><span className="text-muted-foreground">Shipping Vat:</span> {order.shipping_total_vat ?? '—'}</div>
+                                        <div><span className="text-muted-foreground">Shipping Gross:</span> {order.shipping_gross ?? '—'}</div>
+                                        <div><span className="text-muted-foreground">Discount Ex Vat:</span> {order.discount_total_ex_vat ?? '—'}</div>
+                                        <div><span className="text-muted-foreground">Discount Gross:</span> {order.discount_gross ?? '—'}</div>
+                                        <div><span className="text-muted-foreground">Total Vat:</span> {order.total_vat ?? '—'}</div>
+                                        <div><span className="text-muted-foreground">Total Net:</span> {order.total_order_net ?? '—'}</div>
+                                        <div><span className="text-muted-foreground">Total Tax:</span> {order.total_order_tax ?? '—'}</div>
+                                        <div><span className="text-muted-foreground">Total Gross:</span> {order.total_order_gross ?? '—'}</div>
+                                        <div><span className="text-muted-foreground">VAT Number:</span> {order.vat_number || '—'}</div>
+                                        <div><span className="text-muted-foreground">EORI Number:</span> {order.eori_number || '—'}</div>
+
+                                        <div className="col-span-2 md:col-span-4 border-t border-border pt-2 mt-1">
+                                          <span className="text-xs font-semibold text-muted-foreground uppercase">Dates</span>
+                                        </div>
+                                        <div><span className="text-muted-foreground">Order Date:</span> {formatDate(order.order_date)}</div>
+                                        <div><span className="text-muted-foreground">Source Order Date:</span> {formatDate(order.source_order_date)}</div>
+                                        <div><span className="text-muted-foreground">Dispatched:</span> {formatDate(order.dispatched_date)}</div>
+                                        <div><span className="text-muted-foreground">At New Date:</span> {formatDate(order.at_new_date)}</div>
+                                        <div><span className="text-muted-foreground">Req. Despatch:</span> {formatDate(order.required_despatch_date)}</div>
+                                        <div><span className="text-muted-foreground">Req. Delivery:</span> {formatDate(order.required_delivery_date)}</div>
+
+                                        <div className="col-span-2 md:col-span-4 border-t border-border pt-2 mt-1">
+                                          <span className="text-xs font-semibold text-muted-foreground uppercase">Notes & Metadata</span>
+                                        </div>
+                                        <div className="col-span-2"><span className="text-muted-foreground">Delivery Notes:</span> {order.delivery_notes || '—'}</div>
+                                        <div className="col-span-2"><span className="text-muted-foreground">Gift Messages:</span> {order.gift_messages || '—'}</div>
+                                        <div className="col-span-2"><span className="text-muted-foreground">Comments:</span> {order.comments || '—'}</div>
+                                        <div><span className="text-muted-foreground">Tags:</span> {order.tags || '—'}</div>
+                                        <div><span className="text-muted-foreground">Order Lock:</span> {order.order_lock ? 'True' : 'False'}</div>
+                                        <div><span className="text-muted-foreground">PII Removed:</span> {order.pii_removed ? 'Yes' : 'No'}</div>
+                                        <div><span className="text-muted-foreground">Despatched By:</span> {order.despatched_by_user || '—'}</div>
+                                        <div><span className="text-muted-foreground">Last Updated:</span> {formatDate(order.last_updated)}</div>
+                                        <div><span className="text-muted-foreground">Updated By:</span> {order.last_updated_by_user || '—'}</div>
+                                      </div>
+                                    </div>
                                   </div>
                                 </TableCell>
                               </TableRow>
