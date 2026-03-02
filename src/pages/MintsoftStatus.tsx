@@ -671,11 +671,10 @@ const MintsoftStatus = () => {
                               onClick={() => toggleOrderRow(globalIndex)}
                             >
                               <TableCell className="w-10 px-2">
-                                {hasItems && (
-                                  isExpanded
-                                    ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                                    : <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                                )}
+                                {isExpanded
+                                  ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                  : <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                }
                               </TableCell>
                               <TableCell>{order.client || '—'}</TableCell>
                               <TableCell>
