@@ -115,22 +115,33 @@ interface OrderRecord {
   channel: string | null;
   status: string;
   warehouse: string | null;
-  courier: string | null;
-  courier_service: string | null;
+  courier_service_name: string | null;
   tracking_number: string | null;
+  tracking_url: string | null;
   recipient_name: string | null;
+  company_name: string | null;
+  email: string | null;
+  phone: string | null;
+  address1: string | null;
+  town: string | null;
+  county: string | null;
   destination_country: string | null;
   postcode: string | null;
   weight: number | null;
   total_items: number | null;
   num_parcels: number | null;
   parts: string | null;
+  order_value: number | null;
+  currency: string | null;
   order_date: string | null;
   dispatched_date: string | null;
-  last_updated: string | null;
-  last_updated_by_user: string | null;
+  source: string | null;
+  delivery_notes: string | null;
   comments: string | null;
   order_lock: boolean;
+  last_updated: string | null;
+  last_updated_by_user: string | null;
+  despatched_by_user: string | null;
   items: OrderItem[];
 }
 
@@ -602,9 +613,9 @@ const MintsoftStatus = () => {
                         <TableHead>Order Number</TableHead>
                         <TableHead>Parts</TableHead>
                         <TableHead>Order Date</TableHead>
-                        <TableHead>Recipient</TableHead>
+                        <TableHead>Name</TableHead>
                         <TableHead>Postcode</TableHead>
-                        <TableHead>Courier</TableHead>
+                        <TableHead>Courier Service</TableHead>
                         <TableHead>Parcels</TableHead>
                         <TableHead>Weight</TableHead>
                         <TableHead>Items</TableHead>
@@ -642,7 +653,7 @@ const MintsoftStatus = () => {
                               <TableCell className="text-muted-foreground">{formatDate(order.order_date)}</TableCell>
                               <TableCell>{order.recipient_name || '—'}</TableCell>
                               <TableCell>{order.postcode || '—'}</TableCell>
-                              <TableCell>{order.courier || '—'}</TableCell>
+                              <TableCell>{order.courier_service_name || '—'}</TableCell>
                               <TableCell>{order.num_parcels ?? '—'}</TableCell>
                               <TableCell>{order.weight != null ? order.weight.toFixed(3) : '—'}</TableCell>
                               <TableCell>{order.total_items ?? '—'}</TableCell>
