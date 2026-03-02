@@ -126,7 +126,7 @@ export function ABTestingTab() {
 
   const [dateRange, setDateRange] = useState<DateRange | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>();
-  const [showOnlyAB, setShowOnlyAB] = useState(true);
+  const [selectedStore, setSelectedStore] = useState<string>('all_ab');
   const initialLoadRef = useRef(false);
 
   useEffect(() => {
