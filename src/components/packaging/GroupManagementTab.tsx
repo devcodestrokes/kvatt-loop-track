@@ -178,6 +178,9 @@ export function GroupManagementTab() {
                   <TableHead>Group ID</TableHead>
                   <TableHead>Packs</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>ASN Status</TableHead>
+                  <TableHead>Merchant</TableHead>
+                  <TableHead>Last Synced</TableHead>
                   <TableHead>Created</TableHead>
                 </TableRow>
               </TableHeader>
