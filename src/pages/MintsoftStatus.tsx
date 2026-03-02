@@ -203,6 +203,7 @@ const MintsoftStatus = () => {
   const pagedLabels = useMemo(() => labels.slice((packsPage - 1) * packsPageSize, packsPage * packsPageSize), [labels, packsPage, packsPageSize]);
   const pagedAsn = useMemo(() => asnRecords.slice((asnPage - 1) * asnPageSize, asnPage * asnPageSize), [asnRecords, asnPage, asnPageSize]);
   const pagedReturns = useMemo(() => returnRecords.slice((returnsPage - 1) * returnsPageSize, returnsPage * returnsPageSize), [returnRecords, returnsPage, returnsPageSize]);
+  const pagedOrders = useMemo(() => orderRecords.slice((ordersPage - 1) * ordersPageSize, ordersPage * ordersPageSize), [orderRecords, ordersPage, ordersPageSize]);
 
   const formatDate = (d: string | null) => {
     if (!d) return '—';
