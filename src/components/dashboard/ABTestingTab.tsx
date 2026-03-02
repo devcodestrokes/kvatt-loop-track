@@ -270,21 +270,31 @@ export function ABTestingTab() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <div className="icon-glow">
               <FlaskConical className="h-5 w-5 text-white" />
             </div>
             <h2 className="text-2xl font-bold tracking-tight text-foreground">A/B Testing</h2>
           </div>
+          <div className="flex items-center gap-3">
+            {lastUpdated && (
+              <span className="text-xs text-muted-foreground">
+                Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading} className="gap-2">
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportToCSV} className="gap-2">
+              <Download className="h-4 w-4" />
+              CSV
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          {lastUpdated && (
-            <span className="text-xs text-muted-foreground">
-              Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          )}
+        <div className="flex items-center gap-3 flex-wrap">
           {dateRange && (
             <DateRangePicker
               dateRange={dateRange}
@@ -309,14 +319,6 @@ export function ABTestingTab() {
               </SelectContent>
             </Select>
           </div>
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading} className="gap-2">
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <Button variant="outline" size="sm" onClick={exportToCSV} className="gap-2">
-            <Download className="h-4 w-4" />
-            CSV
-          </Button>
         </div>
       </div>
 
