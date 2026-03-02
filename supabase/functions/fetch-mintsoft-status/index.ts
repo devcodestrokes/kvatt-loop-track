@@ -185,7 +185,7 @@ serve(async (req) => {
           id: orderId || null,
           order_number: order.OrderNumber || order.ExternalOrderNumber || '',
           client: order.CLIENTSHORTNAME || order.ClientShortName || order.Client?.Name || order.ClientName || null,
-          channel: order.Channel || (typeof order.OrderChannel === 'object' ? order.OrderChannel?.Name : order.OrderChannel) || null,
+          channel: (typeof order.Channel === 'object' ? order.Channel?.Name : order.Channel) || (typeof order.OrderChannel === 'object' ? order.OrderChannel?.Name : order.OrderChannel) || null,
           status: (typeof order.OrderStatus === 'object' ? order.OrderStatus?.Name : order.OrderStatus) || (typeof order.Status === 'object' ? order.Status?.Name : order.Status) || 'Unknown',
           warehouse: (typeof order.Warehouse === 'object' ? order.Warehouse?.Name : order.Warehouse) || order.WarehouseName || null,
           courier: (typeof order.Courier === 'object' ? order.Courier?.Name : order.Courier) || order.CourierName || order.CourierServiceName || null,
