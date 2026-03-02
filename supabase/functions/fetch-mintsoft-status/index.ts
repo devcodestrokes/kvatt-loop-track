@@ -149,79 +149,141 @@ serve(async (req) => {
       returnsRecords.push(...results);
     }
 
-    // Parse Orders records - list endpoint already includes OrderItems
+    // Parse Orders records - fetch individual details for complete data
     const ordersRecords: any[] = [];
     if (Array.isArray(ordersData)) {
-      for (const order of ordersData) {
+      const orderFetches = ordersData.map(async (order: any) => {
         const orderId = order.ID || order.Id;
-        
-        // Parse order items from list response (already included)
         let orderItems: any[] = [];
-        const rawItems = order.OrderItems || order.Items || [];
-        if (Array.isArray(rawItems)) {
-          orderItems = rawItems.map((item: any) => ({
-            sku: item.ProductCode || item.SKU || '',
-            name: item.ProductName || item.Name || item.Description || '',
-            quantity: item.Quantity || 0,
-            quantity_committed: item.QuantityCommitted || item.CommittedQuantity || 0,
-            quantity_allocated: item.QuantityAllocated || item.AllocatedQuantity || 0,
-            price_ex_vat: item.PriceExVat || item.Price || 0,
-            vat: item.Vat || item.VatAmount || 0,
-            last_updated: item.LastUpdated || null,
-            last_updated_by_user: item.LastUpdatedByUser || null,
-          }));
+
+        // Fetch individual order to get full OrderItems
+        if (orderId) {
+          try {
+            const detailRes = await fetch(`https://api.mintsoft.co.uk/api/Order/${orderId}`, {
+              headers: { 'Accept': 'application/json', 'ms-apikey': MINTSOFT_API_KEY! },
+            });
+            const detailData = await detailRes.json();
+            const rawItems = detailData?.OrderItems || detailData?.Items || [];
+            if (Array.isArray(rawItems)) {
+              orderItems = rawItems.map((item: any) => ({
+                sku: item.ProductCode || item.SKU || '',
+                name: item.ProductName || item.Name || item.Description || '',
+                quantity: item.Quantity || 0,
+                quantity_committed: item.QuantityCommitted || item.CommittedQuantity || 0,
+                quantity_allocated: item.QuantityAllocated || item.AllocatedQuantity || 0,
+                price_ex_vat: item.PriceExVat || item.Price || 0,
+                vat: item.Vat || item.VatAmount || 0,
+                weight: item.Weight || 0,
+                batch_number: item.BatchNumber || null,
+                serial_number: item.SerialNumber || null,
+                comments: item.Comments || null,
+                last_updated: item.LastUpdated || null,
+                last_updated_by_user: item.LastUpdatedByUser || null,
+              }));
+            }
+            // Use detail data for richer fields if available
+            if (detailData) {
+              Object.assign(order, detailData);
+            }
+          } catch (e) {
+            console.error(`Failed to fetch details for Order ${orderId}:`, e);
+          }
         }
 
-        // Build recipient name from FirstName + LastName
-        const firstName = order.FirstName || '';
-        const lastName = order.LastName || '';
-        const recipientName = [order.Title, firstName, lastName].filter(Boolean).join(' ').trim() || order.CompanyName || null;
+        // Build recipient name
+        const recipientName = [order.Title, order.FirstName, order.LastName].filter(Boolean).join(' ').trim() || order.CompanyName || null;
 
         // Parts field
         const part = order.Part;
         const numberOfParts = order.NumberOfParts;
         const partsDisplay = (part && numberOfParts) ? `${part}of${numberOfParts}` : null;
 
-        ordersRecords.push({
+        // Safely extract string from possible object fields
+        const safeStr = (val: any, key = 'Name') => {
+          if (val == null) return null;
+          if (typeof val === 'string') return val;
+          if (typeof val === 'object') return val[key] || val.Name || JSON.stringify(val);
+          return String(val);
+        };
+
+        return {
           id: orderId || null,
           order_number: order.OrderNumber || order.ExternalOrderReference || '',
+          external_order_ref: order.ExternalOrderReference || null,
           client: order.CLIENT_CODE || order.CLIENTSHORTNAME || order.ClientShortName || null,
-          channel: (typeof order.Channel === 'object' ? order.Channel?.Name : order.Channel) || null,
-          status: (typeof order.OrderStatus === 'object' ? order.OrderStatus?.Name : order.OrderStatus) || 'Unknown',
-          warehouse: order.WAREHOUSE_CODE || (typeof order.Warehouse === 'object' ? order.Warehouse?.Name : order.Warehouse) || null,
+          channel: safeStr(order.Channel),
+          channel_id: order.ChannelId || null,
+          status: safeStr(order.OrderStatus) || safeStr(order.OrderStatusId) || 'Unknown',
+          order_status_id: order.OrderStatusId || null,
+          warehouse: order.WAREHOUSE_CODE || safeStr(order.Warehouse) || null,
+          warehouse_id: order.WarehouseId || null,
           courier_service_name: order.CourierServiceName || null,
+          courier_service_id: order.CourierServiceId || null,
+          courier_service_type_id: order.CourierServiceTypeId || null,
           tracking_number: order.TrackingNumber || null,
           tracking_url: order.TrackingURL || null,
           recipient_name: recipientName,
+          title: order.Title || null,
+          first_name: order.FirstName || null,
+          last_name: order.LastName || null,
           company_name: order.CompanyName || null,
           email: order.Email || null,
-          phone: order.Phone || order.Mobile || null,
+          phone: order.Phone || null,
+          mobile: order.Mobile || null,
           address1: order.Address1 || null,
           address2: order.Address2 || null,
           address3: order.Address3 || null,
           town: order.Town || null,
           county: order.County || null,
-          destination_country: (typeof order.Country === 'object' ? order.Country?.Name : order.Country) || null,
+          destination_country: safeStr(order.Country),
+          country_id: order.CountryId || null,
           postcode: order.PostCode || null,
           weight: order.TotalWeight ?? order.Weight ?? null,
           total_items: order.TotalItems || null,
           num_parcels: order.NumberOfParcels || null,
           parts: partsDisplay,
+          part: order.Part || null,
+          number_of_parts: order.NumberOfParts || null,
           order_value: order.OrderValue || null,
-          currency: (typeof order.Currency === 'object' ? order.Currency?.Name : order.Currency) || null,
+          currency: safeStr(order.Currency),
+          currency_id: order.CurrencyId || null,
           order_date: order.OrderDate || null,
+          source_order_date: order.SourceOrderDate || null,
           dispatched_date: order.DespatchDate || null,
+          at_new_date: order.AtNewDate || null,
+          sla_warning_date: order.SLAWarningDate || null,
+          sla_despatch_date: order.SLADespatchDate || null,
+          required_despatch_date: order.RequiredDespatchDate || null,
+          required_delivery_date: order.RequiredDeliveryDate || null,
           source: order.Source || null,
+          recipient_type: safeStr(order.RecipientType),
           delivery_notes: order.DeliveryNotes || null,
           gift_messages: order.GiftMessages || null,
           comments: order.Comments || null,
+          vat_number: order.VATNumber || null,
+          eori_number: order.EORINumber || null,
+          shipping_total_ex_vat: order.ShippingTotalExVat || order.ShippingNet || null,
+          shipping_total_vat: order.ShippingTotalVat || order.ShippingTax || null,
+          shipping_gross: order.ShippingGross || null,
+          discount_total_ex_vat: order.DiscountTotalExVat || order.DiscountNet || null,
+          discount_total_vat: order.DiscountTotalVat || order.DiscountTax || null,
+          discount_gross: order.DiscountGross || null,
+          total_vat: order.TotalVat || null,
+          total_order_net: order.TotalOrderNet || null,
+          total_order_tax: order.TotalOrderTax || null,
+          total_order_gross: order.TotalOrderGross || null,
+          pii_removed: order.PIIRemoved || false,
           order_lock: order.OrderLock || false,
+          tags: safeStr(order.Tags),
           last_updated: order.LastUpdated || null,
           last_updated_by_user: order.LastUpdatedByUser || null,
           despatched_by_user: order.DespatchedByUser || null,
           items: orderItems,
-        });
-      }
+        };
+      });
+
+      const results = await Promise.all(orderFetches);
+      ordersRecords.push(...results);
     }
 
     // Fetch ALL labels from Supabase (paginated)
