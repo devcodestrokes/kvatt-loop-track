@@ -28,6 +28,7 @@ import { useGlobalLoading } from '@/components/layout/DashboardLayout';
 import { useStoreFilter } from '@/hooks/useStoreFilter';
 import { useApiSync } from '@/hooks/useApiSync';
 import { Store as StoreType, DateRange } from '@/types/analytics';
+import { isDevTestStoreId } from '@/hooks/useAnalytics';
 
 const STORES_API_URL = "https://shopify.kvatt.com/api/get-stores";
 const AUTH_TOKEN = "Bearer %^75464tnfsdhndsfbgr54";
@@ -269,14 +270,15 @@ const Insights = () => {
         });
         setStoreNameMapping(mapping);
         
-        const storesList: StoreType[] = data.stores.map((store: any, index: number) => {
-          // Format: "Storename [Store NUMBER]" with proper capitalization
-          const displayName = formatStoreDisplayName(store.name, store.id);
-          return {
-            id: store.id,
-            name: `${displayName} (${store.orderCount.toLocaleString()} orders)`
-          };
-        });
+        const storesList: StoreType[] = data.stores
+          .filter((store: any) => !isDevTestStoreId(store.id?.toString()))
+          .map((store: any, index: number) => {
+            const displayName = formatStoreDisplayName(store.name, store.id);
+            return {
+              id: store.id,
+              name: `${displayName} (${store.orderCount.toLocaleString()} orders)`
+            };
+          });
         setAvailableStores(storesList);
       } else {
         // Fallback to direct query if edge function fails

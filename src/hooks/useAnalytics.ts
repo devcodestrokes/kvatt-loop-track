@@ -24,7 +24,35 @@ const STORE_NAME_MAPPING: Record<string, string> = {
   'leming-kvatt-demo.myshopify.com': 'leming-kvatt-demo',
   'kapil-kvatt-checkout.myshopify.com': 'Kapil Kvatt Checkout',
   '6a86bd.myshopify.com': '6a86bd',
+  'arkitaip.myshopify.com': 'Arkitaip',
 };
+
+// Dev/test/demo stores to exclude from production analytics (not A/B testing)
+export const DEV_TEST_STORE_DOMAINS = new Set([
+  'kvatt-green-package-demo.myshopify.com',
+  'toast-dev.myshopify.com',
+  'toast-newdev.myshopify.com',
+  'toast-newdev-us.myshopify.com',
+  'toast-dev-us.myshopify.com',
+  'kvatt-dev.myshopify.com',
+  'smitg-kvatt-demo.myshopify.com',
+  'smit-v2.myshopify.com',
+  'kvatt-test-gb.myshopify.com',
+  'leming-kvatt-demo.myshopify.com',
+  'kapil-kvatt-checkout.myshopify.com',
+  '6a86bd.myshopify.com',
+]);
+
+// Check if a store domain is a dev/test store
+export const isDevTestStore = (domain: string): boolean => DEV_TEST_STORE_DOMAINS.has(domain);
+
+// Dev/test store IDs (numeric) used in imported_orders/get-store-mapping
+export const DEV_TEST_STORE_IDS = new Set([
+  '1', '5', '6', '8', '9', '10', '11', '20', '23', '24', '25', '26', '28', '29',
+]);
+
+// Check if a store ID (numeric) is a dev/test store
+export const isDevTestStoreId = (storeId: string): boolean => DEV_TEST_STORE_IDS.has(storeId);
 
 // Get display store name from store domain
 export const getDisplayStoreName = (storeDomain: string): string => {
@@ -73,11 +101,13 @@ export function useAnalytics() {
       const result = await response.json();
       
       if (result.status === 200 && result.data?.length) {
-        // Use store name from mapping
-        const storesList: Store[] = result.data.map((storeDomain: string) => ({
-          id: storeDomain,
-          name: getDisplayStoreName(storeDomain)
-        }));
+        // Filter out dev/test stores from production
+        const storesList: Store[] = result.data
+          .filter((storeDomain: string) => !isDevTestStore(storeDomain))
+          .map((storeDomain: string) => ({
+            id: storeDomain,
+            name: getDisplayStoreName(storeDomain)
+          }));
         setStores(storesList);
         return storesList;
       }
@@ -119,8 +149,13 @@ export function useAnalytics() {
       const result = await response.json();
 
       if (result.status === 200 && result.data?.length) {
+        // Filter out dev/test stores from production analytics
+        const filteredData = result.data.filter(
+          (item: AnalyticsData) => !isDevTestStore(item.store)
+        );
+
         // Check if all data has zero values
-        const hasActualData = result.data.some(
+        const hasActualData = filteredData.some(
           (item: AnalyticsData) => 
             item.total_checkouts > 0 || item.opt_ins > 0 || item.opt_outs > 0
         );
@@ -130,7 +165,7 @@ export function useAnalytics() {
           await sendFailureNotification(dateRange, storeId, "All stores returned zero data");
         }
 
-        setData(result.data);
+        setData(filteredData);
         return result.data;
       } else {
         // No data returned - send notification
