@@ -167,6 +167,8 @@ const MintsoftStatus = () => {
   const [asnPageSize, setAsnPageSize] = useState(50);
   const [returnsPage, setReturnsPage] = useState(1);
   const [returnsPageSize, setReturnsPageSize] = useState(50);
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [ordersPageSize, setOrdersPageSize] = useState(50);
 
   const loadData = async () => {
     setLoading(true);
