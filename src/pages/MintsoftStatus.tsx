@@ -555,6 +555,64 @@ const MintsoftStatus = () => {
                 </div>
               )}
             </TabsContent>
+
+            {/* Orders Tab */}
+            <TabsContent value="orders">
+              {orderRecords.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <ShoppingCart className="h-12 w-12 mx-auto mb-3 opacity-40" />
+                  <p>No order records from Mintsoft</p>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-border bg-card overflow-hidden overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-border hover:bg-transparent">
+                        <TableHead>ID</TableHead>
+                        <TableHead>Order Number</TableHead>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Recipient</TableHead>
+                        <TableHead>Country</TableHead>
+                        <TableHead>Postcode</TableHead>
+                        <TableHead>Courier</TableHead>
+                        <TableHead>Tracking</TableHead>
+                        <TableHead>Items</TableHead>
+                        <TableHead>Weight</TableHead>
+                        <TableHead>Order Date</TableHead>
+                        <TableHead>Dispatched</TableHead>
+                        <TableHead>Last Updated</TableHead>
+                        <TableHead>Comments</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {pagedOrders.map((order, i) => (
+                        <TableRow key={i} className="border-border">
+                          <TableCell className="font-mono font-medium">{order.id ?? '—'}</TableCell>
+                          <TableCell className="font-mono">{order.order_number || '—'}</TableCell>
+                          <TableCell>{order.client || '—'}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{order.status || 'Unknown'}</Badge>
+                          </TableCell>
+                          <TableCell>{order.recipient_name || '—'}</TableCell>
+                          <TableCell>{order.destination_country || '—'}</TableCell>
+                          <TableCell>{order.postcode || '—'}</TableCell>
+                          <TableCell>{order.courier || '—'}</TableCell>
+                          <TableCell className="font-mono text-xs">{order.tracking_number || '—'}</TableCell>
+                          <TableCell>{order.total_items ?? '—'}</TableCell>
+                          <TableCell>{order.weight ? `${order.weight}g` : '—'}</TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(order.order_date)}</TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(order.dispatched_date)}</TableCell>
+                          <TableCell className="text-muted-foreground">{formatDate(order.last_updated)}</TableCell>
+                          <TableCell className="text-muted-foreground max-w-[200px] truncate">{order.comments || '—'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <PaginationControls total={orderRecords.length} page={ordersPage} pageSize={ordersPageSize} onPageChange={setOrdersPage} onPageSizeChange={setOrdersPageSize} />
+                </div>
+              )}
+            </TabsContent>
           </Tabs>
         )}
       </div>
