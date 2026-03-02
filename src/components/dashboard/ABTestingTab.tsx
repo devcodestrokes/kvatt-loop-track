@@ -8,6 +8,8 @@ import { LoadingSkeleton } from '@/components/dashboard/LoadingSkeleton';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { getDisplayStoreName } from '@/hooks/useAnalytics';
+import { MultiStoreSelector } from '@/components/dashboard/MultiStoreSelector';
+import { Store } from '@/types/analytics';
 import {
   Table,
   TableBody,
