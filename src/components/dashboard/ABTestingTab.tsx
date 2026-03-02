@@ -348,7 +348,7 @@ export function ABTestingTab() {
       ) : (
         <div className="space-y-6">
           {/* Bar Chart + Ranking side by side */}
-          {chartData.length > 0 && (
+          {storeChartData.length > 0 && (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
               {/* Bar Chart */}
               <div className="data-table lg:col-span-2">
