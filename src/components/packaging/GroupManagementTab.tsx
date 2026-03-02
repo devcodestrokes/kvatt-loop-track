@@ -25,6 +25,10 @@ interface GroupWithPacks {
   label_count: number;
   status: string;
   created_at: string;
+  mintsoft_asn_status?: string | null;
+  mintsoft_asn_id?: number | null;
+  merchant_name?: string | null;
+  last_synced_at?: string | null;
   packs?: {
     id: string;
     label_id: string;
@@ -37,7 +41,9 @@ const STATUS_COLORS: Record<string, string> = {
   created: "bg-blue-100 text-blue-800",
   pending: "bg-yellow-100 text-yellow-800",
   shipped: "bg-purple-100 text-purple-800",
+  delivered: "bg-indigo-100 text-indigo-800",
   completed: "bg-green-100 text-green-800",
+  discrepancy: "bg-red-100 text-red-800",
 };
 
 export function GroupManagementTab() {
@@ -172,6 +178,9 @@ export function GroupManagementTab() {
                   <TableHead>Group ID</TableHead>
                   <TableHead>Packs</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>ASN Status</TableHead>
+                  <TableHead>Merchant</TableHead>
+                  <TableHead>Last Synced</TableHead>
                   <TableHead>Created</TableHead>
                 </TableRow>
               </TableHeader>
@@ -208,13 +217,30 @@ export function GroupManagementTab() {
                           <span className="ml-1 capitalize">{group.status}</span>
                         </Badge>
                       </TableCell>
+                      <TableCell>
+                        {group.mintsoft_asn_status ? (
+                          <Badge variant="outline" className="font-mono text-xs">
+                            {group.mintsoft_asn_status}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {group.merchant_name || <span className="text-muted-foreground text-xs">—</span>}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs">
+                        {group.last_synced_at 
+                          ? new Date(group.last_synced_at).toLocaleString()
+                          : '—'}
+                      </TableCell>
                       <TableCell className="text-muted-foreground">
                         {new Date(group.created_at).toLocaleDateString()}
                       </TableCell>
                     </TableRow>
                     {expandedGroups.has(group.id) && group.packs && (
                       <TableRow>
-                        <TableCell colSpan={5} className="bg-muted/30 p-4">
+                        <TableCell colSpan={8} className="bg-muted/30 p-4">
                           <div className="space-y-3">
                             <div className="flex gap-4 text-sm">
                               <span className="text-muted-foreground">Pack Status Summary:</span>
