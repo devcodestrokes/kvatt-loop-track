@@ -210,7 +210,7 @@ serve(async (req) => {
           id: orderId || null,
           order_number: order.OrderNumber || order.ExternalOrderReference || '',
           external_order_ref: order.ExternalOrderReference || null,
-          client: order.CLIENT_CODE || order.CLIENTSHORTNAME || order.ClientShortName || null,
+          client: order.ClientShortName || order.CLIENTSHORTNAME || safeStr(order.Client) || null,
           channel: safeStr(order.Channel),
           channel_id: order.ChannelId || null,
           status: safeStr(order.OrderStatus) || safeStr(order.OrderStatusId) || 'Unknown',
