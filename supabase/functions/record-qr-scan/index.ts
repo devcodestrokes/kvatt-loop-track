@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       .insert({
         label_id: label.id,
         merchant_id: label.merchant_id,
-        event_type: 'qr_scan',
+        event_type: 'customer_scan',
         location: 'returns_portal',
       });
 
