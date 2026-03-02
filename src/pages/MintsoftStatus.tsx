@@ -180,6 +180,15 @@ const MintsoftStatus = () => {
     });
   };
 
+  const toggleOrderRow = (index: number) => {
+    setExpandedOrderRows(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
   const [packsPage, setPacksPage] = useState(1);
   const [packsPageSize, setPacksPageSize] = useState(50);
   const [asnPage, setAsnPage] = useState(1);
