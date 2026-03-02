@@ -126,6 +126,15 @@ export default function SearchOrders() {
   const [step, setStep] = useState<'start' | 'search' | 'results' | 'pack' | 'feedback' | 'recording'>('start');
   const [showAllOrders, setShowAllOrders] = useState(false);
 
+  // Load merchant configs from DB on mount
+  useEffect(() => {
+    supabase.functions.invoke('get-merchant-configs').then(({ data }) => {
+      if (data?.success && data?.configs) {
+        merchantConfigs = data.configs;
+      }
+    }).catch(err => console.error('Failed to load merchant configs:', err));
+  }, []);
+
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
