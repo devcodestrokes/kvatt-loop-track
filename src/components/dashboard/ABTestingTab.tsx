@@ -1,5 +1,12 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { FlaskConical, RefreshCw, Download, ChevronDown, ChevronRight, ShoppingCart, ThumbsUp, ThumbsDown, Percent, Layers, Store as StoreIcon, Trophy, Medal, Filter } from 'lucide-react';
+import { FlaskConical, RefreshCw, Download, ChevronDown, ChevronRight, ShoppingCart, ThumbsUp, ThumbsDown, Percent, Layers, Store as StoreIcon, Trophy, Medal } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useABTestingAnalytics, ABTestingData } from '@/hooks/useABTestingAnalytics';
 import { useUserDefaults } from '@/hooks/useUserDefaults';
 import { DateRange } from '@/types/analytics';
@@ -119,7 +126,7 @@ export function ABTestingTab() {
 
   const [dateRange, setDateRange] = useState<DateRange | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>();
-  const [showOnlyAB, setShowOnlyAB] = useState(true);
+  const [selectedStore, setSelectedStore] = useState<string>('all_ab');
   const initialLoadRef = useRef(false);
 
   useEffect(() => {
@@ -188,7 +195,16 @@ export function ABTestingTab() {
     a.click();
   };
 
-  const filteredData = showOnlyAB ? data.filter(item => item.variants.length > 0) : data;
+  // AB-enabled stores for the dropdown
+  const abStores = useMemo(() => data.filter(item => item.variants.length > 0), [data]);
+
+  // Filter data based on selected store
+  const filteredData = useMemo(() => {
+    if (selectedStore === 'all_ab') return abStores;
+    if (selectedStore === 'all') return data;
+    return data.filter(item => item.store === selectedStore);
+  }, [data, abStores, selectedStore]);
+
   const storesWithAB = filteredData.filter(item => item.variants.length > 0);
   const storesWithoutAB = filteredData.filter(item => item.variants.length === 0);
 
@@ -276,15 +292,23 @@ export function ABTestingTab() {
               disabled={isLoading}
             />
           )}
-          <Button
-            variant={showOnlyAB ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowOnlyAB(!showOnlyAB)}
-            className="gap-2"
-          >
-            <Filter className="h-4 w-4" />
-            {showOnlyAB ? 'AB Only' : 'All Stores'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <StoreIcon className="h-4 w-4 text-muted-foreground" />
+            <Select value={selectedStore} onValueChange={setSelectedStore} disabled={isLoading}>
+              <SelectTrigger className="w-[220px] bg-secondary border-border">
+                <SelectValue placeholder="Select store" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all_ab">AB Enabled Stores</SelectItem>
+                <SelectItem value="all">All Stores</SelectItem>
+                {abStores.map((item) => (
+                  <SelectItem key={item.store} value={item.store}>
+                    {getDisplayStoreName(item.store)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading} className="gap-2">
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
