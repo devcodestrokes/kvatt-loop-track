@@ -141,8 +141,13 @@ export function useAnalytics() {
       const result = await response.json();
 
       if (result.status === 200 && result.data?.length) {
+        // Filter out dev/test stores from production analytics
+        const filteredData = result.data.filter(
+          (item: AnalyticsData) => !isDevTestStore(item.store)
+        );
+
         // Check if all data has zero values
-        const hasActualData = result.data.some(
+        const hasActualData = filteredData.some(
           (item: AnalyticsData) => 
             item.total_checkouts > 0 || item.opt_ins > 0 || item.opt_outs > 0
         );
@@ -152,7 +157,7 @@ export function useAnalytics() {
           await sendFailureNotification(dateRange, storeId, "All stores returned zero data");
         }
 
-        setData(result.data);
+        setData(filteredData);
         return result.data;
       } else {
         // No data returned - send notification
