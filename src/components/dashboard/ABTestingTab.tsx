@@ -1,9 +1,6 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { FlaskConical, RefreshCw, Download, ChevronDown, ChevronRight, ShoppingCart, ThumbsUp, ThumbsDown, Percent, Layers, Store as StoreIcon, Trophy, Medal } from 'lucide-react';
 import { useABTestingAnalytics, ABTestingData } from '@/hooks/useABTestingAnalytics';
-import { useUserDefaults } from '@/hooks/useUserDefaults';
-import { DateRange } from '@/types/analytics';
-import { DateRangePicker } from '@/components/dashboard/DateRangePicker';
 import { LoadingSkeleton } from '@/components/dashboard/LoadingSkeleton';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
