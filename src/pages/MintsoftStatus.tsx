@@ -613,9 +613,9 @@ const MintsoftStatus = () => {
                         <TableHead>Order Number</TableHead>
                         <TableHead>Parts</TableHead>
                         <TableHead>Order Date</TableHead>
-                        <TableHead>Recipient</TableHead>
+                        <TableHead>Name</TableHead>
                         <TableHead>Postcode</TableHead>
-                        <TableHead>Courier</TableHead>
+                        <TableHead>Courier Service</TableHead>
                         <TableHead>Parcels</TableHead>
                         <TableHead>Weight</TableHead>
                         <TableHead>Items</TableHead>
@@ -653,7 +653,7 @@ const MintsoftStatus = () => {
                               <TableCell className="text-muted-foreground">{formatDate(order.order_date)}</TableCell>
                               <TableCell>{order.recipient_name || '—'}</TableCell>
                               <TableCell>{order.postcode || '—'}</TableCell>
-                              <TableCell>{order.courier || '—'}</TableCell>
+                              <TableCell>{order.courier_service_name || '—'}</TableCell>
                               <TableCell>{order.num_parcels ?? '—'}</TableCell>
                               <TableCell>{order.weight != null ? order.weight.toFixed(3) : '—'}</TableCell>
                               <TableCell>{order.total_items ?? '—'}</TableCell>
