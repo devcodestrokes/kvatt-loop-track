@@ -372,13 +372,10 @@ export default function SearchOrders() {
             alt="Kvatt"
             className="object-contain md:w-[70px] md:h-[60px] w-[50px] h-[43px]" />
           {activeMerchantLogo && (
-            <>
-              <img
               <img
                 src={activeMerchantLogo}
                 alt="Merchant"
                 className="object-contain md:h-[40px] h-[30px] max-w-[120px]" />
-            </>
           )}
         </div>
       </div>
