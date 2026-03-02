@@ -235,7 +235,7 @@ export function ABTestingTab() {
       designAggregates,
       rankedDesigns,
     };
-  }, [data, storesWithAB]);
+  }, [filteredData, storesWithAB]);
 
   // Chart data
   const chartData = useMemo(() => {
