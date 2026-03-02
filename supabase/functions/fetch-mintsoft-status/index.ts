@@ -165,21 +165,37 @@ serve(async (req) => {
             const detailData = await detailRes.json();
             const rawItems = detailData?.OrderItems || detailData?.Items || [];
             if (Array.isArray(rawItems)) {
-              orderItems = rawItems.map((item: any) => ({
-                sku: item.ProductCode || item.SKU || '',
-                name: item.ProductName || item.Name || item.Description || '',
-                quantity: item.Quantity || 0,
-                quantity_committed: item.QuantityCommitted || item.CommittedQuantity || 0,
-                quantity_allocated: item.QuantityAllocated || item.AllocatedQuantity || 0,
-                price_ex_vat: item.PriceExVat || item.Price || 0,
-                vat: item.Vat || item.VatAmount || 0,
-                weight: item.Weight || 0,
-                batch_number: item.BatchNumber || null,
-                serial_number: item.SerialNumber || null,
-                comments: item.Comments || null,
-                last_updated: item.LastUpdated || null,
-                last_updated_by_user: item.LastUpdatedByUser || null,
-              }));
+              orderItems = rawItems.map((item: any) => {
+                // Extract nested stock/location data from ProductStockStatus or similar
+                const stockData = item.ProductStockStatus || item.StockStatus || item.StockLocations || [];
+                const locations = Array.isArray(stockData) ? stockData.map((loc: any) => ({
+                  location: loc.Location || loc.LocationName || safeStr(loc.Warehouse) || '',
+                  quantity: loc.Quantity ?? loc.StockQuantity ?? 0,
+                  best_before: loc.BestBefore || loc.ExpiryDate || null,
+                  batch_no: loc.BatchNumber || loc.Batch || null,
+                  serial_no: loc.SerialNumber || loc.Serial || null,
+                  last_updated: loc.LastUpdated || null,
+                  last_updated_by_user: loc.LastUpdatedByUser || null,
+                })) : [];
+
+                return {
+                  sku: item.ProductCode || item.SKU || '',
+                  name: item.ProductName || item.Name || item.Description || '',
+                  image_url: item.ImageURL || item.Image || item.ProductImageURL || null,
+                  quantity: item.Quantity || 0,
+                  quantity_committed: item.QuantityCommitted || item.CommittedQuantity || 0,
+                  quantity_allocated: item.QuantityAllocated || item.AllocatedQuantity || 0,
+                  price_ex_vat: item.PriceExVat || item.Price || 0,
+                  vat: item.Vat || item.VatAmount || 0,
+                  weight: item.Weight || 0,
+                  batch_number: item.BatchNumber || null,
+                  serial_number: item.SerialNumber || null,
+                  comments: item.Comments || null,
+                  last_updated: item.LastUpdated || null,
+                  last_updated_by_user: item.LastUpdatedByUser || null,
+                  locations,
+                };
+              });
             }
             // Use detail data for richer fields if available
             if (detailData) {
