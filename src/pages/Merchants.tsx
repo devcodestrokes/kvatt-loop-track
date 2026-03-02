@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Store, Plus, Search, MoreHorizontal, TrendingUp, Users, RefreshCw, Pencil, ExternalLink, Image } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Store, Plus, Search, MoreHorizontal, TrendingUp, Users, RefreshCw, Pencil, ExternalLink, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -92,6 +92,8 @@ const Merchants = () => {
     return_link_params: string;
   }>({ name: '', contact_email: '', logo_url: '', return_link: '', return_link_params: '' });
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchMerchants = async () => {
     setIsLoading(true);
@@ -223,6 +225,33 @@ const Merchants = () => {
       return_link: merchant.return_link || '',
       return_link_params: merchant.return_link_params || '',
     });
+  };
+
+  const handleLogoUpload = async (file: File) => {
+    if (!editingMerchant) return;
+    setIsUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const filePath = `${editingMerchant.shopifyDomain.replace(/\./g, '-')}-${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('merchant-logos')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('merchant-logos')
+        .getPublicUrl(filePath);
+
+      setEditForm({ ...editForm, logo_url: publicUrl });
+      toast.success('Logo uploaded');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload logo');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -525,18 +554,54 @@ const Merchants = () => {
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="editLogo">Logo URL</Label>
-              <Input
-                id="editLogo"
-                value={editForm.logo_url}
-                onChange={(e) => setEditForm({ ...editForm, logo_url: e.target.value })}
-                placeholder="https://example.com/logo.png"
+              <Label>Merchant Logo</Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleLogoUpload(file);
+                }}
               />
-              {editForm.logo_url && (
-                <div className="flex items-center gap-2 p-2 rounded-md bg-muted">
-                  <img src={editForm.logo_url} alt="Preview" className="h-10 w-10 rounded object-cover" />
-                  <span className="text-xs text-muted-foreground">Logo preview</span>
+              {editForm.logo_url ? (
+                <div className="flex items-center gap-3 p-3 rounded-md bg-muted">
+                  <img src={editForm.logo_url} alt="Logo" className="h-12 w-12 rounded object-cover" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">Logo uploaded</p>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                    >
+                      <Upload className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setEditForm({ ...editForm, logo_url: '' })}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full gap-2"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                >
+                  <Upload className="h-4 w-4" />
+                  {isUploading ? 'Uploading...' : 'Upload Logo'}
+                </Button>
               )}
             </div>
 
