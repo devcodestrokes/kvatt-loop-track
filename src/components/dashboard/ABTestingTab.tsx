@@ -251,33 +251,19 @@ export function ABTestingTab() {
     };
   }, [filteredData, storesWithAB]);
 
-  // Chart data - store performance
-  const storeChartData = useMemo(() => {
-    return filteredData
-      .filter(d => d.total_checkouts > 0)
+  // Chart data
+  const chartData = useMemo(() => {
+    return designAggregates
+      .filter(d => d.total > 0)
       .map(d => ({
-        name: getDisplayStoreName(d.store).length > 15 ? getDisplayStoreName(d.store).substring(0, 14) + '…' : getDisplayStoreName(d.store),
-        fullName: getDisplayStoreName(d.store),
+        name: d.name.length > 15 ? d.name.substring(0, 14) + '…' : d.name,
+        fullName: d.name,
         'Opt-ins': d.opt_ins,
         'Opt-outs': d.opt_outs,
-        Total: d.total_checkouts,
-        'Opt-in Rate': d.total_checkouts > 0 ? Number(((d.opt_ins / d.total_checkouts) * 100).toFixed(1)) : 0,
+        Total: d.total,
+        'Opt-in Rate': Number(d.opt_in_rate.toFixed(1)),
       }));
-  }, [filteredData]);
-
-  // Store ranking by opt-in rate
-  const rankedStores = useMemo(() => {
-    return filteredData
-      .filter(d => d.total_checkouts > 0)
-      .map(d => ({
-        name: getDisplayStoreName(d.store),
-        total: d.total_checkouts,
-        opt_ins: d.opt_ins,
-        opt_outs: d.opt_outs,
-        opt_in_rate: d.total_checkouts > 0 ? (d.opt_ins / d.total_checkouts) * 100 : 0,
-      }))
-      .sort((a, b) => b.opt_in_rate - a.opt_in_rate);
-  }, [filteredData]);
+  }, [designAggregates]);
 
   return (
     <div className="space-y-6">
@@ -348,16 +334,16 @@ export function ABTestingTab() {
       ) : (
         <div className="space-y-6">
           {/* Bar Chart + Ranking side by side */}
-          {storeChartData.length > 0 && (
+          {chartData.length > 0 && (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
               {/* Bar Chart */}
               <div className="data-table lg:col-span-2">
                 <div className="border-b border-border p-4">
-                  <h3 className="text-base font-semibold text-foreground">Store Performance</h3>
+                  <h3 className="text-base font-semibold text-foreground">Design Performance</h3>
                 </div>
                 <div className="p-4">
                   <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={storeChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                    <BarChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis
                         dataKey="name"
@@ -394,18 +380,18 @@ export function ABTestingTab() {
                 <div className="border-b border-border p-4">
                   <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
                     <Medal className="h-4 w-4 text-primary" />
-                    Store Ranking
+                    Design Ranking
                   </h3>
                 </div>
                 <div className="p-3 space-y-2">
-                  {rankedStores.length === 0 ? (
+                  {rankedDesigns.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-4">No data yet</p>
                   ) : (
-                    rankedStores.map((store, i) => {
-                      const maxTotal = rankedStores[0]?.total || 1;
-                      const barWidth = Math.max((store.total / maxTotal) * 100, 8);
+                    rankedDesigns.map((design, i) => {
+                      const maxTotal = rankedDesigns[0]?.total || 1;
+                      const barWidth = Math.max((design.total / maxTotal) * 100, 8);
                       return (
-                        <div key={store.name} className="group">
+                        <div key={design.name} className="group">
                           <div className="flex items-center gap-2 mb-1">
                             <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                               i === 0 ? 'bg-primary text-primary-foreground' :
@@ -414,13 +400,13 @@ export function ABTestingTab() {
                             }`}>
                               {i + 1}
                             </span>
-                            <span className="text-sm font-medium text-foreground truncate flex-1" title={store.name}>
-                              {store.name}
+                            <span className="text-sm font-medium text-foreground truncate flex-1" title={design.name}>
+                              {design.name}
                             </span>
                             <span className={`text-sm font-semibold ${
                               i === 0 ? 'text-primary' : 'text-foreground'
                             }`}>
-                              {store.opt_in_rate.toFixed(1)}%
+                              {design.opt_in_rate.toFixed(1)}%
                             </span>
                           </div>
                           <div className="ml-8 flex items-center gap-2">
@@ -431,7 +417,7 @@ export function ABTestingTab() {
                               />
                             </div>
                             <span className="text-xs text-muted-foreground whitespace-nowrap">
-                              {store.opt_ins}/{store.total}
+                              {design.opt_ins}/{design.total}
                             </span>
                           </div>
                         </div>
