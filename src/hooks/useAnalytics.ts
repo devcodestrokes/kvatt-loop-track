@@ -93,11 +93,13 @@ export function useAnalytics() {
       const result = await response.json();
       
       if (result.status === 200 && result.data?.length) {
-        // Use store name from mapping
-        const storesList: Store[] = result.data.map((storeDomain: string) => ({
-          id: storeDomain,
-          name: getDisplayStoreName(storeDomain)
-        }));
+        // Filter out dev/test stores from production
+        const storesList: Store[] = result.data
+          .filter((storeDomain: string) => !isDevTestStore(storeDomain))
+          .map((storeDomain: string) => ({
+            id: storeDomain,
+            name: getDisplayStoreName(storeDomain)
+          }));
         setStores(storesList);
         return storesList;
       }
