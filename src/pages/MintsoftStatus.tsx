@@ -137,8 +137,9 @@ const MintsoftStatus = () => {
   const [error, setError] = useState<string | null>(null);
   const [asnRecords, setAsnRecords] = useState<ASNRecord[]>([]);
   const [returnRecords, setReturnRecords] = useState<ReturnRecord[]>([]);
+  const [orderRecords, setOrderRecords] = useState<OrderRecord[]>([]);
   const [labels, setLabels] = useState<LabelRecord[]>([]);
-  const [stats, setStats] = useState({ packs: 0, asn: 0, returns: 0 });
+  const [stats, setStats] = useState({ packs: 0, asn: 0, returns: 0, orders: 0 });
   const [expandedAsnRows, setExpandedAsnRows] = useState<Set<number>>(new Set());
   const [expandedReturnRows, setExpandedReturnRows] = useState<Set<number>>(new Set());
 
