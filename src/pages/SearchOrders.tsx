@@ -125,6 +125,7 @@ export default function SearchOrders() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [step, setStep] = useState<'start' | 'search' | 'results' | 'pack' | 'feedback' | 'recording'>('start');
   const [showAllOrders, setShowAllOrders] = useState(false);
+  const [activeMerchantLogo, setActiveMerchantLogo] = useState<string | null>(null);
 
   // Load merchant configs from DB on mount
   useEffect(() => {
@@ -290,6 +291,11 @@ export default function SearchOrders() {
       });
 
       setOrders(data.orders || []);
+      // Set active merchant logo from first order's merchant config
+      const firstUserId = data.orders?.[0]?.user_id;
+      if (firstUserId && merchantConfigs[firstUserId]?.logo_url) {
+        setActiveMerchantLogo(merchantConfigs[firstUserId].logo_url);
+      }
       setStep('results');
     } catch (err) {
       setError("An error occurred while searching");
@@ -312,6 +318,7 @@ export default function SearchOrders() {
       setCustomer(null);
       setSelectedOrderId(null);
       setShowAllOrders(false);
+      setActiveMerchantLogo(null);
     } else if (step === 'search' || step === 'pack') {
       setStep('start');
     }
@@ -354,11 +361,20 @@ export default function SearchOrders() {
         ) : (
           <div style={{ height: '27px' }} />
         )}
-        <div className="flex justify-center pb-4">
+        <div className="flex items-center justify-center gap-4 pb-4">
           <img
             src={kvattLogo}
             alt="Kvatt"
             className="object-contain md:w-[70px] md:h-[60px] w-[50px] h-[43px]" />
+          {activeMerchantLogo && (
+            <>
+              <div className="h-8 w-px bg-stone-400/50" />
+              <img
+                src={activeMerchantLogo}
+                alt="Merchant"
+                className="object-contain md:h-[40px] h-[30px] max-w-[120px]" />
+            </>
+          )}
         </div>
       </div>
 
