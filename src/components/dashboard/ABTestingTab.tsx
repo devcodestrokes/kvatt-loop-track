@@ -141,18 +141,9 @@ export function ABTestingTab() {
   }, [error]);
 
   const handleRefresh = async () => {
-    if (!dateRange) return;
-    await fetchAnalytics(dateRange, 'all');
+    await fetchAnalytics(undefined, 'all');
     setLastUpdated(new Date());
     toast.success('Data refreshed');
-  };
-
-  const handleDateRangeChange = async (range: DateRange) => {
-    setDateRange(range);
-    if (range.from && range.to) {
-      await fetchAnalytics(range, 'all');
-      setLastUpdated(new Date());
-    }
   };
 
   const exportToCSV = () => {
