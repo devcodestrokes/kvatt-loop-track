@@ -354,26 +354,11 @@ export default function SearchOrders() {
         ) : (
           <div style={{ height: '27px' }} />
         )}
-        <div className="flex items-center justify-center gap-4 pb-4">
+        <div className="flex justify-center pb-4">
           <img
             src={kvattLogo}
             alt="Kvatt"
             className="object-contain md:w-[70px] md:h-[60px] w-[50px] h-[43px]" />
-          {step === 'results' && orders.length > 0 && (() => {
-            // Get the first store's merchant logo
-            const firstUserId = orders[0]?.user_id;
-            const logoUrl = merchantConfigs[firstUserId]?.logo_url;
-            if (!logoUrl) return null;
-            return (
-              <>
-                <div className="h-8 w-px bg-stone-400/50" />
-                <img
-                  src={logoUrl}
-                  alt={getStoreName(firstUserId)}
-                  className="object-contain md:h-[40px] h-[30px] max-w-[120px]" />
-              </>
-            );
-          })()}
         </div>
       </div>
 
@@ -556,6 +541,16 @@ export default function SearchOrders() {
                     style={{ padding: '16px 20px' }}>
 
                         <div className="flex items-center gap-4">
+                          {(() => {
+                            const logoUrl = merchantConfigs[order.user_id]?.logo_url;
+                            return logoUrl ? (
+                              <img
+                                src={logoUrl}
+                                alt={getStoreName(order.user_id)}
+                                className="flex-shrink-0 object-contain rounded-lg"
+                                style={{ width: '40px', height: '40px' }} />
+                            ) : null;
+                          })()}
                           <div
                         className={`flex-shrink-0 rounded-full border-2 flex items-center justify-center ${
                         isSelected ? 'border-stone-900' : 'border-stone-400'
