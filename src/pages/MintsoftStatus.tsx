@@ -96,9 +96,20 @@ interface ReturnRecord {
   return_items: ReturnItem[];
 }
 
+interface OrderItemLocation {
+  location: string;
+  quantity: number;
+  best_before: string | null;
+  batch_no: string | null;
+  serial_no: string | null;
+  last_updated: string | null;
+  last_updated_by_user: string | null;
+}
+
 interface OrderItem {
   sku: string;
   name: string;
+  image_url: string | null;
   quantity: number;
   quantity_committed: number;
   quantity_allocated: number;
@@ -110,6 +121,7 @@ interface OrderItem {
   comments: string | null;
   last_updated: string | null;
   last_updated_by_user: string | null;
+  locations: OrderItemLocation[];
 }
 
 interface OrderRecord {
