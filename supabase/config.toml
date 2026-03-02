@@ -53,3 +53,9 @@ verify_jwt = false
 
 [functions.record-qr-scan]
 verify_jwt = false
+
+[functions.sync-group-status]
+verify_jwt = false
+
+[functions.fetch-mintsoft-status]
+verify_jwt = false
