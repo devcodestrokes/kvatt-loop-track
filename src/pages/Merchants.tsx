@@ -227,6 +227,33 @@ const Merchants = () => {
     });
   };
 
+  const handleLogoUpload = async (file: File) => {
+    if (!editingMerchant) return;
+    setIsUploading(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const filePath = `${editingMerchant.shopifyDomain.replace(/\./g, '-')}-${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('merchant-logos')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('merchant-logos')
+        .getPublicUrl(filePath);
+
+      setEditForm({ ...editForm, logo_url: publicUrl });
+      toast.success('Logo uploaded');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload logo');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleSaveEdit = async () => {
     if (!editingMerchant) return;
     setIsSaving(true);
