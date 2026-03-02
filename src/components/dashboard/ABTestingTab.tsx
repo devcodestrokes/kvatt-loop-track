@@ -188,8 +188,9 @@ export function ABTestingTab() {
     a.click();
   };
 
-  const storesWithAB = data.filter(item => item.variants.length > 0);
-  const storesWithoutAB = data.filter(item => item.variants.length === 0);
+  const filteredData = showOnlyAB ? data.filter(item => item.variants.length > 0) : data;
+  const storesWithAB = filteredData.filter(item => item.variants.length > 0);
+  const storesWithoutAB = filteredData.filter(item => item.variants.length === 0);
 
   // Aggregated design data across all stores
   const { aggregates, designAggregates, rankedDesigns } = useMemo(() => {
