@@ -148,9 +148,7 @@ export function ABTestingTab() {
 
   const exportToCSV = () => {
     const today = new Date();
-    const dateStr = dateRange?.from && dateRange?.to
-      ? `${format(dateRange.from, 'yyyy-MM-dd')}_to_${format(dateRange.to, 'yyyy-MM-dd')}`
-      : format(today, 'yyyy-MM-dd');
+    const dateStr = format(today, 'yyyy-MM-dd');
     const headers = ['Store', 'Design', 'Total', 'Opt-ins', 'Opt-outs', 'Opt-in Rate'];
     const rows: string[][] = [];
     data.forEach((item) => {
