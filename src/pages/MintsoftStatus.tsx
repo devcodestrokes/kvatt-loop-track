@@ -96,6 +96,26 @@ interface ReturnRecord {
   return_items: ReturnItem[];
 }
 
+interface OrderRecord {
+  id: number | string | null;
+  order_number: string;
+  client: string | null;
+  status: string;
+  warehouse: string | null;
+  courier: string | null;
+  tracking_number: string | null;
+  recipient_name: string | null;
+  destination_country: string | null;
+  postcode: string | null;
+  weight: number | null;
+  total_items: number | null;
+  order_date: string | null;
+  dispatched_date: string | null;
+  last_updated: string | null;
+  last_updated_by_user: string | null;
+  comments: string | null;
+}
+
 interface LabelRecord {
   label_id: string;
   status: string;
