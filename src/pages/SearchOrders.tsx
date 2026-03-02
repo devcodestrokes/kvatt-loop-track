@@ -127,6 +127,7 @@ export default function SearchOrders() {
   const [step, setStep] = useState<'start' | 'search' | 'results' | 'pack' | 'feedback' | 'recording'>('start');
   const [showAllOrders, setShowAllOrders] = useState(false);
   const [activeMerchantLogo, setActiveMerchantLogo] = useState<string | null>(null);
+  const [packMerchantEmail, setPackMerchantEmail] = useState<string | null>(null);
 
   // Load merchant configs from DB on mount
   useEffect(() => {
@@ -137,9 +138,31 @@ export default function SearchOrders() {
         if (storeId && merchantConfigs[storeId]?.logo_url) {
           setActiveMerchantLogo(merchantConfigs[storeId].logo_url);
         }
+        if (storeId && merchantConfigs[storeId]?.contact_email) {
+          setPackMerchantEmail(merchantConfigs[storeId].contact_email);
+        }
       }
     }).catch(err => console.error('Failed to load merchant configs:', err));
   }, [storeId]);
+
+  // Resolve merchant from packId via Mintsoft product name mapping
+  useEffect(() => {
+    if (packId) {
+      supabase.functions.invoke('resolve-pack-merchant', {
+        body: { packId }
+      }).then(({ data }) => {
+        if (data?.success && data?.merchant) {
+          if (data.merchant.logo_url) {
+            setActiveMerchantLogo(data.merchant.logo_url);
+          }
+          if (data.merchant.contact_email) {
+            setPackMerchantEmail(data.merchant.contact_email);
+          }
+          console.log('Pack merchant resolved:', data.merchant.name, 'via product:', data.mintsoft_product_name);
+        }
+      }).catch(err => console.error('Failed to resolve pack merchant:', err));
+    }
+  }, [packId]);
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
