@@ -15,14 +15,14 @@ const safeStr = (val: unknown): string => {
 async function findProductNameFromMintsoft(groupSku: string, apiKey: string): Promise<string | null> {
   // Strategy 1: Search Product directly by SKU
   try {
-    const prodSearchRes = await fetch(
-      `https://api.mintsoft.co.uk/api/Product?SKU=${encodeURIComponent(groupSku)}&APIKey=${apiKey}`,
-      { headers: { 'Accept': 'application/json' } }
-    );
+    const prodUrl = `https://api.mintsoft.co.uk/api/Product?SKU=${encodeURIComponent(groupSku)}&APIKey=${apiKey}`;
+    console.log(`[resolve] Trying Product API...`);
+    const prodSearchRes = await fetch(prodUrl, { headers: { 'Accept': 'application/json' } });
+    console.log(`[resolve] Product API status: ${prodSearchRes.status}`);
     if (prodSearchRes.ok) {
       const prodData = await prodSearchRes.json();
       const products = prodData?.Results || prodData?.Data || (Array.isArray(prodData) ? prodData : []);
-      console.log(`[resolve] Product search by SKU found ${products.length} results`);
+      console.log(`[resolve] Product search results: ${products.length}, keys: ${JSON.stringify(Object.keys(prodData || {}))}`);
       if (products.length > 0) {
         const name = safeStr(products[0]?.Name) || safeStr(products[0]?.ProductName);
         if (name) return name;
