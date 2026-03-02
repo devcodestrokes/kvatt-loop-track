@@ -96,24 +96,42 @@ interface ReturnRecord {
   return_items: ReturnItem[];
 }
 
+interface OrderItem {
+  sku: string;
+  name: string;
+  quantity: number;
+  quantity_committed: number;
+  quantity_allocated: number;
+  price_ex_vat: number;
+  vat: number;
+  last_updated: string | null;
+  last_updated_by_user: string | null;
+}
+
 interface OrderRecord {
   id: number | string | null;
   order_number: string;
   client: string | null;
+  channel: string | null;
   status: string;
   warehouse: string | null;
   courier: string | null;
+  courier_service: string | null;
   tracking_number: string | null;
   recipient_name: string | null;
   destination_country: string | null;
   postcode: string | null;
   weight: number | null;
   total_items: number | null;
+  num_parcels: number | null;
+  parts: string | null;
   order_date: string | null;
   dispatched_date: string | null;
   last_updated: string | null;
   last_updated_by_user: string | null;
   comments: string | null;
+  order_lock: boolean;
+  items: OrderItem[];
 }
 
 interface LabelRecord {
@@ -142,6 +160,7 @@ const MintsoftStatus = () => {
   const [stats, setStats] = useState({ packs: 0, asn: 0, returns: 0, orders: 0 });
   const [expandedAsnRows, setExpandedAsnRows] = useState<Set<number>>(new Set());
   const [expandedReturnRows, setExpandedReturnRows] = useState<Set<number>>(new Set());
+  const [expandedOrderRows, setExpandedOrderRows] = useState<Set<number>>(new Set());
 
   const toggleAsnRow = (index: number) => {
     setExpandedAsnRows(prev => {
@@ -154,6 +173,15 @@ const MintsoftStatus = () => {
 
   const toggleReturnRow = (index: number) => {
     setExpandedReturnRows(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
+  const toggleOrderRow = (index: number) => {
+    setExpandedOrderRows(prev => {
       const next = new Set(prev);
       if (next.has(index)) next.delete(index);
       else next.add(index);
@@ -568,45 +596,103 @@ const MintsoftStatus = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-border hover:bg-transparent">
-                        <TableHead>ID</TableHead>
-                        <TableHead>Order Number</TableHead>
+                        <TableHead className="w-10"></TableHead>
                         <TableHead>Client</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead>Channel</TableHead>
+                        <TableHead>Order Number</TableHead>
+                        <TableHead>Parts</TableHead>
+                        <TableHead>Order Date</TableHead>
                         <TableHead>Recipient</TableHead>
-                        <TableHead>Country</TableHead>
                         <TableHead>Postcode</TableHead>
                         <TableHead>Courier</TableHead>
-                        <TableHead>Tracking</TableHead>
-                        <TableHead>Items</TableHead>
+                        <TableHead>Parcels</TableHead>
                         <TableHead>Weight</TableHead>
-                        <TableHead>Order Date</TableHead>
-                        <TableHead>Dispatched</TableHead>
-                        <TableHead>Last Updated</TableHead>
-                        <TableHead>Comments</TableHead>
+                        <TableHead>Items</TableHead>
+                        <TableHead>Order Status</TableHead>
+                        <TableHead>Tracking No</TableHead>
+                        <TableHead>Order Lock</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {pagedOrders.map((order, i) => (
-                        <TableRow key={i} className="border-border">
-                          <TableCell className="font-mono font-medium">{order.id ?? '—'}</TableCell>
-                          <TableCell className="font-mono">{order.order_number || '—'}</TableCell>
-                          <TableCell>{order.client || '—'}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{order.status || 'Unknown'}</Badge>
-                          </TableCell>
-                          <TableCell>{order.recipient_name || '—'}</TableCell>
-                          <TableCell>{order.destination_country || '—'}</TableCell>
-                          <TableCell>{order.postcode || '—'}</TableCell>
-                          <TableCell>{order.courier || '—'}</TableCell>
-                          <TableCell className="font-mono text-xs">{order.tracking_number || '—'}</TableCell>
-                          <TableCell>{order.total_items ?? '—'}</TableCell>
-                          <TableCell>{order.weight ? `${order.weight}g` : '—'}</TableCell>
-                          <TableCell className="text-muted-foreground">{formatDate(order.order_date)}</TableCell>
-                          <TableCell className="text-muted-foreground">{formatDate(order.dispatched_date)}</TableCell>
-                          <TableCell className="text-muted-foreground">{formatDate(order.last_updated)}</TableCell>
-                          <TableCell className="text-muted-foreground max-w-[200px] truncate">{order.comments || '—'}</TableCell>
-                        </TableRow>
-                      ))}
+                      {pagedOrders.map((order, i) => {
+                        const globalIndex = (ordersPage - 1) * ordersPageSize + i;
+                        const isExpanded = expandedOrderRows.has(globalIndex);
+                        const hasItems = order.items && order.items.length > 0;
+                        return (
+                          <Fragment key={globalIndex}>
+                            <TableRow
+                              className={`border-border ${hasItems ? 'cursor-pointer hover:bg-muted/50' : ''}`}
+                              onClick={() => hasItems && toggleOrderRow(globalIndex)}
+                            >
+                              <TableCell className="w-10 px-2">
+                                {hasItems && (
+                                  isExpanded
+                                    ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                    : <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                )}
+                              </TableCell>
+                              <TableCell>{order.client || '—'}</TableCell>
+                              <TableCell>
+                                {order.channel ? (
+                                  <Badge variant="outline" className="bg-primary/10 text-primary">{order.channel}</Badge>
+                                ) : '—'}
+                              </TableCell>
+                              <TableCell className="font-mono font-medium">{order.order_number || '—'}</TableCell>
+                              <TableCell>{order.parts || '—'}</TableCell>
+                              <TableCell className="text-muted-foreground">{formatDate(order.order_date)}</TableCell>
+                              <TableCell>{order.recipient_name || '—'}</TableCell>
+                              <TableCell>{order.postcode || '—'}</TableCell>
+                              <TableCell>{order.courier || '—'}</TableCell>
+                              <TableCell>{order.num_parcels ?? '—'}</TableCell>
+                              <TableCell>{order.weight != null ? order.weight.toFixed(3) : '—'}</TableCell>
+                              <TableCell>{order.total_items ?? '—'}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{order.status || 'Unknown'}</Badge>
+                              </TableCell>
+                              <TableCell className="font-mono text-xs">{order.tracking_number || '—'}</TableCell>
+                              <TableCell>{order.order_lock ? 'True' : 'False'}</TableCell>
+                            </TableRow>
+                            {isExpanded && hasItems && (
+                              <TableRow className="bg-muted/30 border-border">
+                                <TableCell colSpan={15} className="p-0">
+                                  <div className="px-6 py-3">
+                                    <Table>
+                                      <TableHeader>
+                                        <TableRow className="border-border hover:bg-transparent">
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">SKU</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Name</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Quantity</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Quantity Committed</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Quantity Allocated</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Price Ex Vat</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Vat</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Last Updated</TableHead>
+                                          <TableHead className="text-xs font-semibold text-muted-foreground">Last Updated By</TableHead>
+                                        </TableRow>
+                                      </TableHeader>
+                                      <TableBody>
+                                        {order.items.map((item, j) => (
+                                          <TableRow key={j} className="border-border">
+                                            <TableCell className="font-mono text-sm">{item.sku || '—'}</TableCell>
+                                            <TableCell className="text-sm">{item.name || '—'}</TableCell>
+                                            <TableCell className="text-sm">{item.quantity}</TableCell>
+                                            <TableCell className="text-sm">{item.quantity_committed}</TableCell>
+                                            <TableCell className="text-sm">{item.quantity_allocated}</TableCell>
+                                            <TableCell className="text-sm">{item.price_ex_vat.toFixed(5)}</TableCell>
+                                            <TableCell className="text-sm">{item.vat.toFixed(5)}</TableCell>
+                                            <TableCell className="text-sm text-muted-foreground">{formatDate(item.last_updated)}</TableCell>
+                                            <TableCell className="text-sm text-muted-foreground">{item.last_updated_by_user || '—'}</TableCell>
+                                          </TableRow>
+                                        ))}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </Fragment>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                   <PaginationControls total={orderRecords.length} page={ordersPage} pageSize={ordersPageSize} onPageChange={setOrdersPage} onPageSizeChange={setOrdersPageSize} />

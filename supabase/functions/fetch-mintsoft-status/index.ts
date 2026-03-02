@@ -149,28 +149,67 @@ serve(async (req) => {
       returnsRecords.push(...results);
     }
 
-    // Parse Orders records
+    // Parse Orders records - fetch items individually for each order
     const ordersRecords: any[] = [];
     if (Array.isArray(ordersData)) {
-      ordersRecords.push(...ordersData.map((order: any) => ({
-        id: order.ID || order.Id || null,
-        order_number: order.OrderNumber || order.ExternalOrderNumber || '',
-        client: order.CLIENTSHORTNAME || order.ClientShortName || order.Client?.Name || order.ClientName || null,
-        status: (typeof order.OrderStatus === 'object' ? order.OrderStatus?.Name : order.OrderStatus) || (typeof order.Status === 'object' ? order.Status?.Name : order.Status) || 'Unknown',
-        warehouse: (typeof order.Warehouse === 'object' ? order.Warehouse?.Name : order.Warehouse) || order.WarehouseName || null,
-        courier: (typeof order.Courier === 'object' ? order.Courier?.Name : order.Courier) || order.CourierName || order.CourierServiceName || null,
-        tracking_number: order.TrackingNumber || order.CourierTracking || null,
-        recipient_name: order.RecipientName || order.DeliveryName || (typeof order.Name === 'string' ? order.Name : null) || null,
-        destination_country: (typeof order.Country === 'object' ? order.Country?.Name : order.Country) || (typeof order.DeliveryCountry === 'object' ? order.DeliveryCountry?.Name : order.DeliveryCountry) || order.DestinationCountry || null,
-        postcode: order.PostCode || order.DeliveryPostcode || null,
-        weight: order.Weight || order.TotalWeight || null,
-        total_items: order.TotalItems || order.ItemCount || order.Quantity || null,
-        order_date: order.OrderDate || order.CreatedDate || null,
-        dispatched_date: order.DispatchedDate || order.ShippedDate || null,
-        last_updated: order.LastUpdated || order.UpdatedOn || null,
-        last_updated_by_user: order.LastUpdatedByUser || order.UpdatedBy || null,
-        comments: order.Comments || order.Notes || null,
-      })));
+      const orderFetches = ordersData.map(async (order: any) => {
+        const orderId = order.ID || order.Id;
+        let orderItems: any[] = [];
+
+        if (orderId) {
+          try {
+            const detailRes = await fetch(`https://api.mintsoft.co.uk/api/Order/${orderId}`, {
+              headers: { 'Accept': 'application/json', 'ms-apikey': MINTSOFT_API_KEY! },
+            });
+            const detailData = await detailRes.json();
+            const rawItems = detailData?.OrderItems || detailData?.Items || [];
+            if (Array.isArray(rawItems)) {
+              orderItems = rawItems.map((item: any) => ({
+                sku: item.ProductCode || item.SKU || '',
+                name: item.ProductName || item.Name || item.Description || '',
+                quantity: item.Quantity || 0,
+                quantity_committed: item.QuantityCommitted || item.CommittedQuantity || 0,
+                quantity_allocated: item.QuantityAllocated || item.AllocatedQuantity || 0,
+                price_ex_vat: item.PriceExVat || item.Price || 0,
+                vat: item.Vat || item.VatAmount || 0,
+                last_updated: item.LastUpdated || null,
+                last_updated_by_user: item.LastUpdatedByUser || null,
+              }));
+            }
+          } catch (e) {
+            console.error(`Failed to fetch items for Order ${orderId}:`, e);
+          }
+        }
+
+        return {
+          id: orderId || null,
+          order_number: order.OrderNumber || order.ExternalOrderNumber || '',
+          client: order.CLIENTSHORTNAME || order.ClientShortName || order.Client?.Name || order.ClientName || null,
+          channel: order.Channel || (typeof order.OrderChannel === 'object' ? order.OrderChannel?.Name : order.OrderChannel) || null,
+          status: (typeof order.OrderStatus === 'object' ? order.OrderStatus?.Name : order.OrderStatus) || (typeof order.Status === 'object' ? order.Status?.Name : order.Status) || 'Unknown',
+          warehouse: (typeof order.Warehouse === 'object' ? order.Warehouse?.Name : order.Warehouse) || order.WarehouseName || null,
+          courier: (typeof order.Courier === 'object' ? order.Courier?.Name : order.Courier) || order.CourierName || order.CourierServiceName || null,
+          courier_service: (typeof order.CourierService === 'object' ? order.CourierService?.Name : order.CourierService) || order.CourierServiceName || null,
+          tracking_number: order.TrackingNumber || order.CourierTracking || null,
+          recipient_name: order.RecipientName || order.DeliveryName || (typeof order.Name === 'string' ? order.Name : null) || null,
+          destination_country: (typeof order.Country === 'object' ? order.Country?.Name : order.Country) || (typeof order.DeliveryCountry === 'object' ? order.DeliveryCountry?.Name : order.DeliveryCountry) || order.DestinationCountry || null,
+          postcode: order.PostCode || order.DeliveryPostcode || null,
+          weight: order.Weight || order.TotalWeight || null,
+          total_items: order.TotalItems || order.ItemCount || order.Quantity || null,
+          num_parcels: order.NumberOfParcels || order.Parcels || null,
+          parts: order.Parts || null,
+          order_date: order.OrderDate || order.CreatedDate || null,
+          dispatched_date: order.DispatchedDate || order.ShippedDate || null,
+          last_updated: order.LastUpdated || order.UpdatedOn || null,
+          last_updated_by_user: order.LastUpdatedByUser || order.UpdatedBy || null,
+          comments: order.Comments || order.Notes || null,
+          order_lock: order.OrderLock || false,
+          items: orderItems,
+        };
+      });
+
+      const results = await Promise.all(orderFetches);
+      ordersRecords.push(...results);
     }
 
     // Fetch ALL labels from Supabase (paginated)
