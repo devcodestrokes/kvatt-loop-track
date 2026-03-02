@@ -328,23 +328,14 @@ export function ABTestingTab() {
               disabled={isLoading}
             />
           )}
-          <div className="flex items-center gap-2">
-            <StoreIcon className="h-4 w-4 text-muted-foreground" />
-            <Select value={selectedStore} onValueChange={setSelectedStore} disabled={isLoading}>
-              <SelectTrigger className="w-[220px] bg-secondary border-border">
-                <SelectValue placeholder="Select store" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all_ab">AB Enabled Stores</SelectItem>
-                <SelectItem value="all">All Stores</SelectItem>
-                {abStores.map((item) => (
-                  <SelectItem key={item.store} value={item.store}>
-                    {getDisplayStoreName(item.store)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <MultiStoreSelector
+            stores={allStoreOptions}
+            selectedStores={selectedStoreIds}
+            onToggleStore={toggleStore}
+            onSelectAll={selectAllStores}
+            onUnselectAll={unselectAllStores}
+            disabled={isLoading}
+          />
         </div>
       </div>
 
