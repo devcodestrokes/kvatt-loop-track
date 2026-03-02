@@ -164,7 +164,9 @@ serve(async (req) => {
             });
             const detailData = await detailRes.json();
             const rawItems = detailData?.OrderItems || detailData?.Items || [];
-            if (Array.isArray(rawItems)) {
+            if (Array.isArray(rawItems) && rawItems.length > 0) {
+              console.log(`Order ${orderId} first item keys:`, Object.keys(rawItems[0]).join(', '));
+              console.log(`Order ${orderId} first item sample:`, JSON.stringify(rawItems[0]).substring(0, 500));
               orderItems = rawItems.map((item: any) => {
                 // Extract nested stock/location data from ProductStockStatus or similar
                 const stockData = item.ProductStockStatus || item.StockStatus || item.StockLocations || [];
