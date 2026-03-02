@@ -243,12 +243,20 @@ Deno.serve(async (req) => {
       if (mintsoftProductName) {
         const { data: allMerchants } = await supabase
           .from('merchants')
-          .select('name, logo_url, contact_email, return_link, return_link_params, shopify_domain');
+          .select('id, name, logo_url, contact_email, return_link, return_link_params, shopify_domain');
 
         if (allMerchants) {
           matchedMerchant = smartMatchMerchant(mintsoftProductName, allMerchants);
           if (matchedMerchant) {
             console.log(`[resolve] Smart-matched "${mintsoftProductName}" -> ${matchedMerchant.name}`);
+            // Cache merchant_id on label_group so future lookups are instant
+            if (label.group_id && matchedMerchant.id) {
+              await supabase
+                .from('label_groups')
+                .update({ merchant_id: matchedMerchant.id, merchant_name: matchedMerchant.name })
+                .eq('id', label.group_id);
+              console.log(`[resolve] Cached merchant_id on label_group for instant future lookups`);
+            }
           }
         }
       }
