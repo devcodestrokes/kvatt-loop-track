@@ -191,15 +191,45 @@ export function ABTestingTab() {
     a.click();
   };
 
-  // AB-enabled stores for the dropdown
-  const abStores = useMemo(() => data.filter(item => item.variants.length > 0), [data]);
+  // Build store list for MultiStoreSelector, labeling AB-enabled stores (>1 design)
+  const allStoreOptions: Store[] = useMemo(() => {
+    return data.map(item => {
+      const isAB = item.variants.length > 1;
+      return {
+        id: item.store,
+        name: `${getDisplayStoreName(item.store)}${isAB ? ' (AB)' : ''}`,
+      };
+    });
+  }, [data]);
 
-  // Filter data based on selected store
+  // Auto-select AB-enabled stores on first data load
+  useEffect(() => {
+    if (data.length > 0 && !storesInitialized) {
+      const abIds = data.filter(item => item.variants.length > 1).map(item => item.store);
+      setSelectedStoreIds(abIds.length > 0 ? abIds : data.map(item => item.store));
+      setStoresInitialized(true);
+    }
+  }, [data, storesInitialized]);
+
+  const toggleStore = useCallback((storeId: string) => {
+    setSelectedStoreIds(prev =>
+      prev.includes(storeId) ? prev.filter(id => id !== storeId) : [...prev, storeId]
+    );
+  }, []);
+
+  const selectAllStores = useCallback(() => {
+    setSelectedStoreIds(allStoreOptions.map(s => s.id));
+  }, [allStoreOptions]);
+
+  const unselectAllStores = useCallback(() => {
+    setSelectedStoreIds([]);
+  }, []);
+
+  // Filter data based on selected stores
   const filteredData = useMemo(() => {
-    if (selectedStore === 'all_ab') return abStores;
-    if (selectedStore === 'all') return data;
-    return data.filter(item => item.store === selectedStore);
-  }, [data, abStores, selectedStore]);
+    if (selectedStoreIds.length === 0) return [];
+    return data.filter(item => selectedStoreIds.includes(item.store));
+  }, [data, selectedStoreIds]);
 
   const storesWithAB = filteredData.filter(item => item.variants.length > 0);
   const storesWithoutAB = filteredData.filter(item => item.variants.length === 0);
