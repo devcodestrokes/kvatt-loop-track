@@ -240,7 +240,7 @@ export function GroupManagementTab() {
                     </TableRow>
                     {expandedGroups.has(group.id) && group.packs && (
                       <TableRow>
-                        <TableCell colSpan={5} className="bg-muted/30 p-4">
+                        <TableCell colSpan={8} className="bg-muted/30 p-4">
                           <div className="space-y-3">
                             <div className="flex gap-4 text-sm">
                               <span className="text-muted-foreground">Pack Status Summary:</span>
