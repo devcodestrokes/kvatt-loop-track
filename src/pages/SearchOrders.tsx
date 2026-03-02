@@ -373,7 +373,7 @@ export default function SearchOrders() {
             className="object-contain md:w-[70px] md:h-[60px] w-[50px] h-[43px]" />
           {activeMerchantLogo && (
             <>
-              <div className="h-8 w-px bg-stone-400/50" />
+              <img
               <img
                 src={activeMerchantLogo}
                 alt="Merchant"
