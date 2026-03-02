@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { FlaskConical, RefreshCw, Download, ChevronDown, ChevronRight, ShoppingCart, ThumbsUp, ThumbsDown, Percent, Layers, Store as StoreIcon, Trophy, Medal } from 'lucide-react';
+import { FlaskConical, RefreshCw, Download, ChevronDown, ChevronRight, ShoppingCart, ThumbsUp, ThumbsDown, Percent, Layers, Store as StoreIcon, Trophy, Medal, Filter } from 'lucide-react';
 import { useABTestingAnalytics, ABTestingData } from '@/hooks/useABTestingAnalytics';
 import { useUserDefaults } from '@/hooks/useUserDefaults';
 import { DateRange } from '@/types/analytics';
@@ -119,6 +119,7 @@ export function ABTestingTab() {
 
   const [dateRange, setDateRange] = useState<DateRange | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>();
+  const [showOnlyAB, setShowOnlyAB] = useState(true);
   const initialLoadRef = useRef(false);
 
   useEffect(() => {
@@ -187,19 +188,20 @@ export function ABTestingTab() {
     a.click();
   };
 
-  const storesWithAB = data.filter(item => item.variants.length > 0);
-  const storesWithoutAB = data.filter(item => item.variants.length === 0);
+  const filteredData = showOnlyAB ? data.filter(item => item.variants.length > 0) : data;
+  const storesWithAB = filteredData.filter(item => item.variants.length > 0);
+  const storesWithoutAB = filteredData.filter(item => item.variants.length === 0);
 
   // Aggregated design data across all stores
   const { aggregates, designAggregates, rankedDesigns } = useMemo(() => {
-    const totalCheckouts = data.reduce((sum, d) => sum + (d.total_checkouts || 0), 0);
-    const totalOptIns = data.reduce((sum, d) => sum + (d.opt_ins || 0), 0);
-    const totalOptOuts = data.reduce((sum, d) => sum + (d.opt_outs || 0), 0);
+    const totalCheckouts = filteredData.reduce((sum, d) => sum + (d.total_checkouts || 0), 0);
+    const totalOptIns = filteredData.reduce((sum, d) => sum + (d.opt_ins || 0), 0);
+    const totalOptOuts = filteredData.reduce((sum, d) => sum + (d.opt_outs || 0), 0);
     const optInRate = totalCheckouts > 0 ? (totalOptIns / totalCheckouts) * 100 : 0;
     const activeStores = storesWithAB.length;
 
     const designAgg: Record<string, { ins: number; outs: number; total: number }> = {};
-    data.forEach(d => d.variants.forEach(v => {
+    filteredData.forEach(d => d.variants.forEach(v => {
       if (!designAgg[v.name]) designAgg[v.name] = { ins: 0, outs: 0, total: 0 };
       designAgg[v.name].ins += v.opt_ins;
       designAgg[v.name].outs += v.opt_outs;
@@ -233,7 +235,7 @@ export function ABTestingTab() {
       designAggregates,
       rankedDesigns,
     };
-  }, [data, storesWithAB]);
+  }, [filteredData, storesWithAB]);
 
   // Chart data
   const chartData = useMemo(() => {
@@ -274,6 +276,15 @@ export function ABTestingTab() {
               disabled={isLoading}
             />
           )}
+          <Button
+            variant={showOnlyAB ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowOnlyAB(!showOnlyAB)}
+            className="gap-2"
+          >
+            <Filter className="h-4 w-4" />
+            {showOnlyAB ? 'AB Only' : 'All Stores'}
+          </Button>
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading} className="gap-2">
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
