@@ -1,12 +1,5 @@
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { FlaskConical, RefreshCw, Download, ChevronDown, ChevronRight, ShoppingCart, ThumbsUp, ThumbsDown, Percent, Layers, Store as StoreIcon, Trophy, Medal } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useABTestingAnalytics, ABTestingData } from '@/hooks/useABTestingAnalytics';
 import { useUserDefaults } from '@/hooks/useUserDefaults';
 import { DateRange } from '@/types/analytics';
@@ -15,6 +8,8 @@ import { LoadingSkeleton } from '@/components/dashboard/LoadingSkeleton';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { getDisplayStoreName } from '@/hooks/useAnalytics';
+import { MultiStoreSelector } from '@/components/dashboard/MultiStoreSelector';
+import { Store } from '@/types/analytics';
 import {
   Table,
   TableBody,
@@ -126,7 +121,8 @@ export function ABTestingTab() {
 
   const [dateRange, setDateRange] = useState<DateRange | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>();
-  const [selectedStore, setSelectedStore] = useState<string>('all_ab');
+  const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
+  const [storesInitialized, setStoresInitialized] = useState(false);
   const initialLoadRef = useRef(false);
 
   useEffect(() => {
@@ -195,18 +191,48 @@ export function ABTestingTab() {
     a.click();
   };
 
-  // AB-enabled stores for the dropdown
-  const abStores = useMemo(() => data.filter(item => item.variants.length > 0), [data]);
+  // Build store list for MultiStoreSelector, labeling AB-enabled stores (>1 design)
+  const allStoreOptions: Store[] = useMemo(() => {
+    return data.map(item => {
+      const isAB = item.variants.length > 1;
+      return {
+        id: item.store,
+        name: `${getDisplayStoreName(item.store)}${isAB ? ' (AB)' : ''}`,
+      };
+    });
+  }, [data]);
 
-  // Filter data based on selected store
+  // Auto-select AB-enabled stores on first data load
+  useEffect(() => {
+    if (data.length > 0 && !storesInitialized) {
+      const abIds = data.filter(item => item.variants.length > 1).map(item => item.store);
+      setSelectedStoreIds(abIds.length > 0 ? abIds : data.map(item => item.store));
+      setStoresInitialized(true);
+    }
+  }, [data, storesInitialized]);
+
+  const toggleStore = useCallback((storeId: string) => {
+    setSelectedStoreIds(prev =>
+      prev.includes(storeId) ? prev.filter(id => id !== storeId) : [...prev, storeId]
+    );
+  }, []);
+
+  const selectAllStores = useCallback(() => {
+    setSelectedStoreIds(allStoreOptions.map(s => s.id));
+  }, [allStoreOptions]);
+
+  const unselectAllStores = useCallback(() => {
+    setSelectedStoreIds([]);
+  }, []);
+
+  // Filter data based on selected stores
   const filteredData = useMemo(() => {
-    if (selectedStore === 'all_ab') return abStores;
-    if (selectedStore === 'all') return data;
-    return data.filter(item => item.store === selectedStore);
-  }, [data, abStores, selectedStore]);
+    if (selectedStoreIds.length === 0) return [];
+    return data.filter(item => selectedStoreIds.includes(item.store));
+  }, [data, selectedStoreIds]);
 
-  const storesWithAB = filteredData.filter(item => item.variants.length > 0);
-  const storesWithoutAB = filteredData.filter(item => item.variants.length === 0);
+  const storesWithAB = filteredData.filter(item => item.variants.length > 1);
+  const storesWithoutAB = filteredData.filter(item => item.variants.length <= 1);
 
   // Aggregated design data across all stores
   const { aggregates, designAggregates, rankedDesigns } = useMemo(() => {
@@ -302,23 +328,14 @@ export function ABTestingTab() {
               disabled={isLoading}
             />
           )}
-          <div className="flex items-center gap-2">
-            <StoreIcon className="h-4 w-4 text-muted-foreground" />
-            <Select value={selectedStore} onValueChange={setSelectedStore} disabled={isLoading}>
-              <SelectTrigger className="w-[220px] bg-secondary border-border">
-                <SelectValue placeholder="Select store" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all_ab">AB Enabled Stores</SelectItem>
-                <SelectItem value="all">All Stores</SelectItem>
-                {abStores.map((item) => (
-                  <SelectItem key={item.store} value={item.store}>
-                    {getDisplayStoreName(item.store)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <MultiStoreSelector
+            stores={allStoreOptions}
+            selectedStores={selectedStoreIds}
+            onToggleStore={toggleStore}
+            onSelectAll={selectAllStores}
+            onUnselectAll={unselectAllStores}
+            disabled={isLoading}
+          />
         </div>
       </div>
 
