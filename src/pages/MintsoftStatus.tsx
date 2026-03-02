@@ -219,6 +219,7 @@ const MintsoftStatus = () => {
   const [expandedAsnRows, setExpandedAsnRows] = useState<Set<number>>(new Set());
   const [expandedReturnRows, setExpandedReturnRows] = useState<Set<number>>(new Set());
   const [expandedOrderRows, setExpandedOrderRows] = useState<Set<number>>(new Set());
+  const [expandedOrderItemRows, setExpandedOrderItemRows] = useState<Set<string>>(new Set());
 
   const toggleAsnRow = (index: number) => {
     setExpandedAsnRows(prev => {
@@ -243,6 +244,15 @@ const MintsoftStatus = () => {
       const next = new Set(prev);
       if (next.has(index)) next.delete(index);
       else next.add(index);
+      return next;
+    });
+  };
+
+  const toggleOrderItemRow = (key: string) => {
+    setExpandedOrderItemRows(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   };
