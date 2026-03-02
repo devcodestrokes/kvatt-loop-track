@@ -1,4 +1,6 @@
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import kvattBirdLogo from "@/assets/kvatt-bird-logo.png";
+import universalWorksLogo from "@/assets/universal-works-logo.png";
 import { AppSidebar } from "./AppSidebar";
 import { Menu } from "lucide-react";
 import { FilterLoadingOverlay } from "@/components/dashboard/FilterLoadingOverlay";
@@ -42,7 +44,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Menu className="h-4 w-4" />
               </SidebarTrigger>
               <div className="h-6 w-px bg-border/50" />
-              <div className="flex-1" />
+              <div className="flex-1 flex items-center justify-center gap-3">
+                <img src={kvattBirdLogo} alt="Kvatt" className="h-7 w-7 object-contain" />
+                <div className="h-5 w-px bg-border/50" />
+                <img src={universalWorksLogo} alt="Universal Works" className="h-7 object-contain" />
+              </div>
             </header>
             <main className="flex-1 p-6 sm:p-8 lg:p-10">
               <div className="animate-fade-in">{children}</div>
