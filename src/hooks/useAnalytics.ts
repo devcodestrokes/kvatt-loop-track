@@ -46,6 +46,14 @@ export const DEV_TEST_STORE_DOMAINS = new Set([
 // Check if a store domain is a dev/test store
 export const isDevTestStore = (domain: string): boolean => DEV_TEST_STORE_DOMAINS.has(domain);
 
+// Dev/test store IDs (numeric) used in imported_orders/get-store-mapping
+export const DEV_TEST_STORE_IDS = new Set([
+  '1', '5', '6', '8', '9', '10', '11', '20', '23', '24', '25', '26', '28', '29',
+]);
+
+// Check if a store ID (numeric) is a dev/test store
+export const isDevTestStoreId = (storeId: string): boolean => DEV_TEST_STORE_IDS.has(storeId);
+
 // Get display store name from store domain
 export const getDisplayStoreName = (storeDomain: string): string => {
   return STORE_NAME_MAPPING[storeDomain] || storeDomain.replace('.myshopify.com', '');
