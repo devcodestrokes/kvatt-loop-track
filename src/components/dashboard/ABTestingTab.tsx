@@ -292,15 +292,23 @@ export function ABTestingTab() {
               disabled={isLoading}
             />
           )}
-          <Button
-            variant={showOnlyAB ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowOnlyAB(!showOnlyAB)}
-            className="gap-2"
-          >
-            <Filter className="h-4 w-4" />
-            {showOnlyAB ? 'AB Only' : 'All Stores'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <StoreIcon className="h-4 w-4 text-muted-foreground" />
+            <Select value={selectedStore} onValueChange={setSelectedStore} disabled={isLoading}>
+              <SelectTrigger className="w-[220px] bg-secondary border-border">
+                <SelectValue placeholder="Select store" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all_ab">AB Enabled Stores</SelectItem>
+                <SelectItem value="all">All Stores</SelectItem>
+                {abStores.map((item) => (
+                  <SelectItem key={item.store} value={item.store}>
+                    {getDisplayStoreName(item.store)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoading} className="gap-2">
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
