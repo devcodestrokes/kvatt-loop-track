@@ -87,10 +87,12 @@ const Customers = () => {
         });
         setStoreNameMapping(mapping);
         
-        const storesList: StoreType[] = data.stores.map((store: any) => ({
-          id: store.id,
-          name: `${store.name} (${store.orderCount?.toLocaleString() || 0} orders)`
-        }));
+        const storesList: StoreType[] = data.stores
+          .filter((store: any) => !isDevTestStoreId(store.id?.toString()))
+          .map((store: any) => ({
+            id: store.id,
+            name: `${store.name} (${store.orderCount?.toLocaleString() || 0} orders)`
+          }));
         setAvailableStores(storesList);
       }
     } catch (err) {
