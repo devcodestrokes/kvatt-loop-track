@@ -223,7 +223,7 @@ Deno.serve(async (req) => {
     if (!matchedMerchant && groupMerchantName) {
       const { data: allMerchants } = await supabase
         .from('merchants')
-        .select('name, logo_url, contact_email, return_link, return_link_params, shopify_domain');
+        .select('id, name, logo_url, contact_email, return_link, return_link_params, shopify_domain');
 
       if (allMerchants) {
         matchedMerchant = smartMatchMerchant(groupMerchantName, allMerchants);
