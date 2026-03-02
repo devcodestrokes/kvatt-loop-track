@@ -353,7 +353,7 @@ export function ABTestingTab() {
               {/* Bar Chart */}
               <div className="data-table lg:col-span-2">
                 <div className="border-b border-border p-4">
-                  <h3 className="text-base font-semibold text-foreground">Design Performance</h3>
+                  <h3 className="text-base font-semibold text-foreground">Store Performance</h3>
                 </div>
                 <div className="p-4">
                   <ResponsiveContainer width="100%" height={300}>
