@@ -293,6 +293,7 @@ const MintsoftStatus = () => {
               <TabsTrigger value="packs">Packs ({labels.length})</TabsTrigger>
               <TabsTrigger value="asn">ASN Activity ({asnRecords.length})</TabsTrigger>
               <TabsTrigger value="returns">Returns ({returnRecords.length})</TabsTrigger>
+              <TabsTrigger value="orders">Orders ({orderRecords.length})</TabsTrigger>
             </TabsList>
 
             {/* Packs Tab */}
