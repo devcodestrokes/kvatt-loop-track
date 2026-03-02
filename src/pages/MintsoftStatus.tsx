@@ -667,8 +667,8 @@ const MintsoftStatus = () => {
                         return (
                           <Fragment key={globalIndex}>
                             <TableRow
-                              className={`border-border ${hasItems ? 'cursor-pointer hover:bg-muted/50' : ''}`}
-                              onClick={() => hasItems && toggleOrderRow(globalIndex)}
+                              className="border-border cursor-pointer hover:bg-muted/50"
+                              onClick={() => toggleOrderRow(globalIndex)}
                             >
                               <TableCell className="w-10 px-2">
                                 {hasItems && (
