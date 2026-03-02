@@ -360,11 +360,20 @@ export default function SearchOrders() {
         ) : (
           <div style={{ height: '27px' }} />
         )}
-        <div className="flex justify-center pb-4">
+        <div className="flex items-center justify-center gap-4 pb-4">
           <img
             src={kvattLogo}
             alt="Kvatt"
             className="object-contain md:w-[70px] md:h-[60px] w-[50px] h-[43px]" />
+          {activeMerchantLogo && (
+            <>
+              <div className="h-8 w-px bg-stone-400/50" />
+              <img
+                src={activeMerchantLogo}
+                alt="Merchant"
+                className="object-contain md:h-[40px] h-[30px] max-w-[120px]" />
+            </>
+          )}
         </div>
       </div>
 
