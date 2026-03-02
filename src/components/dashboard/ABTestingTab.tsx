@@ -194,9 +194,9 @@ export function ABTestingTab() {
 
   // Aggregated design data across all stores
   const { aggregates, designAggregates, rankedDesigns } = useMemo(() => {
-    const totalCheckouts = data.reduce((sum, d) => sum + (d.total_checkouts || 0), 0);
-    const totalOptIns = data.reduce((sum, d) => sum + (d.opt_ins || 0), 0);
-    const totalOptOuts = data.reduce((sum, d) => sum + (d.opt_outs || 0), 0);
+    const totalCheckouts = filteredData.reduce((sum, d) => sum + (d.total_checkouts || 0), 0);
+    const totalOptIns = filteredData.reduce((sum, d) => sum + (d.opt_ins || 0), 0);
+    const totalOptOuts = filteredData.reduce((sum, d) => sum + (d.opt_outs || 0), 0);
     const optInRate = totalCheckouts > 0 ? (totalOptIns / totalCheckouts) * 100 : 0;
     const activeStores = storesWithAB.length;
 
