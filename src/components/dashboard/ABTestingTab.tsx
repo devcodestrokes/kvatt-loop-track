@@ -394,18 +394,18 @@ export function ABTestingTab() {
                 <div className="border-b border-border p-4">
                   <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
                     <Medal className="h-4 w-4 text-primary" />
-                    Design Ranking
+                    Store Ranking
                   </h3>
                 </div>
                 <div className="p-3 space-y-2">
-                  {rankedDesigns.length === 0 ? (
+                  {rankedStores.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-4">No data yet</p>
                   ) : (
-                    rankedDesigns.map((design, i) => {
-                      const maxTotal = rankedDesigns[0]?.total || 1;
-                      const barWidth = Math.max((design.total / maxTotal) * 100, 8);
+                    rankedStores.map((store, i) => {
+                      const maxTotal = rankedStores[0]?.total || 1;
+                      const barWidth = Math.max((store.total / maxTotal) * 100, 8);
                       return (
-                        <div key={design.name} className="group">
+                        <div key={store.name} className="group">
                           <div className="flex items-center gap-2 mb-1">
                             <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                               i === 0 ? 'bg-primary text-primary-foreground' :
@@ -414,13 +414,13 @@ export function ABTestingTab() {
                             }`}>
                               {i + 1}
                             </span>
-                            <span className="text-sm font-medium text-foreground truncate flex-1" title={design.name}>
-                              {design.name}
+                            <span className="text-sm font-medium text-foreground truncate flex-1" title={store.name}>
+                              {store.name}
                             </span>
                             <span className={`text-sm font-semibold ${
                               i === 0 ? 'text-primary' : 'text-foreground'
                             }`}>
-                              {design.opt_in_rate.toFixed(1)}%
+                              {store.opt_in_rate.toFixed(1)}%
                             </span>
                           </div>
                           <div className="ml-8 flex items-center gap-2">
@@ -431,7 +431,7 @@ export function ABTestingTab() {
                               />
                             </div>
                             <span className="text-xs text-muted-foreground whitespace-nowrap">
-                              {design.opt_ins}/{design.total}
+                              {store.opt_ins}/{store.total}
                             </span>
                           </div>
                         </div>
