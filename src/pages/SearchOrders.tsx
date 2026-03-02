@@ -375,7 +375,7 @@ export default function SearchOrders() {
               <img
                 src={activeMerchantLogo}
                 alt="Merchant"
-                className="object-contain md:h-[40px] h-[30px] max-w-[120px]" />
+                className="object-contain md:h-[60px] h-[43px] max-w-[150px]" />
           )}
         </div>
       </div>
