@@ -96,9 +96,20 @@ interface ReturnRecord {
   return_items: ReturnItem[];
 }
 
+interface OrderItemLocation {
+  location: string;
+  quantity: number;
+  best_before: string | null;
+  batch_no: string | null;
+  serial_no: string | null;
+  last_updated: string | null;
+  last_updated_by_user: string | null;
+}
+
 interface OrderItem {
   sku: string;
   name: string;
+  image_url: string | null;
   quantity: number;
   quantity_committed: number;
   quantity_allocated: number;
@@ -110,6 +121,7 @@ interface OrderItem {
   comments: string | null;
   last_updated: string | null;
   last_updated_by_user: string | null;
+  locations: OrderItemLocation[];
 }
 
 interface OrderRecord {
@@ -207,6 +219,7 @@ const MintsoftStatus = () => {
   const [expandedAsnRows, setExpandedAsnRows] = useState<Set<number>>(new Set());
   const [expandedReturnRows, setExpandedReturnRows] = useState<Set<number>>(new Set());
   const [expandedOrderRows, setExpandedOrderRows] = useState<Set<number>>(new Set());
+  const [expandedOrderItemRows, setExpandedOrderItemRows] = useState<Set<string>>(new Set());
 
   const toggleAsnRow = (index: number) => {
     setExpandedAsnRows(prev => {
@@ -231,6 +244,15 @@ const MintsoftStatus = () => {
       const next = new Set(prev);
       if (next.has(index)) next.delete(index);
       else next.add(index);
+      return next;
+    });
+  };
+
+  const toggleOrderItemRow = (key: string) => {
+    setExpandedOrderItemRows(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   };
@@ -708,39 +730,95 @@ const MintsoftStatus = () => {
                                         <Table>
                                           <TableHeader>
                                             <TableRow className="border-border hover:bg-transparent">
+                                              <TableHead className="text-xs font-semibold text-muted-foreground w-8"></TableHead>
                                               <TableHead className="text-xs font-semibold text-muted-foreground">SKU</TableHead>
                                               <TableHead className="text-xs font-semibold text-muted-foreground">Name</TableHead>
+                                              <TableHead className="text-xs font-semibold text-muted-foreground">Image</TableHead>
                                               <TableHead className="text-xs font-semibold text-muted-foreground">Qty</TableHead>
                                               <TableHead className="text-xs font-semibold text-muted-foreground">Committed</TableHead>
                                               <TableHead className="text-xs font-semibold text-muted-foreground">Allocated</TableHead>
                                               <TableHead className="text-xs font-semibold text-muted-foreground">Price Ex Vat</TableHead>
                                               <TableHead className="text-xs font-semibold text-muted-foreground">Vat</TableHead>
-                                              <TableHead className="text-xs font-semibold text-muted-foreground">Weight</TableHead>
-                                              <TableHead className="text-xs font-semibold text-muted-foreground">Batch</TableHead>
-                                              <TableHead className="text-xs font-semibold text-muted-foreground">Serial</TableHead>
-                                              <TableHead className="text-xs font-semibold text-muted-foreground">Comments</TableHead>
                                               <TableHead className="text-xs font-semibold text-muted-foreground">Last Updated</TableHead>
                                               <TableHead className="text-xs font-semibold text-muted-foreground">Updated By</TableHead>
                                             </TableRow>
                                           </TableHeader>
                                           <TableBody>
-                                            {order.items.map((item, j) => (
-                                              <TableRow key={j} className="border-border">
-                                                <TableCell className="font-mono text-sm">{item.sku || '—'}</TableCell>
-                                                <TableCell className="text-sm">{item.name || '—'}</TableCell>
-                                                <TableCell className="text-sm">{item.quantity}</TableCell>
-                                                <TableCell className="text-sm">{item.quantity_committed}</TableCell>
-                                                <TableCell className="text-sm">{item.quantity_allocated}</TableCell>
-                                                <TableCell className="text-sm">{typeof item.price_ex_vat === 'number' ? item.price_ex_vat.toFixed(2) : '—'}</TableCell>
-                                                <TableCell className="text-sm">{typeof item.vat === 'number' ? item.vat.toFixed(2) : '—'}</TableCell>
-                                                <TableCell className="text-sm">{item.weight || '—'}</TableCell>
-                                                <TableCell className="text-sm">{item.batch_number || '—'}</TableCell>
-                                                <TableCell className="text-sm">{item.serial_number || '—'}</TableCell>
-                                                <TableCell className="text-sm text-muted-foreground">{item.comments || '—'}</TableCell>
-                                                <TableCell className="text-sm text-muted-foreground">{formatDate(item.last_updated)}</TableCell>
-                                                <TableCell className="text-sm text-muted-foreground">{item.last_updated_by_user || '—'}</TableCell>
-                                              </TableRow>
-                                            ))}
+                                            {order.items.map((item, j) => {
+                                              const itemKey = `${globalIndex}-${j}`;
+                                              const isItemExpanded = expandedOrderItemRows.has(itemKey);
+                                              const hasLocations = item.locations && item.locations.length > 0;
+                                              return (
+                                                <Fragment key={j}>
+                                                  <TableRow
+                                                    className={`border-border ${hasLocations ? 'cursor-pointer hover:bg-muted/50' : ''}`}
+                                                    onClick={() => hasLocations && toggleOrderItemRow(itemKey)}
+                                                  >
+                                                    <TableCell className="w-8 px-1">
+                                                      {hasLocations && (
+                                                        isItemExpanded
+                                                          ? <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                                                          : <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                                                      )}
+                                                    </TableCell>
+                                                    <TableCell className="font-mono text-sm">{item.sku || '—'}</TableCell>
+                                                    <TableCell className="text-sm">{item.name || '—'}</TableCell>
+                                                    <TableCell>
+                                                      {item.image_url ? (
+                                                        <img src={item.image_url} alt={item.name || 'Product'} className="h-10 w-10 object-contain rounded" />
+                                                      ) : (
+                                                        <span className="text-muted-foreground text-xs">—</span>
+                                                      )}
+                                                    </TableCell>
+                                                    <TableCell className="text-sm">{item.quantity}</TableCell>
+                                                    <TableCell className="text-sm">{item.quantity_committed}</TableCell>
+                                                    <TableCell className="text-sm">{item.quantity_allocated}</TableCell>
+                                                    <TableCell className="text-sm">{typeof item.price_ex_vat === 'number' ? item.price_ex_vat.toFixed(5) : '—'}</TableCell>
+                                                    <TableCell className="text-sm">{typeof item.vat === 'number' ? item.vat.toFixed(5) : '—'}</TableCell>
+                                                    <TableCell className="text-sm text-muted-foreground">{formatDate(item.last_updated)}</TableCell>
+                                                    <TableCell className="text-sm text-muted-foreground">{item.last_updated_by_user || '—'}</TableCell>
+                                                  </TableRow>
+                                                  {isItemExpanded && (
+                                                    <TableRow className="bg-muted/20 border-border">
+                                                      <TableCell colSpan={11} className="p-0">
+                                                        <div className="px-8 py-2">
+                                                          <Table>
+                                                            <TableHeader>
+                                                              <TableRow className="border-border hover:bg-transparent">
+                                                                <TableHead className="text-xs font-semibold text-muted-foreground">Location</TableHead>
+                                                                <TableHead className="text-xs font-semibold text-muted-foreground">Quantity</TableHead>
+                                                                <TableHead className="text-xs font-semibold text-muted-foreground">Best Before</TableHead>
+                                                                <TableHead className="text-xs font-semibold text-muted-foreground">Batch No</TableHead>
+                                                                <TableHead className="text-xs font-semibold text-muted-foreground">Serial No</TableHead>
+                                                                <TableHead className="text-xs font-semibold text-muted-foreground">Last Updated</TableHead>
+                                                                <TableHead className="text-xs font-semibold text-muted-foreground">Last Updated By User</TableHead>
+                                                              </TableRow>
+                                                            </TableHeader>
+                                                            <TableBody>
+                                                              {hasLocations ? item.locations.map((loc, k) => (
+                                                                <TableRow key={k} className="border-border">
+                                                                  <TableCell className="text-xs">{loc.location || '—'}</TableCell>
+                                                                  <TableCell className="text-xs">{loc.quantity}</TableCell>
+                                                                  <TableCell className="text-xs text-muted-foreground">{formatDate(loc.best_before)}</TableCell>
+                                                                  <TableCell className="text-xs">{loc.batch_no || '—'}</TableCell>
+                                                                  <TableCell className="text-xs">{loc.serial_no || '—'}</TableCell>
+                                                                  <TableCell className="text-xs text-muted-foreground">{formatDate(loc.last_updated)}</TableCell>
+                                                                  <TableCell className="text-xs text-muted-foreground">{loc.last_updated_by_user || '—'}</TableCell>
+                                                                </TableRow>
+                                                              )) : (
+                                                                <TableRow className="border-border">
+                                                                  <TableCell colSpan={7} className="text-center text-xs text-muted-foreground py-3">No records found</TableCell>
+                                                                </TableRow>
+                                                              )}
+                                                            </TableBody>
+                                                          </Table>
+                                                        </div>
+                                                      </TableCell>
+                                                    </TableRow>
+                                                  )}
+                                                </Fragment>
+                                              );
+                                            })}
                                           </TableBody>
                                         </Table>
                                       </div>
