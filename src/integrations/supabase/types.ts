@@ -491,10 +491,14 @@ export type Database = {
       }
       merchants: {
         Row: {
+          contact_email: string | null
           created_at: string
           id: string
           landing_page_config: Json | null
+          logo_url: string | null
           name: string
+          return_link: string | null
+          return_link_params: string | null
           return_rate: number
           shopify_domain: string
           status: string
@@ -503,10 +507,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          contact_email?: string | null
           created_at?: string
           id?: string
           landing_page_config?: Json | null
+          logo_url?: string | null
           name: string
+          return_link?: string | null
+          return_link_params?: string | null
           return_rate?: number
           shopify_domain: string
           status?: string
@@ -515,10 +523,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          contact_email?: string | null
           created_at?: string
           id?: string
           landing_page_config?: Json | null
+          logo_url?: string | null
           name?: string
+          return_link?: string | null
+          return_link_params?: string | null
           return_rate?: number
           shopify_domain?: string
           status?: string
