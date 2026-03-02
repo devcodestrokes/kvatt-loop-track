@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Store, Plus, Search, MoreHorizontal, TrendingUp, Users, RefreshCw } from 'lucide-react';
+import { Store, Plus, Search, MoreHorizontal, TrendingUp, Users, RefreshCw, Pencil, ExternalLink, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -28,6 +29,16 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
+
+interface MerchantConfig {
+  id?: string;
+  logo_url?: string | null;
+  contact_email?: string | null;
+  return_link?: string | null;
+  return_link_params?: string | null;
+}
 
 interface Merchant {
   id: string;
@@ -37,6 +48,12 @@ interface Merchant {
   totalCheckouts: number;
   optInRate: number;
   status: 'active' | 'pending' | 'inactive';
+  // DB config
+  dbId?: string;
+  logo_url?: string | null;
+  contact_email?: string | null;
+  return_link?: string | null;
+  return_link_params?: string | null;
 }
 
 interface AnalyticsData {
@@ -66,6 +83,15 @@ const Merchants = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [newMerchant, setNewMerchant] = useState({ name: '', shopifyDomain: '' });
+  const [editingMerchant, setEditingMerchant] = useState<Merchant | null>(null);
+  const [editForm, setEditForm] = useState<{
+    name: string;
+    contact_email: string;
+    logo_url: string;
+    return_link: string;
+    return_link_params: string;
+  }>({ name: '', contact_email: '', logo_url: '', return_link: '', return_link_params: '' });
+  const [isSaving, setIsSaving] = useState(false);
 
   const fetchMerchants = async () => {
     setIsLoading(true);
@@ -73,7 +99,7 @@ const Merchants = () => {
       const endDate = new Date().toISOString().split('T')[0];
       const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-      const [storesRes, analyticsRes] = await Promise.all([
+      const [storesRes, analyticsRes, dbRes] = await Promise.all([
         fetch('https://shopify.kvatt.com/api/get-stores', {
           headers: {
             'Content-Type': 'application/json',
@@ -87,11 +113,26 @@ const Merchants = () => {
             'Accept': 'application/json',
             'Authorization': 'Bearer %^75464tnfsdhndsfbgr54'
           }
-        })
+        }),
+        supabase.from('merchants').select('id, name, shopify_domain, logo_url, contact_email, return_link, return_link_params'),
       ]);
 
       const storesData = await storesRes.json();
       const analyticsData = await analyticsRes.json();
+      
+      // Build DB config map by shopify_domain
+      const dbConfigMap = new Map<string, MerchantConfig>();
+      if (dbRes.data) {
+        for (const row of dbRes.data) {
+          dbConfigMap.set(row.shopify_domain, {
+            id: row.id,
+            logo_url: row.logo_url,
+            contact_email: row.contact_email,
+            return_link: row.return_link,
+            return_link_params: row.return_link_params,
+          });
+        }
+      }
 
       if (storesData.status === 200 && storesData.data) {
         const analyticsMap = new Map<string, AnalyticsData>();
@@ -106,6 +147,7 @@ const Merchants = () => {
           const totalCheckouts = analytics?.total_checkouts || 0;
           const optIns = analytics?.opt_ins || 0;
           const optInRate = totalCheckouts > 0 ? Math.round((optIns / totalCheckouts) * 100) : 0;
+          const dbConfig = dbConfigMap.get(domain);
           
           let status: 'active' | 'pending' | 'inactive' = 'inactive';
           if (totalCheckouts > 0) {
@@ -116,12 +158,17 @@ const Merchants = () => {
 
           return {
             id: String(index + 1),
-            name: formatStoreName(domain),
+            name: dbConfig?.id ? formatStoreName(domain) : formatStoreName(domain),
             shopifyDomain: domain,
             totalOptIns: optIns,
             totalCheckouts: totalCheckouts,
             optInRate: optInRate,
             status: status,
+            dbId: dbConfig?.id || undefined,
+            logo_url: dbConfig?.logo_url || null,
+            contact_email: dbConfig?.contact_email || null,
+            return_link: dbConfig?.return_link || null,
+            return_link_params: dbConfig?.return_link_params || null,
           };
         });
 
@@ -165,6 +212,56 @@ const Merchants = () => {
     setNewMerchant({ name: '', shopifyDomain: '' });
     setIsAdding(false);
     toast.success('Merchant added successfully');
+  };
+
+  const openEditDialog = (merchant: Merchant) => {
+    setEditingMerchant(merchant);
+    setEditForm({
+      name: merchant.name,
+      contact_email: merchant.contact_email || '',
+      logo_url: merchant.logo_url || '',
+      return_link: merchant.return_link || '',
+      return_link_params: merchant.return_link_params || '',
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingMerchant) return;
+    setIsSaving(true);
+
+    try {
+      const upsertData = {
+        name: editForm.name || formatStoreName(editingMerchant.shopifyDomain),
+        shopify_domain: editingMerchant.shopifyDomain,
+        contact_email: editForm.contact_email || null,
+        logo_url: editForm.logo_url || null,
+        return_link: editForm.return_link || null,
+        return_link_params: editForm.return_link_params || null,
+        status: editingMerchant.status,
+      };
+
+      if (editingMerchant.dbId) {
+        const { error } = await supabase
+          .from('merchants')
+          .update(upsertData)
+          .eq('id', editingMerchant.dbId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('merchants')
+          .insert(upsertData);
+        if (error) throw error;
+      }
+
+      toast.success('Merchant updated successfully');
+      setEditingMerchant(null);
+      fetchMerchants();
+    } catch (error) {
+      console.error('Error saving merchant:', error);
+      toast.error('Failed to save merchant');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const totalMerchants = merchants.length;
@@ -283,9 +380,10 @@ const Merchants = () => {
         <Table>
           <TableHeader>
             <TableRow className="border-border hover:bg-transparent">
+              <TableHead className="w-10"></TableHead>
               <TableHead>Store Name</TableHead>
               <TableHead>Shopify Domain</TableHead>
-              <TableHead className="text-right">Total Opt-ins</TableHead>
+              <TableHead>Return Link</TableHead>
               <TableHead className="text-right">Checkouts</TableHead>
               <TableHead className="text-right">Opt-in Rate</TableHead>
               <TableHead>Status</TableHead>
@@ -296,9 +394,10 @@ const Merchants = () => {
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <TableRow key={i} className="border-border">
+                  <TableCell><Skeleton className="h-8 w-8 rounded-full" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-32" /></TableCell>
                   <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-                  <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-24" /></TableCell>
                   <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
                   <TableCell className="text-right"><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
                   <TableCell><Skeleton className="h-6 w-16" /></TableCell>
@@ -307,19 +406,46 @@ const Merchants = () => {
               ))
             ) : filteredMerchants.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                   No merchants found
                 </TableCell>
               </TableRow>
             ) : (
               filteredMerchants.map((merchant) => (
                 <TableRow key={merchant.id} className="border-border">
+                  <TableCell>
+                    {merchant.logo_url ? (
+                      <img
+                        src={merchant.logo_url}
+                        alt={merchant.name}
+                        className="h-8 w-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                        <Store className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell className="font-medium">{merchant.name}</TableCell>
                   <TableCell className="font-mono text-sm text-muted-foreground">
                     {merchant.shopifyDomain}
                   </TableCell>
-                  <TableCell className="text-right font-mono">
-                    {merchant.totalOptIns.toLocaleString()}
+                  <TableCell>
+                    {merchant.return_link ? (
+                      <div className="flex items-center gap-1">
+                        <Badge variant="outline" className="text-xs max-w-[180px] truncate">
+                          <ExternalLink className="h-3 w-3 mr-1 shrink-0" />
+                          {new URL(merchant.return_link).hostname}
+                        </Badge>
+                        {merchant.return_link_params && (
+                          <Badge variant="secondary" className="text-xs">
+                            params
+                          </Badge>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right font-mono">
                     {merchant.totalCheckouts.toLocaleString()}
@@ -346,9 +472,16 @@ const Merchants = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>View Analytics</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openEditDialog(merchant)}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit Config
+                        </DropdownMenuItem>
+                        {merchant.return_link && (
+                          <DropdownMenuItem onClick={() => window.open(merchant.return_link!, '_blank')}>
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Open Return Portal
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -358,6 +491,109 @@ const Merchants = () => {
           </TableBody>
         </Table>
       </div>
+
+      {/* Edit Merchant Dialog */}
+      <Dialog open={!!editingMerchant} onOpenChange={(open) => !open && setEditingMerchant(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Merchant Config</DialogTitle>
+            <DialogDescription>
+              Configure branding, contact info, and return portal settings for{' '}
+              <span className="font-medium">{editingMerchant?.name}</span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
+            <div className="grid gap-2">
+              <Label htmlFor="editName">Display Name</Label>
+              <Input
+                id="editName"
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                placeholder="e.g., Universal Works"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="editEmail">Contact Email</Label>
+              <Input
+                id="editEmail"
+                type="email"
+                value={editForm.contact_email}
+                onChange={(e) => setEditForm({ ...editForm, contact_email: e.target.value })}
+                placeholder="e.g., returns@brand.com"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="editLogo">Logo URL</Label>
+              <Input
+                id="editLogo"
+                value={editForm.logo_url}
+                onChange={(e) => setEditForm({ ...editForm, logo_url: e.target.value })}
+                placeholder="https://example.com/logo.png"
+              />
+              {editForm.logo_url && (
+                <div className="flex items-center gap-2 p-2 rounded-md bg-muted">
+                  <img src={editForm.logo_url} alt="Preview" className="h-10 w-10 rounded object-cover" />
+                  <span className="text-xs text-muted-foreground">Logo preview</span>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium mb-3">Return Portal Configuration</p>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="editReturnLink">Return Link (Base URL)</Label>
+              <Input
+                id="editReturnLink"
+                value={editForm.return_link}
+                onChange={(e) => setEditForm({ ...editForm, return_link: e.target.value })}
+                placeholder="https://returns.brand.com/"
+              />
+              <p className="text-xs text-muted-foreground">
+                The base URL of the return portal
+              </p>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="editReturnParams">Pre-fill Query Parameters</Label>
+              <Textarea
+                id="editReturnParams"
+                value={editForm.return_link_params}
+                onChange={(e) => setEditForm({ ...editForm, return_link_params: e.target.value })}
+                placeholder="?s=1&lang=&e={email}&o={order_number}"
+                rows={2}
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                Use <code className="bg-muted px-1 rounded">{'{email}'}</code> and{' '}
+                <code className="bg-muted px-1 rounded">{'{order_number}'}</code> as placeholders.
+                These will be dynamically replaced with the customer's data.
+              </p>
+            </div>
+
+            {editForm.return_link && (
+              <div className="rounded-md bg-muted p-3">
+                <p className="text-xs font-medium mb-1">Preview URL:</p>
+                <p className="text-xs font-mono break-all text-muted-foreground">
+                  {editForm.return_link}
+                  {editForm.return_link_params
+                    ?.replace('{email}', 'customer@example.com')
+                    .replace('{order_number}', '1234')}
+                </p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingMerchant(null)}>Cancel</Button>
+            <Button onClick={handleSaveEdit} disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
