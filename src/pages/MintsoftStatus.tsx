@@ -96,24 +96,42 @@ interface ReturnRecord {
   return_items: ReturnItem[];
 }
 
+interface OrderItem {
+  sku: string;
+  name: string;
+  quantity: number;
+  quantity_committed: number;
+  quantity_allocated: number;
+  price_ex_vat: number;
+  vat: number;
+  last_updated: string | null;
+  last_updated_by_user: string | null;
+}
+
 interface OrderRecord {
   id: number | string | null;
   order_number: string;
   client: string | null;
+  channel: string | null;
   status: string;
   warehouse: string | null;
   courier: string | null;
+  courier_service: string | null;
   tracking_number: string | null;
   recipient_name: string | null;
   destination_country: string | null;
   postcode: string | null;
   weight: number | null;
   total_items: number | null;
+  num_parcels: number | null;
+  parts: string | null;
   order_date: string | null;
   dispatched_date: string | null;
   last_updated: string | null;
   last_updated_by_user: string | null;
   comments: string | null;
+  order_lock: boolean;
+  items: OrderItem[];
 }
 
 interface LabelRecord {
