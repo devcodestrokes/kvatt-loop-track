@@ -297,7 +297,11 @@ export type Database = {
           group_id: string
           id: string
           label_count: number
+          last_synced_at: string | null
           merchant_id: string | null
+          merchant_name: string | null
+          mintsoft_asn_id: number | null
+          mintsoft_asn_status: string | null
           status: string
           updated_at: string
         }
@@ -306,7 +310,11 @@ export type Database = {
           group_id: string
           id?: string
           label_count?: number
+          last_synced_at?: string | null
           merchant_id?: string | null
+          merchant_name?: string | null
+          mintsoft_asn_id?: number | null
+          mintsoft_asn_status?: string | null
           status?: string
           updated_at?: string
         }
@@ -315,7 +323,11 @@ export type Database = {
           group_id?: string
           id?: string
           label_count?: number
+          last_synced_at?: string | null
           merchant_id?: string | null
+          merchant_name?: string | null
+          mintsoft_asn_id?: number | null
+          mintsoft_asn_status?: string | null
           status?: string
           updated_at?: string
         }
