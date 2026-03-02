@@ -12,29 +12,30 @@ const safeStr = (val: unknown): string => {
   return String(val);
 };
 
-async function findProductNameFromMintsoft(groupSku: string, apiKey: string): Promise<string | null> {
-  const clientId = 82;
+const CLIENT_ID = 82;
 
-  // Strategy 1: List recent orders and find item with matching SKU
+async function findProductNameFromMintsoft(groupSku: string, apiKey: string): Promise<string | null> {
+  const headers = { 'Accept': 'application/json', 'ms-apikey': apiKey };
+
+  // Strategy 1: List orders and find matching SKU in items
   try {
-    console.log(`[resolve] Searching orders for SKU: ${groupSku}`);
+    console.log(`[resolve] Fetching orders list...`);
     const orderRes = await fetch(
-      `https://api.mintsoft.co.uk/api/Order?ClientId=${clientId}&Limit=200&APIKey=${apiKey}`,
-      { headers: { 'Accept': 'application/json' } }
+      `https://api.mintsoft.co.uk/api/Order/List?ClientId=${CLIENT_ID}`,
+      { headers }
     );
     if (orderRes.ok) {
-      const orderData = await orderRes.json();
-      const orders = orderData?.Results || orderData?.Data || (Array.isArray(orderData) ? orderData : []);
-      console.log(`[resolve] Got ${orders.length} orders, checking items...`);
+      const orderRaw = await orderRes.json();
+      const orders = Array.isArray(orderRaw) ? orderRaw : (orderRaw?.Results || orderRaw?.Data || []);
+      console.log(`[resolve] Got ${orders.length} orders`);
 
-      // Check each order's items for the SKU match
       for (const order of orders) {
         const orderId = order?.ID || order?.Id;
         if (!orderId) continue;
 
         const detailRes = await fetch(
-          `https://api.mintsoft.co.uk/api/Order/${orderId}?APIKey=${apiKey}`,
-          { headers: { 'Accept': 'application/json' } }
+          `https://api.mintsoft.co.uk/api/Order/${orderId}`,
+          { headers }
         );
         if (!detailRes.ok) continue;
 
@@ -45,17 +46,15 @@ async function findProductNameFromMintsoft(groupSku: string, apiKey: string): Pr
         );
 
         if (matchItem) {
-          console.log(`[resolve] Found matching item in order ${orderId}`);
-          // Try product name from item
+          console.log(`[resolve] Found SKU match in order ${orderId}`);
           let name = safeStr(matchItem.Name) || safeStr(matchItem.ProductName);
           if (name) return name;
 
-          // Try fetching product by ID
           const pid = matchItem.ProductId || matchItem.ProductID;
           if (pid) {
             const prodRes = await fetch(
-              `https://api.mintsoft.co.uk/api/Product/${pid}?APIKey=${apiKey}`,
-              { headers: { 'Accept': 'application/json' } }
+              `https://api.mintsoft.co.uk/api/Product/${pid}`,
+              { headers }
             );
             if (prodRes.ok) {
               const prod = await prodRes.json();
@@ -70,25 +69,25 @@ async function findProductNameFromMintsoft(groupSku: string, apiKey: string): Pr
     console.error('[resolve] Order search error:', e);
   }
 
-  // Strategy 2: Also check ASNs
+  // Strategy 2: Check ASNs
   try {
-    console.log(`[resolve] Searching ASNs for SKU: ${groupSku}`);
+    console.log(`[resolve] Fetching ASN list...`);
     const asnRes = await fetch(
-      `https://api.mintsoft.co.uk/api/ASN?ClientId=${clientId}&Limit=100&APIKey=${apiKey}`,
-      { headers: { 'Accept': 'application/json' } }
+      `https://api.mintsoft.co.uk/api/ASN/List?ClientId=${CLIENT_ID}&IncludeItems=true`,
+      { headers }
     );
     if (asnRes.ok) {
-      const asnData = await asnRes.json();
-      const asns = asnData?.Results || asnData?.Data || (Array.isArray(asnData) ? asnData : []);
-      console.log(`[resolve] Got ${asns.length} ASNs, checking items...`);
+      const asnRaw = await asnRes.json();
+      const asns = Array.isArray(asnRaw) ? asnRaw : (asnRaw?.Results || asnRaw?.Data || []);
+      console.log(`[resolve] Got ${asns.length} ASNs`);
 
       for (const asn of asns) {
         const asnId = asn?.ID || asn?.Id;
         if (!asnId) continue;
 
         const detailRes = await fetch(
-          `https://api.mintsoft.co.uk/api/ASN/${asnId}?APIKey=${apiKey}`,
-          { headers: { 'Accept': 'application/json' } }
+          `https://api.mintsoft.co.uk/api/ASN/${asnId}`,
+          { headers }
         );
         if (!detailRes.ok) continue;
 
@@ -99,15 +98,15 @@ async function findProductNameFromMintsoft(groupSku: string, apiKey: string): Pr
         );
 
         if (matchItem) {
-          console.log(`[resolve] Found matching item in ASN ${asnId}`);
+          console.log(`[resolve] Found SKU match in ASN ${asnId}`);
           let name = safeStr(matchItem.Name) || safeStr(matchItem.ProductName);
           if (name) return name;
 
           const pid = matchItem.ProductId || matchItem.ProductID;
           if (pid) {
             const prodRes = await fetch(
-              `https://api.mintsoft.co.uk/api/Product/${pid}?APIKey=${apiKey}`,
-              { headers: { 'Accept': 'application/json' } }
+              `https://api.mintsoft.co.uk/api/Product/${pid}`,
+              { headers }
             );
             if (prodRes.ok) {
               const prod = await prodRes.json();
@@ -129,18 +128,15 @@ function smartMatchMerchant(productName: string, merchants: any[]): any | null {
   const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
   const normalizedProduct = normalize(productName);
 
-  // Exact normalized match
   let match = merchants.find(m => normalize(m.name) === normalizedProduct);
   if (match) return match;
 
-  // Contains match (either direction)
   match = merchants.find(m =>
     normalizedProduct.includes(normalize(m.name)) ||
     normalize(m.name).includes(normalizedProduct)
   );
   if (match) return match;
 
-  // Word-level matching
   const productWords = normalizedProduct.match(/[a-z0-9]{3,}/g) || [];
   match = merchants.find(m => {
     const merchantWords = normalize(m.name).match(/[a-z0-9]{3,}/g) || [];
@@ -232,7 +228,7 @@ Deno.serve(async (req) => {
       if (allMerchants) {
         matchedMerchant = smartMatchMerchant(groupMerchantName, allMerchants);
         if (matchedMerchant) {
-          console.log(`[resolve] Matched via group name "${groupMerchantName}" -> ${matchedMerchant.name}`);
+          console.log(`[resolve] Matched via group name -> ${matchedMerchant.name}`);
         }
       }
     }
