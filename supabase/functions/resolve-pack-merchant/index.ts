@@ -12,6 +12,150 @@ const safeStr = (val: unknown): string => {
   return String(val);
 };
 
+async function findProductNameFromMintsoft(groupSku: string, apiKey: string): Promise<string | null> {
+  // Strategy 1: Search Product directly by SKU
+  try {
+    const prodSearchRes = await fetch(
+      `https://api.mintsoft.co.uk/api/Product?SKU=${encodeURIComponent(groupSku)}&APIKey=${apiKey}`,
+      { headers: { 'Accept': 'application/json' } }
+    );
+    if (prodSearchRes.ok) {
+      const prodData = await prodSearchRes.json();
+      const products = prodData?.Results || prodData?.Data || (Array.isArray(prodData) ? prodData : []);
+      console.log(`[resolve] Product search by SKU found ${products.length} results`);
+      if (products.length > 0) {
+        const name = safeStr(products[0]?.Name) || safeStr(products[0]?.ProductName);
+        if (name) return name;
+      }
+    }
+  } catch (e) {
+    console.error('[resolve] Product search error:', e);
+  }
+
+  // Strategy 2: Search OrderItem by SKU
+  try {
+    const oiRes = await fetch(
+      `https://api.mintsoft.co.uk/api/OrderItem?SKU=${encodeURIComponent(groupSku)}&APIKey=${apiKey}`,
+      { headers: { 'Accept': 'application/json' } }
+    );
+    if (oiRes.ok) {
+      const oiData = await oiRes.json();
+      const items = oiData?.Results || oiData?.Data || (Array.isArray(oiData) ? oiData : []);
+      console.log(`[resolve] OrderItem search found ${items.length} results`);
+      if (items.length > 0) {
+        // Try getting product name from item directly
+        let name = safeStr(items[0]?.Name) || safeStr(items[0]?.ProductName);
+        if (name) return name;
+        // Try fetching product by ID
+        const pid = items[0]?.ProductId || items[0]?.ProductID;
+        if (pid) {
+          const prodRes = await fetch(
+            `https://api.mintsoft.co.uk/api/Product/${pid}?APIKey=${apiKey}`,
+            { headers: { 'Accept': 'application/json' } }
+          );
+          if (prodRes.ok) {
+            const prod = await prodRes.json();
+            name = safeStr(prod?.Name) || safeStr(prod?.ProductName);
+            if (name) return name;
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[resolve] OrderItem search error:', e);
+  }
+
+  // Strategy 3: Search Order by SKU  
+  try {
+    const orderRes = await fetch(
+      `https://api.mintsoft.co.uk/api/Order?SKU=${encodeURIComponent(groupSku)}&APIKey=${apiKey}`,
+      { headers: { 'Accept': 'application/json' } }
+    );
+    if (orderRes.ok) {
+      const orderData = await orderRes.json();
+      const orders = orderData?.Results || orderData?.Data || (Array.isArray(orderData) ? orderData : []);
+      console.log(`[resolve] Order search by SKU found ${orders.length} results`);
+      if (orders.length > 0) {
+        const orderId = orders[0]?.ID || orders[0]?.Id;
+        if (orderId) {
+          const detailRes = await fetch(
+            `https://api.mintsoft.co.uk/api/Order/${orderId}?APIKey=${apiKey}`,
+            { headers: { 'Accept': 'application/json' } }
+          );
+          if (detailRes.ok) {
+            const detail = await detailRes.json();
+            const items = detail?.OrderItems || detail?.Items || [];
+            const matchItem = items.find((i: any) => i.SKU === groupSku || i.ProductSKU === groupSku);
+            if (matchItem) {
+              const name = safeStr(matchItem.Name) || safeStr(matchItem.ProductName);
+              if (name) return name;
+              const pid = matchItem.ProductId || matchItem.ProductID;
+              if (pid) {
+                const prodRes = await fetch(
+                  `https://api.mintsoft.co.uk/api/Product/${pid}?APIKey=${apiKey}`,
+                  { headers: { 'Accept': 'application/json' } }
+                );
+                if (prodRes.ok) {
+                  const prod = await prodRes.json();
+                  return safeStr(prod?.Name) || safeStr(prod?.ProductName) || null;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[resolve] Order search error:', e);
+  }
+
+  // Strategy 4: Search ASN by SKU
+  try {
+    const asnRes = await fetch(
+      `https://api.mintsoft.co.uk/api/ASN?SKU=${encodeURIComponent(groupSku)}&APIKey=${apiKey}`,
+      { headers: { 'Accept': 'application/json' } }
+    );
+    if (asnRes.ok) {
+      const asnData = await asnRes.json();
+      const asns = asnData?.Results || asnData?.Data || (Array.isArray(asnData) ? asnData : []);
+      console.log(`[resolve] ASN search found ${asns.length} results`);
+      if (asns.length > 0) {
+        const asnId = asns[0]?.ID || asns[0]?.Id;
+        if (asnId) {
+          const detailRes = await fetch(
+            `https://api.mintsoft.co.uk/api/ASN/${asnId}?APIKey=${apiKey}`,
+            { headers: { 'Accept': 'application/json' } }
+          );
+          if (detailRes.ok) {
+            const detail = await detailRes.json();
+            const items = detail?.ASNItems || detail?.Items || [];
+            const matchItem = items.find((i: any) => i.SKU === groupSku || i.ProductSKU === groupSku);
+            if (matchItem) {
+              const name = safeStr(matchItem.Name) || safeStr(matchItem.ProductName);
+              if (name) return name;
+              const pid = matchItem.ProductId || matchItem.ProductID;
+              if (pid) {
+                const prodRes = await fetch(
+                  `https://api.mintsoft.co.uk/api/Product/${pid}?APIKey=${apiKey}`,
+                  { headers: { 'Accept': 'application/json' } }
+                );
+                if (prodRes.ok) {
+                  const prod = await prodRes.json();
+                  return safeStr(prod?.Name) || safeStr(prod?.ProductName) || null;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('[resolve] ASN search error:', e);
+  }
+
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -31,9 +175,9 @@ Deno.serve(async (req) => {
     );
     const mintsoftApiKey = Deno.env.get('MINTSOFT_API_KEY')!;
 
-    console.log(`[resolve-pack-merchant] Resolving merchant for pack: ${packId}`);
+    console.log(`[resolve] Resolving merchant for pack: ${packId}`);
 
-    // 1. Find label by packId (case-insensitive)
+    // 1. Find label
     const { data: label } = await supabase
       .from('labels')
       .select('id, group_id, merchant_id')
@@ -42,15 +186,15 @@ Deno.serve(async (req) => {
       .single();
 
     if (!label) {
-      console.log(`[resolve-pack-merchant] Label not found: ${packId}`);
       return new Response(JSON.stringify({ success: false, error: 'Pack not found' }), {
         status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // 2. Get label_group to find the SKU (group_id text field)
+    // 2. Get label_group
     let groupSku: string | null = null;
     let groupMerchantId: string | null = null;
+    let groupMerchantName: string | null = null;
 
     if (label.group_id) {
       const { data: group } = await supabase
@@ -63,11 +207,12 @@ Deno.serve(async (req) => {
       if (group) {
         groupSku = group.group_id;
         groupMerchantId = group.merchant_id;
-        console.log(`[resolve-pack-merchant] Found group SKU: ${groupSku}`);
+        groupMerchantName = group.merchant_name;
+        console.log(`[resolve] Group SKU: ${groupSku}, merchant_name: ${groupMerchantName}`);
       }
     }
 
-    // 3. Try direct merchant_id from label or label_group first
+    // 3. Direct merchant_id lookup
     let matchedMerchant: any = null;
     const merchantId = label.merchant_id || groupMerchantId;
 
@@ -81,143 +226,41 @@ Deno.serve(async (req) => {
 
       if (m) {
         matchedMerchant = m;
-        console.log(`[resolve-pack-merchant] Direct merchant match: ${m.name}`);
+        console.log(`[resolve] Direct merchant match: ${m.name}`);
       }
     }
 
-    // 4. If no direct match, search Mintsoft for orders/ASNs with the group SKU
+    // 4. Try smart-matching merchant_name from label_group directly
+    if (!matchedMerchant && groupMerchantName) {
+      const { data: allMerchants } = await supabase
+        .from('merchants')
+        .select('name, logo_url, contact_email, return_link, return_link_params, shopify_domain');
+
+      if (allMerchants) {
+        matchedMerchant = smartMatchMerchant(groupMerchantName, allMerchants);
+        if (matchedMerchant) {
+          console.log(`[resolve] Matched via group merchant_name "${groupMerchantName}" -> ${matchedMerchant.name}`);
+        }
+      }
+    }
+
+    // 5. Search Mintsoft for product name and smart-match
     let mintsoftProductName: string | null = null;
 
     if (!matchedMerchant && groupSku) {
-      console.log(`[resolve-pack-merchant] No direct merchant, searching Mintsoft for SKU: ${groupSku}`);
+      console.log(`[resolve] Searching Mintsoft for SKU: ${groupSku}`);
+      mintsoftProductName = await findProductNameFromMintsoft(groupSku, mintsoftApiKey);
+      console.log(`[resolve] Mintsoft product name: ${mintsoftProductName}`);
 
-      try {
-        // Try Order search by SKU
-        const orderRes = await fetch(
-          `https://api.mintsoft.co.uk/api/Order?SKU=${encodeURIComponent(groupSku)}&APIKey=${mintsoftApiKey}`,
-          { headers: { 'Accept': 'application/json' } }
-        );
-
-        if (orderRes.ok) {
-          const orderData = await orderRes.json();
-          const orders = orderData?.Results || orderData?.Data || (Array.isArray(orderData) ? orderData : []);
-
-          if (orders.length > 0) {
-            const orderId = orders[0]?.ID || orders[0]?.Id;
-            if (orderId) {
-              const detailRes = await fetch(
-                `https://api.mintsoft.co.uk/api/Order/${orderId}?APIKey=${mintsoftApiKey}`,
-                { headers: { 'Accept': 'application/json' } }
-              );
-              if (detailRes.ok) {
-                const detail = await detailRes.json();
-                const items = detail?.OrderItems || detail?.Items || [];
-                const matchItem = items.find((i: any) =>
-                  i.SKU === groupSku || i.ProductSKU === groupSku
-                );
-                if (matchItem) {
-                  const pid = matchItem.ProductId || matchItem.ProductID;
-                  if (pid) {
-                    const prodRes = await fetch(
-                      `https://api.mintsoft.co.uk/api/Product/${pid}?APIKey=${mintsoftApiKey}`,
-                      { headers: { 'Accept': 'application/json' } }
-                    );
-                    if (prodRes.ok) {
-                      const prod = await prodRes.json();
-                      mintsoftProductName = safeStr(prod?.Name) || safeStr(prod?.ProductName) || null;
-                    }
-                  }
-                  if (!mintsoftProductName) {
-                    mintsoftProductName = safeStr(matchItem.Name) || safeStr(matchItem.ProductName) || null;
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        // Also try ASN search if no product name yet
-        if (!mintsoftProductName) {
-          const asnRes = await fetch(
-            `https://api.mintsoft.co.uk/api/ASN?SKU=${encodeURIComponent(groupSku)}&APIKey=${mintsoftApiKey}`,
-            { headers: { 'Accept': 'application/json' } }
-          );
-          if (asnRes.ok) {
-            const asnData = await asnRes.json();
-            const asns = asnData?.Results || asnData?.Data || (Array.isArray(asnData) ? asnData : []);
-            if (asns.length > 0) {
-              const asnId = asns[0]?.ID || asns[0]?.Id;
-              if (asnId) {
-                const detailRes = await fetch(
-                  `https://api.mintsoft.co.uk/api/ASN/${asnId}?APIKey=${mintsoftApiKey}`,
-                  { headers: { 'Accept': 'application/json' } }
-                );
-                if (detailRes.ok) {
-                  const detail = await detailRes.json();
-                  const items = detail?.ASNItems || detail?.Items || [];
-                  const matchItem = items.find((i: any) =>
-                    i.SKU === groupSku || i.ProductSKU === groupSku
-                  );
-                  if (matchItem) {
-                    const pid = matchItem.ProductId || matchItem.ProductID;
-                    if (pid) {
-                      const prodRes = await fetch(
-                        `https://api.mintsoft.co.uk/api/Product/${pid}?APIKey=${mintsoftApiKey}`,
-                        { headers: { 'Accept': 'application/json' } }
-                      );
-                      if (prodRes.ok) {
-                        const prod = await prodRes.json();
-                        mintsoftProductName = safeStr(prod?.Name) || safeStr(prod?.ProductName) || null;
-                      }
-                    }
-                    if (!mintsoftProductName) {
-                      mintsoftProductName = safeStr(matchItem.Name) || safeStr(matchItem.ProductName) || null;
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        console.log(`[resolve-pack-merchant] Mintsoft product name: ${mintsoftProductName}`);
-      } catch (e) {
-        console.error('[resolve-pack-merchant] Mintsoft lookup error:', e);
-      }
-
-      // 5. Smart-match product name to merchants table
       if (mintsoftProductName) {
         const { data: allMerchants } = await supabase
           .from('merchants')
           .select('name, logo_url, contact_email, return_link, return_link_params, shopify_domain');
 
-        if (allMerchants && allMerchants.length > 0) {
-          const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
-          const normalizedProduct = normalize(mintsoftProductName);
-
-          // Exact normalized match
-          matchedMerchant = allMerchants.find(m => normalize(m.name) === normalizedProduct);
-
-          // Contains match (either direction)
-          if (!matchedMerchant) {
-            matchedMerchant = allMerchants.find(m =>
-              normalizedProduct.includes(normalize(m.name)) ||
-              normalize(m.name).includes(normalizedProduct)
-            );
-          }
-
-          // Word-level matching: at least 1 common word with 3+ chars
-          if (!matchedMerchant) {
-            const productWords = normalizedProduct.match(/[a-z0-9]{3,}/g) || [];
-            matchedMerchant = allMerchants.find(m => {
-              const merchantWords = normalize(m.name).match(/[a-z0-9]{3,}/g) || [];
-              const common = productWords.filter(w => merchantWords.includes(w));
-              return common.length >= 1;
-            });
-          }
-
+        if (allMerchants) {
+          matchedMerchant = smartMatchMerchant(mintsoftProductName, allMerchants);
           if (matchedMerchant) {
-            console.log(`[resolve-pack-merchant] Smart-matched to merchant: ${matchedMerchant.name}`);
+            console.log(`[resolve] Smart-matched product "${mintsoftProductName}" -> ${matchedMerchant.name}`);
           }
         }
       }
@@ -239,9 +282,33 @@ Deno.serve(async (req) => {
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
-    console.error('[resolve-pack-merchant] Error:', msg);
+    console.error('[resolve] Error:', msg);
     return new Response(JSON.stringify({ success: false, error: msg }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
+
+function smartMatchMerchant(productName: string, merchants: any[]): any | null {
+  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const normalizedProduct = normalize(productName);
+
+  // Exact normalized match
+  let match = merchants.find(m => normalize(m.name) === normalizedProduct);
+  if (match) return match;
+
+  // Contains match (either direction)
+  match = merchants.find(m =>
+    normalizedProduct.includes(normalize(m.name)) ||
+    normalize(m.name).includes(normalizedProduct)
+  );
+  if (match) return match;
+
+  // Word-level matching: at least 1 common word with 3+ chars
+  const productWords = normalizedProduct.match(/[a-z0-9]{3,}/g) || [];
+  match = merchants.find(m => {
+    const merchantWords = normalize(m.name).match(/[a-z0-9]{3,}/g) || [];
+    return productWords.filter(w => merchantWords.includes(w)).length >= 1;
+  });
+  return match || null;
+}
