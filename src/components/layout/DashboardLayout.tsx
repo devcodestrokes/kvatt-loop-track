@@ -1,4 +1,6 @@
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import kvattBirdLogo from "@/assets/kvatt-bird-logo.png";
+import universalWorksLogo from "@/assets/universal-works-logo.png";
 import { AppSidebar } from "./AppSidebar";
 import { Menu } from "lucide-react";
 import { FilterLoadingOverlay } from "@/components/dashboard/FilterLoadingOverlay";
