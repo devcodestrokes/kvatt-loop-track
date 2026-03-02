@@ -24,7 +24,27 @@ const STORE_NAME_MAPPING: Record<string, string> = {
   'leming-kvatt-demo.myshopify.com': 'leming-kvatt-demo',
   'kapil-kvatt-checkout.myshopify.com': 'Kapil Kvatt Checkout',
   '6a86bd.myshopify.com': '6a86bd',
+  'arkitaip.myshopify.com': 'Arkitaip',
 };
+
+// Dev/test/demo stores to exclude from production analytics (not A/B testing)
+export const DEV_TEST_STORE_DOMAINS = new Set([
+  'kvatt-green-package-demo.myshopify.com',
+  'toast-dev.myshopify.com',
+  'toast-newdev.myshopify.com',
+  'toast-newdev-us.myshopify.com',
+  'toast-dev-us.myshopify.com',
+  'kvatt-dev.myshopify.com',
+  'smitg-kvatt-demo.myshopify.com',
+  'smit-v2.myshopify.com',
+  'kvatt-test-gb.myshopify.com',
+  'leming-kvatt-demo.myshopify.com',
+  'kapil-kvatt-checkout.myshopify.com',
+  '6a86bd.myshopify.com',
+]);
+
+// Check if a store domain is a dev/test store
+export const isDevTestStore = (domain: string): boolean => DEV_TEST_STORE_DOMAINS.has(domain);
 
 // Get display store name from store domain
 export const getDisplayStoreName = (storeDomain: string): string => {
