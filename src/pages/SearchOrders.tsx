@@ -32,8 +32,21 @@ const STORE_MAPPINGS: Record<string, string> = {
   '30': 'SCALES SwimSkins'
 };
 
+interface MerchantConfig {
+  name: string;
+  return_link: string | null;
+  return_link_params: string | null;
+  logo_url: string | null;
+  contact_email: string | null;
+}
+
+// Dynamic merchant configs loaded from DB
+let merchantConfigs: Record<string, MerchantConfig> = {};
+
 const getStoreName = (userId: string | null): string => {
   if (!userId) return "N/A";
+  // Use DB config name if available, else fallback to static map
+  if (merchantConfigs[userId]?.name) return merchantConfigs[userId].name;
   return STORE_MAPPINGS[userId] || `Store ${userId}`;
 };
 
@@ -42,20 +55,21 @@ const extractOrderNumber = (orderName: string): string => {
 };
 
 const getReturnPortalUrl = (order: OrderResult, customerEmail: string): string | null => {
-  const storeName = getStoreName(order.user_id);
+  const userId = order.user_id;
+  const config = merchantConfigs[userId];
   const orderId = extractOrderNumber(order.name || '');
 
-  switch (storeName) {
-    case 'SIRPLUS':
-      return `https://returnsportal.shop/sirplus?s=1&lang=&e=${encodeURIComponent(customerEmail)}&o=${encodeURIComponent(orderId)}&a=true`;
-    case 'Universal Works':
-    case 'Kvatt - Demo Store':
-      return `https://returns.universalworks.co.uk/?s=1&lang=&e=${encodeURIComponent(customerEmail)}&o=${encodeURIComponent(orderId)}`;
-    case 'TOAST':
-      return `https://toast.returns.international/`;
-    default:
-      return null;
+  if (config?.return_link) {
+    let url = config.return_link;
+    if (config.return_link_params) {
+      url += config.return_link_params
+        .replace('{email}', encodeURIComponent(customerEmail))
+        .replace('{order_number}', encodeURIComponent(orderId));
+    }
+    return url;
   }
+
+  return null;
 };
 
 interface OrderResult {
