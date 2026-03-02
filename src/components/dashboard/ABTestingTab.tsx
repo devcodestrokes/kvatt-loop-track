@@ -1,9 +1,6 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { FlaskConical, RefreshCw, Download, ChevronDown, ChevronRight, ShoppingCart, ThumbsUp, ThumbsDown, Percent, Layers, Store as StoreIcon, Trophy, Medal } from 'lucide-react';
 import { useABTestingAnalytics, ABTestingData } from '@/hooks/useABTestingAnalytics';
-import { useUserDefaults } from '@/hooks/useUserDefaults';
-import { DateRange } from '@/types/analytics';
-import { DateRangePicker } from '@/components/dashboard/DateRangePicker';
 import { LoadingSkeleton } from '@/components/dashboard/LoadingSkeleton';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -117,36 +114,22 @@ function StoreRow({ item }: { item: ABTestingData }) {
 
 export function ABTestingTab() {
   const { data, stores, isLoading, error, fetchStores, fetchAnalytics } = useABTestingAnalytics();
-  const { getDefaultDateRange, isInitialized: defaultsInitialized } = useUserDefaults();
 
-  const [dateRange, setDateRange] = useState<DateRange | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>();
   const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
   const [storesInitialized, setStoresInitialized] = useState(false);
   const initialLoadRef = useRef(false);
 
   useEffect(() => {
-    if (!defaultsInitialized) return;
-    if (!getDefaultDateRange) return;
-    setDateRange(getDefaultDateRange());
-  }, [getDefaultDateRange, defaultsInitialized]);
-
-  useEffect(() => {
-    if (defaultsInitialized && !dateRange) {
-      setDateRange(getDefaultDateRange());
-    }
-  }, [defaultsInitialized, getDefaultDateRange, dateRange]);
-
-  useEffect(() => {
-    if (!dateRange || initialLoadRef.current) return;
+    if (initialLoadRef.current) return;
     initialLoadRef.current = true;
     const loadInitialData = async () => {
       await fetchStores();
-      await fetchAnalytics(dateRange, 'all');
+      await fetchAnalytics(undefined, 'all');
       setLastUpdated(new Date());
     };
     loadInitialData();
-  }, [dateRange, fetchStores, fetchAnalytics]);
+  }, [fetchStores, fetchAnalytics]);
 
   useEffect(() => {
     if (error) {
@@ -155,25 +138,14 @@ export function ABTestingTab() {
   }, [error]);
 
   const handleRefresh = async () => {
-    if (!dateRange) return;
-    await fetchAnalytics(dateRange, 'all');
+    await fetchAnalytics(undefined, 'all');
     setLastUpdated(new Date());
     toast.success('Data refreshed');
   };
 
-  const handleDateRangeChange = async (range: DateRange) => {
-    setDateRange(range);
-    if (range.from && range.to) {
-      await fetchAnalytics(range, 'all');
-      setLastUpdated(new Date());
-    }
-  };
-
   const exportToCSV = () => {
     const today = new Date();
-    const dateStr = dateRange?.from && dateRange?.to
-      ? `${format(dateRange.from, 'yyyy-MM-dd')}_to_${format(dateRange.to, 'yyyy-MM-dd')}`
-      : format(today, 'yyyy-MM-dd');
+    const dateStr = format(today, 'yyyy-MM-dd');
     const headers = ['Store', 'Design', 'Total', 'Opt-ins', 'Opt-outs', 'Opt-in Rate'];
     const rows: string[][] = [];
     data.forEach((item) => {
@@ -321,13 +293,6 @@ export function ABTestingTab() {
           </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          {dateRange && (
-            <DateRangePicker
-              dateRange={dateRange}
-              onDateRangeChange={handleDateRangeChange}
-              disabled={isLoading}
-            />
-          )}
           <MultiStoreSelector
             stores={allStoreOptions}
             selectedStores={selectedStoreIds}
