@@ -201,7 +201,7 @@ export function ABTestingTab() {
     const activeStores = storesWithAB.length;
 
     const designAgg: Record<string, { ins: number; outs: number; total: number }> = {};
-    data.forEach(d => d.variants.forEach(v => {
+    filteredData.forEach(d => d.variants.forEach(v => {
       if (!designAgg[v.name]) designAgg[v.name] = { ins: 0, outs: 0, total: 0 };
       designAgg[v.name].ins += v.opt_ins;
       designAgg[v.name].outs += v.opt_outs;
