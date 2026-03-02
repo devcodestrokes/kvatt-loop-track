@@ -92,6 +92,8 @@ const Merchants = () => {
     return_link_params: string;
   }>({ name: '', contact_email: '', logo_url: '', return_link: '', return_link_params: '' });
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchMerchants = async () => {
     setIsLoading(true);
