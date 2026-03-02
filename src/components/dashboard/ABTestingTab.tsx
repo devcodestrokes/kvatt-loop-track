@@ -296,13 +296,6 @@ export function ABTestingTab() {
           </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          {dateRange && (
-            <DateRangePicker
-              dateRange={dateRange}
-              onDateRangeChange={handleDateRangeChange}
-              disabled={isLoading}
-            />
-          )}
           <MultiStoreSelector
             stores={allStoreOptions}
             selectedStores={selectedStoreIds}
