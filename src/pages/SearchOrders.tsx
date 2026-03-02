@@ -541,6 +541,16 @@ export default function SearchOrders() {
                     style={{ padding: '16px 20px' }}>
 
                         <div className="flex items-center gap-4">
+                          {(() => {
+                            const logoUrl = merchantConfigs[order.user_id]?.logo_url;
+                            return logoUrl ? (
+                              <img
+                                src={logoUrl}
+                                alt={getStoreName(order.user_id)}
+                                className="flex-shrink-0 object-contain rounded-lg"
+                                style={{ width: '40px', height: '40px' }} />
+                            ) : null;
+                          })()}
                           <div
                         className={`flex-shrink-0 rounded-full border-2 flex items-center justify-center ${
                         isSelected ? 'border-stone-900' : 'border-stone-400'
