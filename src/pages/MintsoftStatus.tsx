@@ -160,6 +160,7 @@ const MintsoftStatus = () => {
   const [stats, setStats] = useState({ packs: 0, asn: 0, returns: 0, orders: 0 });
   const [expandedAsnRows, setExpandedAsnRows] = useState<Set<number>>(new Set());
   const [expandedReturnRows, setExpandedReturnRows] = useState<Set<number>>(new Set());
+  const [expandedOrderRows, setExpandedOrderRows] = useState<Set<number>>(new Set());
 
   const toggleAsnRow = (index: number) => {
     setExpandedAsnRows(prev => {
