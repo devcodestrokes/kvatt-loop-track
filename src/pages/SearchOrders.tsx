@@ -128,13 +128,41 @@ export default function SearchOrders() {
   const [showAllOrders, setShowAllOrders] = useState(false);
   const [activeMerchantLogo, setActiveMerchantLogo] = useState<string | null>(null);
   const [packMerchantEmail, setPackMerchantEmail] = useState<string | null>(null);
+  const [preloading, setPreloading] = useState(true);
+  const [preloadProgress, setPreloadProgress] = useState(0);
+
+  // Preload: animate progress bar while loading merchant configs
+  useEffect(() => {
+    if (!preloading) return;
+    const interval = setInterval(() => {
+      setPreloadProgress(prev => {
+        if (prev >= 90) { clearInterval(interval); return 90; }
+        return prev + Math.random() * 15;
+      });
+    }, 200);
+    return () => clearInterval(interval);
+  }, [preloading]);
+
+  const finishPreload = useCallback(() => {
+    setPreloadProgress(100);
+    setTimeout(() => setPreloading(false), 400);
+  }, []);
 
   // Load merchant configs from DB on mount
   useEffect(() => {
+    let configsLoaded = false;
+    let merchantResolved = false;
+    const needsMerchantResolve = !!packId;
+
+    const checkDone = () => {
+      if (configsLoaded && (!needsMerchantResolve || merchantResolved)) {
+        finishPreload();
+      }
+    };
+
     supabase.functions.invoke('get-merchant-configs').then(({ data }) => {
       if (data?.success && data?.configs) {
         merchantConfigs = data.configs;
-        // If storeId is in URL, set merchant logo immediately
         if (storeId && merchantConfigs[storeId]?.logo_url) {
           setActiveMerchantLogo(merchantConfigs[storeId].logo_url);
         }
@@ -142,11 +170,15 @@ export default function SearchOrders() {
           setPackMerchantEmail(merchantConfigs[storeId].contact_email);
         }
       }
-    }).catch(err => console.error('Failed to load merchant configs:', err));
-  }, [storeId]);
+      configsLoaded = true;
+      checkDone();
+    }).catch(err => {
+      console.error('Failed to load merchant configs:', err);
+      configsLoaded = true;
+      checkDone();
+    });
 
-  // Resolve merchant from packId via Mintsoft product name mapping
-  useEffect(() => {
+    // Resolve merchant from packId via Mintsoft product name mapping
     if (packId) {
       supabase.functions.invoke('resolve-pack-merchant', {
         body: { packId }
@@ -160,9 +192,19 @@ export default function SearchOrders() {
           }
           console.log('Pack merchant resolved:', data.merchant.name, 'via product:', data.mintsoft_product_name);
         }
-      }).catch(err => console.error('Failed to resolve pack merchant:', err));
+        merchantResolved = true;
+        checkDone();
+      }).catch(err => {
+        console.error('Failed to resolve pack merchant:', err);
+        merchantResolved = true;
+        checkDone();
+      });
     }
-  }, [packId]);
+
+    // Fallback: if nothing loads within 6s, finish anyway
+    const fallback = setTimeout(() => finishPreload(), 6000);
+    return () => clearTimeout(fallback);
+  }, [storeId, packId, finishPreload]);
 
   // Voice recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -373,6 +415,27 @@ export default function SearchOrders() {
     acc[store].push(order);
     return acc;
   }, {});
+
+  if (preloading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center" style={{ backgroundColor: '#e8e4de', fontFamily: "'Inter', sans-serif" }}>
+        <img
+          src={kvattLogo}
+          alt="Kvatt"
+          className="w-[80px] h-[69px] md:w-[100px] md:h-[86px] object-contain mb-8"
+        />
+        <div className="w-[160px] h-[3px] rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(28, 25, 23, 0.15)' }}>
+          <div
+            className="h-full rounded-full transition-all duration-300 ease-out"
+            style={{
+              width: `${preloadProgress}%`,
+              backgroundColor: '#1c1917',
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col relative" style={{ backgroundColor: '#e8e4de', fontFamily: "'Inter', sans-serif" }}>
