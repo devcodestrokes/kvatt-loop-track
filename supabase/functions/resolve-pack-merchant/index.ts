@@ -124,21 +124,37 @@ async function findProductNameFromMintsoft(groupSku: string, apiKey: string): Pr
   return null;
 }
 
+// Dev/test/demo store identifiers to deprioritize
+const DEV_TEST_KEYWORDS = ['dev', 'test', 'demo', 'staging', 'sandbox', 'quickstart'];
+
+function isDevTestMerchant(name: string): boolean {
+  const lower = name.toLowerCase();
+  return DEV_TEST_KEYWORDS.some(kw => lower.includes(kw));
+}
+
 function smartMatchMerchant(productName: string, merchants: any[]): any | null {
   const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
   const normalizedProduct = normalize(productName);
 
-  let match = merchants.find(m => normalize(m.name) === normalizedProduct);
+  // Split merchants into production and dev/test groups — always prefer production
+  const prodMerchants = merchants.filter(m => !isDevTestMerchant(m.name));
+  const devMerchants = merchants.filter(m => isDevTestMerchant(m.name));
+  const orderedMerchants = [...prodMerchants, ...devMerchants];
+
+  // Priority 1: Exact match
+  let match = orderedMerchants.find(m => normalize(m.name) === normalizedProduct);
   if (match) return match;
 
-  match = merchants.find(m =>
+  // Priority 2: Contains match (prefer production merchants)
+  match = orderedMerchants.find(m =>
     normalizedProduct.includes(normalize(m.name)) ||
     normalize(m.name).includes(normalizedProduct)
   );
   if (match) return match;
 
+  // Priority 3: Word overlap (prefer production merchants)
   const productWords = normalizedProduct.match(/[a-z0-9]{3,}/g) || [];
-  match = merchants.find(m => {
+  match = orderedMerchants.find(m => {
     const merchantWords = normalize(m.name).match(/[a-z0-9]{3,}/g) || [];
     return productWords.filter(w => merchantWords.includes(w)).length >= 1;
   });
