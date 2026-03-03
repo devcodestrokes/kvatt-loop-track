@@ -416,6 +416,27 @@ export default function SearchOrders() {
     return acc;
   }, {});
 
+  if (preloading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center" style={{ backgroundColor: '#e8e4de', fontFamily: "'Inter', sans-serif" }}>
+        <img
+          src={kvattLogo}
+          alt="Kvatt"
+          className="w-[80px] h-[69px] md:w-[100px] md:h-[86px] object-contain mb-8"
+        />
+        <div className="w-[160px] h-[3px] rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(28, 25, 23, 0.15)' }}>
+          <div
+            className="h-full rounded-full transition-all duration-300 ease-out"
+            style={{
+              width: `${preloadProgress}%`,
+              backgroundColor: '#1c1917',
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col relative" style={{ backgroundColor: '#e8e4de', fontFamily: "'Inter', sans-serif" }}>
       {/* Top section: back button then logo below it */}
