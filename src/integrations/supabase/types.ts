@@ -686,6 +686,50 @@ export type Database = {
         }
         Relationships: []
       }
+      pack_shipments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          merchant_id: string
+          merchant_name: string
+          notes: string | null
+          pack_count: number
+          pack_ids: string[]
+          shipped_date: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          merchant_id: string
+          merchant_name: string
+          notes?: string | null
+          pack_count?: number
+          pack_ids?: string[]
+          shipped_date: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          merchant_id?: string
+          merchant_name?: string
+          notes?: string | null
+          pack_count?: number
+          pack_ids?: string[]
+          shipped_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pack_shipments_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
