@@ -70,7 +70,8 @@ function StoreRow({ item }: { item: ABTestingData }) {
           {hasVariants ? `${item.variants.length} design${item.variants.length > 1 ? 's' : ''}` : '—'}
         </TableCell>
       </TableRow>
-      {expanded && DESIGN_LABELS.map((designName) => {
+      {expanded && item.variants.map((variant) => {
+        const designName = variant.name;
         const variant = item.variants.find(v => v.name === designName);
         return (
           <TableRow key={designName} className="border-border bg-secondary/30">
