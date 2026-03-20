@@ -915,7 +915,7 @@ export default function SearchOrders() {
                 </button>
               </>
             )}
-            <SupportFooter />
+            {!recordingSent && <SupportFooter />}
           </div>
         }
       </div>
