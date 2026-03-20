@@ -762,10 +762,14 @@ export default function SearchOrders() {
                 />
               </div>
 
-              {/* Step dots below slider */}
-              <div className="flex items-center justify-between mt-2 px-1">
+              {/* Step dots below slider - aligned to slider stop positions */}
+              <div className="relative h-4 mt-2">
                 {[0, 1, 2, 3, 4].map(i => (
-                  <div key={i} className="w-[8px] h-[8px] rounded-full bg-stone-400/70" />
+                  <div
+                    key={i}
+                    className="absolute w-[7px] h-[7px] rounded-full bg-stone-400/70 -translate-x-1/2"
+                    style={{ left: `${(i / 4) * 100}%` }}
+                  />
                 ))}
               </div>
             </div>
