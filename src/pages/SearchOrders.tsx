@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Loader2, ChevronLeft, Square, Play, Pause, Send } from "lucide-react";
+import { Loader2, ChevronLeft, Square, Play, Pause, Send, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import kvattLogo from "@/assets/kvatt-bird-logo.png";
@@ -868,7 +868,7 @@ export default function SearchOrders() {
                 </div>
 
                 {/* Controls */}
-                <div className="flex items-center justify-center gap-10 mb-8">
+                <div className="flex items-center justify-center gap-10 mb-4">
                   <button
                     onClick={stopRecording}
                     disabled={!isRecording}
@@ -895,16 +895,28 @@ export default function SearchOrders() {
                     </span>
                   </button>
 
+                  {/* Reset button - only enabled when recording is stopped and audio exists */}
                   <button
-                    onClick={sendRecording}
-                    disabled={!audioBlob || isRecording}
+                    onClick={() => {
+                      setAudioBlob(null);
+                      setRecordingTime(0);
+                    }}
+                    disabled={isRecording || !audioBlob}
                     className="flex flex-col items-center gap-2 disabled:opacity-30 transition-transform duration-200 active:scale-90">
                     <div className="w-12 h-12 rounded-full bg-stone-900 flex items-center justify-center">
-                      <Send className="w-4 h-4 text-white animate-scale-in" />
+                      <RotateCcw className="w-4 h-4 text-white animate-scale-in" />
                     </div>
-                    <span className="text-xs font-medium text-stone-900 uppercase tracking-wide">Send</span>
+                    <span className="text-xs font-medium text-stone-900 uppercase tracking-wide">Reset</span>
                   </button>
                 </div>
+
+                {/* Send feedback button - enabled only when stopped with audio */}
+                <button
+                  onClick={sendRecording}
+                  disabled={!audioBlob || isRecording}
+                  className="w-full py-4 rounded-2xl bg-stone-900 text-white font-medium text-base tracking-tight disabled:opacity-30 transition-all duration-200 active:scale-[0.98] mb-8">
+                  send feedback
+                </button>
               </>
             )}
             <SupportFooter />
