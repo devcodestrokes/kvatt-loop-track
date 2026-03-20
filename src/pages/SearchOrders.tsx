@@ -910,7 +910,7 @@ export default function SearchOrders() {
                 <button
                   onClick={sendRecording}
                   disabled={!audioBlob || isRecording}
-                  className="w-full py-4 rounded-2xl bg-stone-900 text-white font-medium text-base tracking-tight disabled:opacity-30 transition-all duration-200 active:scale-[0.98] mb-8">
+                  className="w-full py-4 rounded-2xl bg-stone-900 text-white font-medium text-base tracking-tight disabled:opacity-30 transition-all duration-200 active:scale-[0.98] mt-10">
                   send feedback
                 </button>
               </>
