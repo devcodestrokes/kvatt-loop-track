@@ -114,6 +114,10 @@ export function ABTestingTab() {
   const [lastUpdated, setLastUpdated] = useState<Date>();
   const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
   const [storesInitialized, setStoresInitialized] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: subDays(new Date(), 29),
+    to: new Date(),
+  });
   const initialLoadRef = useRef(false);
 
   useEffect(() => {
@@ -121,7 +125,7 @@ export function ABTestingTab() {
     initialLoadRef.current = true;
     const loadInitialData = async () => {
       await fetchStores();
-      await fetchAnalytics(undefined, 'all');
+      await fetchAnalytics(dateRange, 'all');
       setLastUpdated(new Date());
     };
     loadInitialData();
@@ -133,8 +137,14 @@ export function ABTestingTab() {
     }
   }, [error]);
 
+  const handleDateRangeChange = async (newRange: DateRange) => {
+    setDateRange(newRange);
+    await fetchAnalytics(newRange, 'all');
+    setLastUpdated(new Date());
+  };
+
   const handleRefresh = async () => {
-    await fetchAnalytics(undefined, 'all');
+    await fetchAnalytics(dateRange, 'all');
     setLastUpdated(new Date());
     toast.success('Data refreshed');
   };
