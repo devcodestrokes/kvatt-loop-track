@@ -128,6 +128,7 @@ export default function SearchOrders() {
   const [showAllOrders, setShowAllOrders] = useState(false);
   const [activeMerchantLogo, setActiveMerchantLogo] = useState<string | null>(null);
   const [packMerchantEmail, setPackMerchantEmail] = useState<string | null>(null);
+  const [packMerchantDomain, setPackMerchantDomain] = useState<string | null>(null);
   const [preloading, setPreloading] = useState(true);
   const [preloadProgress, setPreloadProgress] = useState(0);
   const [sliderValue, setSliderValue] = useState(0);
@@ -191,7 +192,10 @@ export default function SearchOrders() {
           if (data.merchant.contact_email) {
             setPackMerchantEmail(data.merchant.contact_email);
           }
-          console.log('Pack merchant resolved:', data.merchant.name, 'via product:', data.mintsoft_product_name);
+          if (data.merchant.shopify_domain) {
+            setPackMerchantDomain(data.merchant.shopify_domain);
+          }
+          console.log('Pack merchant resolved:', data.merchant.name, 'domain:', data.merchant.shopify_domain);
         }
         merchantResolved = true;
         checkDone();
@@ -351,8 +355,14 @@ export default function SearchOrders() {
     setSelectedOrderId(null);
     setShowAllOrders(false);
     try {
+      const searchBody: Record<string, unknown> = { email: email.trim() };
+      // When accessed via pack QR, filter to that retailer's opt-in orders only
+      if (packId && packMerchantDomain) {
+        searchBody.store_domain = packMerchantDomain;
+        searchBody.opt_in_only = true;
+      }
       const { data, error: fnError } = await supabase.functions.invoke('search-orders-by-email', {
-        body: { email: email.trim() }
+        body: searchBody
       });
 
       if (fnError) {

@@ -49,12 +49,16 @@ Deno.serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get email from request body or query params
+    // Get email and optional filters from request body or query params
     let email: string | null = null;
+    let store_domain: string | null = null;
+    let opt_in_only = false;
     
     if (req.method === 'POST') {
       const body = await req.json();
       email = body.email;
+      store_domain = body.store_domain || null;
+      opt_in_only = body.opt_in_only === true;
     } else {
       const url = new URL(req.url);
       email = url.searchParams.get('email');
@@ -65,6 +69,51 @@ Deno.serve(async (req) => {
         JSON.stringify({ success: false, error: 'Email is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Reverse-lookup: find user_id from store domain
+    let storeUserIds: string[] | null = null;
+    if (store_domain) {
+      storeUserIds = Object.entries(STORE_MAPPINGS)
+        .filter(([_, name]) => {
+          const domain = store_domain!.toLowerCase();
+          return name.toLowerCase().includes(domain) || domain.includes(name.toLowerCase());
+        })
+        .map(([id]) => id);
+      
+      // Also try matching the domain part from get-store-mapping static data
+      const DOMAIN_MAPPINGS: Record<string, string> = {
+        'kvatt-green-package-demo.myshopify.com': '1',
+        'quickstart-ba771359.myshopify.com': '5',
+        'dev.toa.st': '6',
+        'universalworks.com': '7',
+        'toast-newdev.myshopify.com': '8',
+        'toast-newdev-us.myshopify.com': '9',
+        'toast-dev-us.myshopify.com': '10',
+        'kvatt-dev.myshopify.com': '11',
+        'www.toa.st': '12',
+        'zapply.eu': '13',
+        'cocopupwipes.com': '14',
+        'anerkennen.com': '15',
+        'auibrn-ad.myshopify.com': '16',
+        'sirplus.co.uk': '17',
+        'smitg-kvatt-demo.myshopify.com': '20',
+        'smit-v2.myshopify.com': '23',
+        'partht-kvatt-demo.myshopify.com': '24',
+        'vrutankt-devesha.myshopify.com': '25',
+        'bdnee0-s0.myshopify.com': '26',
+        'kvatt.com': '27',
+        'leming-kvatt-demo.myshopify.com': '28',
+        'kapil-kvatt-checkout.myshopify.com': '29',
+        'shop.scales-swimskins.com': '30',
+      };
+      
+      const domainMatch = DOMAIN_MAPPINGS[store_domain.toLowerCase()];
+      if (domainMatch && !storeUserIds?.includes(domainMatch)) {
+        storeUserIds = [...(storeUserIds || []), domainMatch];
+      }
+      
+      console.log(`[search-orders-by-email] Filtering by domain "${store_domain}" -> user_ids: ${storeUserIds?.join(',')}`);
     }
 
     const searchEmail = email.trim().toLowerCase();
@@ -94,11 +143,23 @@ Deno.serve(async (req) => {
 
     console.log(`[search-orders-by-email] Found customer: ${customer.external_id}`);
 
-    // Step 2: Fetch all orders for this customer (indexed by customer_id)
-    const { data: orders, error: ordersError } = await supabase
+    // Step 2: Fetch orders for this customer with optional filters
+    let query = supabase
       .from('imported_orders')
       .select('id, name, total_price, opt_in, payment_status, shopify_created_at, city, province, country, user_id')
-      .eq('customer_id', customer.external_id)
+      .eq('customer_id', customer.external_id);
+
+    // Filter by store if pack merchant resolved
+    if (storeUserIds && storeUserIds.length > 0) {
+      query = query.in('user_id', storeUserIds);
+    }
+
+    // Filter by opt_in only (customers who selected Kvatt at checkout)
+    if (opt_in_only) {
+      query = query.eq('opt_in', true);
+    }
+
+    const { data: orders, error: ordersError } = await query
       .order('shopify_created_at', { ascending: false });
 
     if (ordersError) {
