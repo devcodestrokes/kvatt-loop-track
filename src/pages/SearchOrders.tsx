@@ -740,8 +740,14 @@ export default function SearchOrders() {
 
               {/* Slider track with pill knob */}
               <div className="relative">
-                {/* Thick rounded track */}
+                {/* Background track */}
                 <div className="absolute left-2 right-2 top-1/2 h-[10px] -translate-y-1/2 bg-stone-300 rounded-full shadow-inner" />
+
+                {/* Filled (black) track - left portion */}
+                <div
+                  className="absolute left-2 top-1/2 h-[10px] -translate-y-1/2 bg-stone-800 rounded-full transition-all duration-200"
+                  style={{ width: `calc((100% - 16px) * ${sliderValue / 4})` }}
+                />
 
                 {/* Range input */}
                 <input
@@ -749,7 +755,8 @@ export default function SearchOrders() {
                   min="0"
                   max="4"
                   step="1"
-                  defaultValue="0"
+                  value={sliderValue}
+                  onChange={(e) => setSliderValue(Number(e.target.value))}
                   className="absolute left-2 right-2 w-auto appearance-none bg-transparent cursor-pointer h-12 m-0 z-10
                     [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-runnable-track]:h-[10px]
                     [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-16 [&::-webkit-slider-thumb]:h-10
@@ -766,13 +773,20 @@ export default function SearchOrders() {
                 <div className="h-12" />
               </div>
 
-              {/* Step dots below slider - aligned to thumb center travel range (40px inset each side) */}
+              {/* Step dots below slider */}
               <div className="relative h-4 mt-2" style={{ marginLeft: '40px', marginRight: '40px' }}>
                 {[0, 1, 2, 3, 4].map(i => (
                   <div
                     key={i}
-                    className="absolute w-[7px] h-[7px] rounded-full bg-stone-400/70"
-                    style={{ left: `${(i / 4) * 100}%`, top: '50%', transform: 'translate(-50%, -50%)' }}
+                    className="absolute w-[7px] h-[7px] rounded-full transition-all duration-300 ease-out"
+                    style={{
+                      left: `${(i / 4) * 100}%`,
+                      top: '50%',
+                      transform: 'translate(-50%, -50%)',
+                      backgroundColor: i <= sliderValue ? '#292524' : 'rgba(168, 162, 158, 0.7)',
+                      opacity: i === sliderValue ? 0 : 1,
+                      scale: i === sliderValue ? '0' : '1',
+                    }}
                   />
                 ))}
               </div>
