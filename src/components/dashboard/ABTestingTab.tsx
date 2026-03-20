@@ -18,14 +18,7 @@ import {
 import { format } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 
-const DESIGN_LABELS = [
-  'General',
-  'Universal Work',
-  'Toast',
-  'Universal Work Collapsible',
-  'Toast Collapsible',
-  'UW 18-12-2025',
-];
+// Design labels are now dynamically derived from API data
 
 const DESIGN_COLORS = [
   'hsl(var(--primary))',
