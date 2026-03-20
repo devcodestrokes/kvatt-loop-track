@@ -726,7 +726,7 @@ export default function SearchOrders() {
               <p>If anything feels off or great, we'd love to hear about it!</p>
             </div>
 
-            {/* Emoji Sentiment Slider */}
+            {/* Emoji Sentiment Slider - Snaps to 5 steps */}
             <div className="my-8">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-3xl md:text-4xl" role="img" aria-label="frustrated">😤</span>
@@ -742,7 +742,8 @@ export default function SearchOrders() {
                 <input
                   type="range"
                   min="0"
-                  max="100"
+                  max="4"
+                  step="1"
                   defaultValue="0"
                   className="absolute w-full appearance-none bg-transparent cursor-pointer h-8
                     [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-runnable-track]:h-[6px]
