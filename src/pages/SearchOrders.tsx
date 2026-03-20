@@ -842,11 +842,7 @@ export default function SearchOrders() {
             </h1>
 
             {recordingSent ? (
-              <div
-                style={{ fontSize: '18px', fontWeight: 400, lineHeight: '150%', letterSpacing: '-0.0425em' }}
-                className="text-stone-900 space-y-4">
-                <p>Your voice feedback has been received. We really appreciate you taking the time!</p>
-              </div>
+              <div className="flex flex-col items-center justify-center min-h-[40vh]" />
             ) : (
               <>
                 {/* Recording status */}
