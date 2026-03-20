@@ -1,56 +1,17 @@
+## Problem
 
-# Redesign Search Orders Page - Kvatt Returns Portal Style
+The step indicator dots below the slider don't align with the actual slider stop positions. This is because the range input thumb is 64px wide (`w-16`), so the thumb's center doesn't travel the full width of the track — it's inset by half the thumb width (32px) on each side. The dots currently use `mx-2` (8px inset), which doesn't account for this.
 
-## Overview
-Redesign the `/search-orders` public page to match the clean, minimal Kvatt returns portal aesthetic shown in the reference images. The page will have a warm beige background, centered content, the Kvatt bird logo at the top, and a multi-step flow.
+what i need the thumb area of the center excet below i want to that dot that dot are have a stop point every stop point user drag the slider the slider thumb stop on that dot point and the mb must be have a area of the center point the dot center in horizontal straight line 
 
-## Design Approach
-The new layout will follow the reference images closely:
-- **Background**: Warm beige/cream (`#e8e4de` or similar)
-- **Typography**: Clean, bold headings, minimal text
-- **Layout**: Centered content, max-width container, no cards/borders
-- **Logo**: Kvatt bird logo centered at the top (already in `src/assets/kvatt-logo.jpeg`)
-- **Buttons**: Black rounded buttons with white text
-- **Support footer**: "Need support" section with email and WhatsApp info at the bottom
+## Fix
 
-## Multi-Step Flow
+**File: `src/pages/SearchOrders.tsx` (lines 768-777)**
 
-### Step 1: Initial Screen
-- Kvatt logo centered
-- Heading: "Let's find your order"
-- Email input field
-- Black "find order" button
-- Support info at bottom
+Update the dot container's horizontal margin to match the actual thumb travel range:
 
-### Step 2: Results Screen
-- "< back" link top-left
-- Kvatt logo centered
-- "We found a match!" subtext
-- Heading: "Select your order below"
-- List of orders grouped by store, showing order number, date, and amount
-- Black "confirm & start return" button (links to return portal)
-- Support info at bottom
+- The track is inset by `left-2 right-2` (8px each side)
+- The thumb center travels from `8px + 32px = 40px` to `width - 40px`
+- Change the dot container from `mx-2` to use `left` and `right` values of `calc(8px + 32px)` = 40px, matching the thumb's travel endpoints
 
-### Step 3: No results / Error
-- Same layout with message "No orders found"
-
-## Technical Details
-
-### File: `src/pages/SearchOrders.tsx`
-- Complete UI overhaul while keeping all existing logic (search, API calls, store mappings, return portal URLs)
-- Replace Card-based layout with a full-page beige background centered layout
-- Add step-based state management (`step: 'search' | 'results'`)
-- Use the existing `kvatt-logo.jpeg` from `src/assets/`
-- Style with Tailwind using custom colors for the beige theme
-- Responsive design matching the mobile version shown in references
-- Add "< back" navigation between steps
-- Add support section with `returns@kvatt.com` and `+44 (0) 75.49.88.48.50`
-- Selected order state for the "confirm & start return" button that opens the return portal
-
-### Key styling changes:
-- Full viewport height beige background
-- No sidebar, no dashboard chrome (already standalone)
-- Centered column layout, max-width ~480px
-- Input fields: simple border, rounded
-- Buttons: `bg-black text-white rounded-full` style
-- Order list items: beige cards with subtle border, radio-button selection
+This ensures all 5 dots sit exactly under the 5 positions where the thumb actually stops.
