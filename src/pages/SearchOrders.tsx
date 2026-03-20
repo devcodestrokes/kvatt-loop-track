@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Loader2, ChevronLeft, Square, Play, Pause, Send } from "lucide-react";
+import { Loader2, ChevronLeft, Square, Play, Pause, Send, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import kvattLogo from "@/assets/kvatt-bird-logo.png";
