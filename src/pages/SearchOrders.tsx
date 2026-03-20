@@ -717,29 +717,29 @@ export default function SearchOrders() {
           <div className="w-full text-left">
             <h1
               style={{ lineHeight: '105%', letterSpacing: '-0.04em' }}
-              className="text-stone-900 mb-6 md:text-[52px] text-[36px] md:font-medium font-medium">
+              className="text-stone-900 mb-6 md:text-[58px] text-[40px] md:font-medium font-medium">
               Tell us how your feel
             </h1>
             <div
-              style={{ fontSize: '18px', fontWeight: 400, lineHeight: '150%', letterSpacing: '-0.0425em' }}
-              className="text-stone-900 mb-4 space-y-4">
+              style={{ fontSize: '22px', fontWeight: 400, lineHeight: '150%', letterSpacing: '-0.0425em' }}
+              className="text-stone-900 mb-11 space-y-4">
               <p>Your experience matters so much as we learn how to improve our service.</p>
               <p>If anything feels off or great, we'd love to hear about it!</p>
             </div>
 
             {/* Emoji Sentiment Slider */}
-            <div className="my-8">
+            <div className="m-2">
               {/* Large emojis at top */}
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-5xl md:text-6xl leading-none block" style={{ lineHeight: 1 }}>😤</span>
-                <span className="text-5xl md:text-6xl leading-none block" style={{ lineHeight: 1 }}>🥳</span>
+              <div className="flex items-center justify-between mb-3 mx-3">
+                <span className="text-4xl md:text-5xl leading-none block" style={{ lineHeight: 1 }}>😤</span>
+                <span className="text-4xl md:text-5xl leading-none block" style={{ lineHeight: 1 }}>🥳</span>
               </div>
 
               {/* Thin divider */}
-              <div className="w-full h-[1px] bg-stone-400/50 mb-5" />
+              <div className="w-auto h-[1px] bg-stone-400/50 mb-1 ml-2 mr-2" />
 
               {/* Slider track with pill knob */}
-              <div className="relative">
+              <div className="relative mx-0">
                 {/* Background track */}
                 <div className="absolute left-2 right-2 top-1/2 h-[10px] -translate-y-1/2 bg-stone-300 rounded-full shadow-inner" />
 
@@ -774,7 +774,7 @@ export default function SearchOrders() {
               </div>
 
               {/* Step dots below slider */}
-              <div className="relative h-4 mt-2" style={{ marginLeft: '40px', marginRight: '40px' }}>
+              <div className="relative h-4 mt-1" style={{ marginLeft: '30px', marginRight: '30px' }}>
                 {[0, 1, 2, 3, 4].map(i => (
                   <div
                     key={i}
@@ -798,7 +798,7 @@ export default function SearchOrders() {
                 startRecording();
               }}
               style={{ letterSpacing: '-0.04em' }}
-              className="w-full md:h-[62px] md:text-[20px] mt-4 h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors flex items-center justify-center">
+              className="w-full md:h-[62px] md:text-[20px] mt-11 h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors flex items-center justify-center">
               record your feedback
             </button>
             <SupportFooter />
