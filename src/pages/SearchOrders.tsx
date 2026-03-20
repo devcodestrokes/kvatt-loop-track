@@ -355,8 +355,14 @@ export default function SearchOrders() {
     setSelectedOrderId(null);
     setShowAllOrders(false);
     try {
+      const searchBody: Record<string, unknown> = { email: email.trim() };
+      // When accessed via pack QR, filter to that retailer's opt-in orders only
+      if (packId && packMerchantDomain) {
+        searchBody.store_domain = packMerchantDomain;
+        searchBody.opt_in_only = true;
+      }
       const { data, error: fnError } = await supabase.functions.invoke('search-orders-by-email', {
-        body: { email: email.trim() }
+        body: searchBody
       });
 
       if (fnError) {
