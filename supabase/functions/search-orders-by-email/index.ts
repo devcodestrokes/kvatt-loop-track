@@ -143,11 +143,23 @@ Deno.serve(async (req) => {
 
     console.log(`[search-orders-by-email] Found customer: ${customer.external_id}`);
 
-    // Step 2: Fetch all orders for this customer (indexed by customer_id)
-    const { data: orders, error: ordersError } = await supabase
+    // Step 2: Fetch orders for this customer with optional filters
+    let query = supabase
       .from('imported_orders')
       .select('id, name, total_price, opt_in, payment_status, shopify_created_at, city, province, country, user_id')
-      .eq('customer_id', customer.external_id)
+      .eq('customer_id', customer.external_id);
+
+    // Filter by store if pack merchant resolved
+    if (storeUserIds && storeUserIds.length > 0) {
+      query = query.in('user_id', storeUserIds);
+    }
+
+    // Filter by opt_in only (customers who selected Kvatt at checkout)
+    if (opt_in_only) {
+      query = query.eq('opt_in', true);
+    }
+
+    const { data: orders, error: ordersError } = await query
       .order('shopify_created_at', { ascending: false });
 
     if (ordersError) {
