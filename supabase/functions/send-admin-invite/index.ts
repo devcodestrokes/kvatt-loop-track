@@ -28,7 +28,7 @@ serve(async (req: Request): Promise<Response> => {
     console.log(`Sending admin invite to: ${email}`);
 
     // Get the app URL for the invite link - use custom domain
-    const inviteLink = "https://kvatt.codestrokes.com/auth?tab=signup";
+    const inviteLink = "https://onetap.kvatt.com/auth?tab=signup";
 
     const emailHtml = `
       <!DOCTYPE html>

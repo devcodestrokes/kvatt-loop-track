@@ -174,7 +174,7 @@ export default function Auth() {
                           <span>
                             Could not connect. Try refreshing, or{' '}
                             <a 
-                              href="https://kvatt.codestrokes.com/auth" 
+                              href="https://onetap.kvatt.com/auth" 
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="underline font-medium text-primary"
