@@ -94,6 +94,30 @@ export type Database = {
           },
         ]
       }
+      customer_feedback: {
+        Row: {
+          created_at: string
+          id: string
+          order_ref: string
+          recording_path: string | null
+          sentiment_value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_ref: string
+          recording_path?: string | null
+          sentiment_value?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_ref?: string
+          recording_path?: string | null
+          sentiment_value?: number
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           city: string | null
