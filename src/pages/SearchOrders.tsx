@@ -724,7 +724,36 @@ export default function SearchOrders() {
               className="text-stone-900 mb-4 space-y-4">
               <p>Your experience matters so much as we learn how to improve our service.</p>
               <p>If anything feels off or great, we'd love to hear about it!</p>
-              <p className="font-medium">Why are you returning? What did you enjoy? What could be better?</p>
+            </div>
+
+            {/* Emoji Sentiment Slider */}
+            <div className="my-8">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-3xl md:text-4xl" role="img" aria-label="frustrated">😤</span>
+                <span className="text-3xl md:text-4xl" role="img" aria-label="celebrating">🥳</span>
+              </div>
+              <div className="relative h-8 flex items-center">
+                <div className="w-full h-[6px] bg-stone-300 rounded-full absolute" />
+                <div className="absolute w-full flex justify-between px-[10%]">
+                  {[0, 1, 2, 3].map(i => (
+                    <div key={i} className="w-[6px] h-[6px] rounded-full bg-stone-400" />
+                  ))}
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  defaultValue="0"
+                  className="absolute w-full appearance-none bg-transparent cursor-pointer h-8
+                    [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-runnable-track]:h-[6px]
+                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-14 [&::-webkit-slider-thumb]:h-9
+                    [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg
+                    [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-stone-200 [&::-webkit-slider-thumb]:-mt-3
+                    [&::-moz-range-thumb]:w-14 [&::-moz-range-thumb]:h-9
+                    [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:shadow-lg
+                    [&::-moz-range-thumb]:border [&::-moz-range-thumb]:border-stone-200 [&::-moz-range-thumb]:border-0"
+                />
+              </div>
             </div>
 
             <button
@@ -733,8 +762,8 @@ export default function SearchOrders() {
                 startRecording();
               }}
               style={{ letterSpacing: '-0.04em' }}
-              className="w-full md:h-[62px] md:text-[20px] mt-8 h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors flex items-center justify-center">
-              click to record your impression
+              className="w-full md:h-[62px] md:text-[20px] mt-4 h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors flex items-center justify-center">
+              record your feedback
             </button>
             <SupportFooter />
           </div>
