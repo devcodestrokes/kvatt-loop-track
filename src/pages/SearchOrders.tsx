@@ -728,31 +728,37 @@ export default function SearchOrders() {
 
             {/* Emoji Sentiment Slider - Snaps to 5 steps */}
             <div className="my-8">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-3xl md:text-4xl" role="img" aria-label="frustrated">😤</span>
-                <span className="text-3xl md:text-4xl" role="img" aria-label="celebrating">🥳</span>
+              <div className="flex items-center justify-between mb-5">
+                <span className="text-3xl md:text-4xl leading-none">😤</span>
+                <span className="text-3xl md:text-4xl leading-none">🥳</span>
               </div>
-              <div className="relative h-8 flex items-center">
-                <div className="w-full h-[6px] bg-stone-300 rounded-full absolute" />
-                <div className="absolute w-full flex justify-between px-[10%]">
-                  {[0, 1, 2, 3].map(i => (
-                    <div key={i} className="w-[6px] h-[6px] rounded-full bg-stone-400" />
-                  ))}
-                </div>
+              <div className="relative h-10 flex items-center">
+                {/* Track */}
+                <div className="absolute left-0 right-0 h-[6px] bg-stone-300 rounded-full" />
+                {/* Dot markers - positioned at 20%, 40%, 60%, 80% to match steps 1-4 (0 and 5 are at edges) */}
+                {[1, 2, 3, 4].map(i => (
+                  <div
+                    key={i}
+                    className="absolute w-[7px] h-[7px] rounded-full bg-stone-400 -translate-x-1/2"
+                    style={{ left: `${(i / 5) * 100}%` }}
+                  />
+                ))}
+                {/* Range input - 6 stops (0-5), snaps step by step */}
                 <input
                   type="range"
                   min="0"
-                  max="4"
+                  max="5"
                   step="1"
                   defaultValue="0"
-                  className="absolute w-full appearance-none bg-transparent cursor-pointer h-8
+                  className="absolute w-full appearance-none bg-transparent cursor-pointer h-10 m-0
                     [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-runnable-track]:h-[6px]
                     [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-14 [&::-webkit-slider-thumb]:h-9
                     [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg
-                    [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-stone-200 [&::-webkit-slider-thumb]:-mt-3
+                    [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-stone-200 [&::-webkit-slider-thumb]:-mt-[13px]
+                    [&::-moz-range-track]:bg-transparent [&::-moz-range-track]:h-[6px]
                     [&::-moz-range-thumb]:w-14 [&::-moz-range-thumb]:h-9
                     [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:shadow-lg
-                    [&::-moz-range-thumb]:border [&::-moz-range-thumb]:border-stone-200 [&::-moz-range-thumb]:border-0"
+                    [&::-moz-range-thumb]:border-0"
                 />
               </div>
             </div>
