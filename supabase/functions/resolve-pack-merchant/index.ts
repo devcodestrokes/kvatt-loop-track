@@ -286,6 +286,7 @@ Deno.serve(async (req) => {
         contact_email: matchedMerchant.contact_email,
         return_link: matchedMerchant.return_link,
         return_link_params: matchedMerchant.return_link_params,
+        shopify_domain: matchedMerchant.shopify_domain,
       } : null,
       mintsoft_product_name: mintsoftProductName,
       group_sku: groupSku,
