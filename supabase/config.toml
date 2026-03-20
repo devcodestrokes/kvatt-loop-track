@@ -62,3 +62,12 @@ verify_jwt = false
 
 [functions.get-merchant-configs]
 verify_jwt = false
+
+[functions.assign-packs]
+verify_jwt = false
+
+[functions.get-next-pack-serials]
+verify_jwt = false
+
+[functions.resolve-pack-merchant]
+verify_jwt = false
