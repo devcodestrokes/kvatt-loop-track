@@ -143,11 +143,15 @@ Deno.serve(async (req) => {
 
     console.log(`[search-orders-by-email] Found customer: ${customer.external_id}`);
 
-    // Step 2: Fetch orders for this customer with optional filters
+    // Step 2: Fetch orders from the last 3 months only (optimization)
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
     let query = supabase
       .from('imported_orders')
       .select('id, name, total_price, opt_in, payment_status, shopify_created_at, city, province, country, user_id')
-      .eq('customer_id', customer.external_id);
+      .eq('customer_id', customer.external_id)
+      .gte('shopify_created_at', threeMonthsAgo.toISOString());
 
     // Filter by store if pack merchant resolved
     if (storeUserIds && storeUserIds.length > 0) {
