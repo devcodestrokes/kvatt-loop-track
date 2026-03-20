@@ -216,8 +216,9 @@ export function ABTestingTab() {
       designAgg[v.name].total += v.total;
     }));
 
-    const designAggregates: DesignAggregate[] = DESIGN_LABELS.map(name => {
-      const d = designAgg[name] || { ins: 0, outs: 0, total: 0 };
+    const allVariantNames = Object.keys(designAgg);
+    const designAggregates: DesignAggregate[] = allVariantNames.map(name => {
+      const d = designAgg[name];
       return {
         name,
         total: d.total,
