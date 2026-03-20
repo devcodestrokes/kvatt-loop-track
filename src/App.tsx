@@ -25,6 +25,7 @@ import Help from "./pages/Help";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import MintsoftStatus from "./pages/MintsoftStatus";
+import Feedback from "./pages/Feedback";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +59,7 @@ const App = () => (
                       <Route path="/insights" element={<Insights />} />
                       <Route path="/customers" element={<Customers />} />
                       <Route path="/packaging-labels" element={<PackagingLabels />} />
+                      <Route path="/feedback" element={<Feedback />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/help" element={<Help />} />
                       <Route path="*" element={<NotFound />} />
