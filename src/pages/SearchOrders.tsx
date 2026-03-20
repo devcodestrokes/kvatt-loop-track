@@ -738,9 +738,10 @@ export default function SearchOrders() {
               <div className="w-full h-[1px] bg-stone-400/50 mb-5" />
 
               {/* Slider track with pill knob */}
-              <div className="relative h-12 flex items-center">
+              <div className="relative">
                 {/* Thick rounded track */}
-                <div className="absolute left-0 right-0 h-[10px] bg-stone-300 rounded-full shadow-inner" />
+                <div className="absolute left-2 right-2 top-1/2 h-[10px] -translate-y-1/2 bg-stone-300 rounded-full shadow-inner" />
+
                 {/* Range input */}
                 <input
                   type="range"
@@ -748,7 +749,7 @@ export default function SearchOrders() {
                   max="4"
                   step="1"
                   defaultValue="0"
-                  className="absolute w-full appearance-none bg-transparent cursor-pointer h-12 m-0 z-10
+                  className="absolute left-2 right-2 w-auto appearance-none bg-transparent cursor-pointer h-12 m-0 z-10
                     [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-runnable-track]:h-[10px]
                     [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-16 [&::-webkit-slider-thumb]:h-10
                     [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full
@@ -760,15 +761,17 @@ export default function SearchOrders() {
                     [&::-moz-range-thumb]:shadow-[0_2px_10px_rgba(0,0,0,0.15),0_0_3px_rgba(0,0,0,0.06)]
                     [&::-moz-range-thumb]:border-0"
                 />
+
+                <div className="h-12" />
               </div>
 
-              {/* Step dots below slider - aligned to slider stop positions */}
-              <div className="relative h-4 mt-2">
+              {/* Step dots below slider - perfectly aligned to slider stops */}
+              <div className="relative h-4 mt-2 mx-2">
                 {[0, 1, 2, 3, 4].map(i => (
                   <div
                     key={i}
-                    className="absolute w-[7px] h-[7px] rounded-full bg-stone-400/70 -translate-x-1/2"
-                    style={{ left: `${(i / 4) * 100}%` }}
+                    className="absolute w-[7px] h-[7px] rounded-full bg-stone-400/70"
+                    style={{ left: `${(i / 4) * 100}%`, top: '50%', transform: 'translate(-50%, -50%)' }}
                   />
                 ))}
               </div>
