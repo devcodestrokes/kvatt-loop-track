@@ -765,8 +765,8 @@ export default function SearchOrders() {
                 <div className="h-12" />
               </div>
 
-              {/* Step dots below slider - perfectly aligned to slider stops */}
-              <div className="relative h-4 mt-2 mx-2">
+              {/* Step dots below slider - aligned to thumb center travel range (40px inset each side) */}
+              <div className="relative h-4 mt-2" style={{ marginLeft: '40px', marginRight: '40px' }}>
                 {[0, 1, 2, 3, 4].map(i => (
                   <div
                     key={i}
