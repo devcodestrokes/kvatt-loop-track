@@ -128,6 +128,7 @@ export default function SearchOrders() {
   const [showAllOrders, setShowAllOrders] = useState(false);
   const [activeMerchantLogo, setActiveMerchantLogo] = useState<string | null>(null);
   const [packMerchantEmail, setPackMerchantEmail] = useState<string | null>(null);
+  const [packMerchantDomain, setPackMerchantDomain] = useState<string | null>(null);
   const [preloading, setPreloading] = useState(true);
   const [preloadProgress, setPreloadProgress] = useState(0);
   const [sliderValue, setSliderValue] = useState(0);
