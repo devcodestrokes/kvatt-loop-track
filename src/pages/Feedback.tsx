@@ -24,10 +24,17 @@ function AudioPlayer({ filePath }: { filePath: string }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    const { data } = supabase.storage.from('voice-feedback').getPublicUrl(filePath);
-    if (data?.publicUrl) {
-      setAudioUrl(data.publicUrl);
-    }
+    const getUrl = async () => {
+      const { data, error: err } = await supabase.storage
+        .from('voice-feedback')
+        .createSignedUrl(filePath, 3600);
+      if (!err && data?.signedUrl) {
+        setAudioUrl(data.signedUrl);
+      } else {
+        setError(true);
+      }
+    };
+    getUrl();
   }, [filePath]);
 
   useEffect(() => {
