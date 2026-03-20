@@ -16,7 +16,8 @@ import {
   Users,
   Search,
   Boxes,
-  FlaskConical
+  FlaskConical,
+  MessageSquare
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import kvattLogo from '@/assets/kvatt-logo.jpeg';
