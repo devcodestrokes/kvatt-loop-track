@@ -637,14 +637,14 @@ export default function SearchOrders() {
                   <button
                     key={order.id}
                     onClick={() => setSelectedOrderId(order.id)}
-                    className={`w-full text-left rounded-2xl transition-all ${
+                    className={`w-full text-left gap-5 rounded-2xl transition-all ${
                     isSelected ?
                     'border-2 border-stone-900 bg-[#ddd9d1]' :
                     'border border-stone-300/50 bg-[#ddd9d1]/60'
                     }`}
                     style={{ padding: '16px 20px' }}>
 
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-10">
                           <div
                         className={`flex-shrink-0 rounded-full border-2 flex items-center justify-center ${
                         isSelected ? 'border-stone-900' : 'border-stone-400'
@@ -666,7 +666,7 @@ export default function SearchOrders() {
                           className="text-stone-900"
                           style={{ fontSize: '15px', fontWeight: 400, lineHeight: '1.5' }}>
 
-                              date: {order.shopify_created_at ?
+                             <span className="font-bold">date:</span> {order.shopify_created_at ?
                           format(new Date(order.shopify_created_at), "dd.MM.yyyy") :
                           "N/A"}
                             </p>
@@ -674,7 +674,7 @@ export default function SearchOrders() {
                           className="text-stone-900"
                           style={{ fontSize: '15px', fontWeight: 400, lineHeight: '1.5' }}>
 
-                              amount: £{Math.round(order.total_price || 0)}
+                              <span className="font-bold">amount:</span> £{Math.round(order.total_price || 0)}
                             </p>
                           </div>
                         </div>
