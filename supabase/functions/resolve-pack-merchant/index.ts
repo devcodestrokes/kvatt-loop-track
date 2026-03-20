@@ -156,7 +156,7 @@ function smartMatchMerchant(productName: string, merchants: any[]): any | null {
   const productWords = normalizedProduct.match(/[a-z0-9]{3,}/g) || [];
   match = orderedMerchants.find(m => {
     const merchantWords = normalize(m.name).match(/[a-z0-9]{3,}/g) || [];
-    return productWords.filter(w => merchantWords.includes(w)).length >= 1;
+    return productWords.filter((w: string) => merchantWords.includes(w)).length >= 1;
   });
   return match || null;
 }

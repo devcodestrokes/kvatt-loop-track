@@ -67,7 +67,7 @@ serve(async (req) => {
     // Find matching labels
     const { data: labels, error: labelsError } = await supabase
       .from('labels')
-      .select('id, label_id, status, merchant_id')
+      .select('id, label_id, status, merchant_id, group_id')
       .in('label_id', pack_ids);
 
     if (labelsError) throw labelsError;
