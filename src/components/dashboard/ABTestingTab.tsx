@@ -201,7 +201,7 @@ export function ABTestingTab() {
   const storesWithoutAB = filteredData.filter(item => item.variants.length <= 1);
 
   // Aggregated design data across all stores
-  const { aggregates, designAggregates, rankedDesigns } = useMemo(() => {
+  const { aggregates, designAggregates, rankedDesigns, rankedStores } = useMemo(() => {
     const totalCheckouts = filteredData.reduce((sum, d) => sum + (d.total_checkouts || 0), 0);
     const totalOptIns = filteredData.reduce((sum, d) => sum + (d.opt_ins || 0), 0);
     const totalOptOuts = filteredData.reduce((sum, d) => sum + (d.opt_outs || 0), 0);
@@ -232,6 +232,18 @@ export function ABTestingTab() {
       .filter(d => d.total > 0)
       .sort((a, b) => b.opt_in_rate - a.opt_in_rate);
 
+    // Store ranking by opt-in rate
+    const rankedStores = filteredData
+      .filter(d => d.total_checkouts > 0)
+      .map(d => ({
+        store: d.store,
+        total_checkouts: d.total_checkouts,
+        opt_ins: d.opt_ins,
+        opt_outs: d.opt_outs,
+        optInRate: d.total_checkouts > 0 ? (d.opt_ins / d.total_checkouts) * 100 : 0,
+      }))
+      .sort((a, b) => b.optInRate - a.optInRate);
+
     let bestDesign = '—';
     let bestRate = 0;
     if (rankedDesigns.length > 0) {
@@ -243,6 +255,7 @@ export function ABTestingTab() {
       aggregates: { totalCheckouts, totalOptIns, totalOptOuts, optInRate, activeStores, bestDesign, bestRate },
       designAggregates,
       rankedDesigns,
+      rankedStores,
     };
   }, [filteredData, storesWithAB]);
 
