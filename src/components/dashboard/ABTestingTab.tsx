@@ -6,7 +6,9 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { getDisplayStoreName } from '@/hooks/useAnalytics';
 import { MultiStoreSelector } from '@/components/dashboard/MultiStoreSelector';
-import { Store } from '@/types/analytics';
+import { DateRangePicker } from '@/components/dashboard/DateRangePicker';
+import { Store, DateRange } from '@/types/analytics';
+import { subDays } from 'date-fns';
 import {
   Table,
   TableBody,
@@ -18,14 +20,7 @@ import {
 import { format } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 
-const DESIGN_LABELS = [
-  'General',
-  'Universal Work',
-  'Toast',
-  'Universal Work Collapsible',
-  'Toast Collapsible',
-  'UW 18-12-2025',
-];
+// Design labels are now dynamically derived from API data
 
 const DESIGN_COLORS = [
   'hsl(var(--primary))',
@@ -77,8 +72,9 @@ function StoreRow({ item }: { item: ABTestingData }) {
           {hasVariants ? `${item.variants.length} design${item.variants.length > 1 ? 's' : ''}` : '—'}
         </TableCell>
       </TableRow>
-      {expanded && DESIGN_LABELS.map((designName) => {
-        const variant = item.variants.find(v => v.name === designName);
+      {expanded && item.variants.map((variant) => {
+        const designName = variant.name;
+        
         return (
           <TableRow key={designName} className="border-border bg-secondary/30">
             <TableCell className="pl-12 text-sm text-muted-foreground">
@@ -118,6 +114,10 @@ export function ABTestingTab() {
   const [lastUpdated, setLastUpdated] = useState<Date>();
   const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
   const [storesInitialized, setStoresInitialized] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: subDays(new Date(), 29),
+    to: new Date(),
+  });
   const initialLoadRef = useRef(false);
 
   useEffect(() => {
@@ -125,7 +125,7 @@ export function ABTestingTab() {
     initialLoadRef.current = true;
     const loadInitialData = async () => {
       await fetchStores();
-      await fetchAnalytics(undefined, 'all');
+      await fetchAnalytics(dateRange, 'all');
       setLastUpdated(new Date());
     };
     loadInitialData();
@@ -137,8 +137,14 @@ export function ABTestingTab() {
     }
   }, [error]);
 
+  const handleDateRangeChange = async (newRange: DateRange) => {
+    setDateRange(newRange);
+    await fetchAnalytics(newRange, 'all');
+    setLastUpdated(new Date());
+  };
+
   const handleRefresh = async () => {
-    await fetchAnalytics(undefined, 'all');
+    await fetchAnalytics(dateRange, 'all');
     setLastUpdated(new Date());
     toast.success('Data refreshed');
   };
@@ -207,7 +213,7 @@ export function ABTestingTab() {
   const storesWithoutAB = filteredData.filter(item => item.variants.length <= 1);
 
   // Aggregated design data across all stores
-  const { aggregates, designAggregates, rankedDesigns } = useMemo(() => {
+  const { aggregates, designAggregates, rankedDesigns, rankedStores } = useMemo(() => {
     const totalCheckouts = filteredData.reduce((sum, d) => sum + (d.total_checkouts || 0), 0);
     const totalOptIns = filteredData.reduce((sum, d) => sum + (d.opt_ins || 0), 0);
     const totalOptOuts = filteredData.reduce((sum, d) => sum + (d.opt_outs || 0), 0);
@@ -215,15 +221,16 @@ export function ABTestingTab() {
     const activeStores = storesWithAB.length;
 
     const designAgg: Record<string, { ins: number; outs: number; total: number }> = {};
-    filteredData.forEach(d => d.variants.forEach(v => {
+    storesWithAB.forEach(d => d.variants.forEach(v => {
       if (!designAgg[v.name]) designAgg[v.name] = { ins: 0, outs: 0, total: 0 };
       designAgg[v.name].ins += v.opt_ins;
       designAgg[v.name].outs += v.opt_outs;
       designAgg[v.name].total += v.total;
     }));
 
-    const designAggregates: DesignAggregate[] = DESIGN_LABELS.map(name => {
-      const d = designAgg[name] || { ins: 0, outs: 0, total: 0 };
+    const allVariantNames = Object.keys(designAgg);
+    const designAggregates: DesignAggregate[] = allVariantNames.map(name => {
+      const d = designAgg[name];
       return {
         name,
         total: d.total,
@@ -237,6 +244,18 @@ export function ABTestingTab() {
       .filter(d => d.total > 0)
       .sort((a, b) => b.opt_in_rate - a.opt_in_rate);
 
+    // Store ranking by opt-in rate
+    const rankedStores = filteredData
+      .filter(d => d.total_checkouts > 0)
+      .map(d => ({
+        store: d.store,
+        total_checkouts: d.total_checkouts,
+        opt_ins: d.opt_ins,
+        opt_outs: d.opt_outs,
+        optInRate: d.total_checkouts > 0 ? (d.opt_ins / d.total_checkouts) * 100 : 0,
+      }))
+      .sort((a, b) => b.optInRate - a.optInRate);
+
     let bestDesign = '—';
     let bestRate = 0;
     if (rankedDesigns.length > 0) {
@@ -248,6 +267,7 @@ export function ABTestingTab() {
       aggregates: { totalCheckouts, totalOptIns, totalOptOuts, optInRate, activeStores, bestDesign, bestRate },
       designAggregates,
       rankedDesigns,
+      rankedStores,
     };
   }, [filteredData, storesWithAB]);
 
@@ -293,6 +313,11 @@ export function ABTestingTab() {
           </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
+          <DateRangePicker
+            dateRange={dateRange}
+            onDateRangeChange={handleDateRangeChange}
+            disabled={isLoading}
+          />
           <MultiStoreSelector
             stores={allStoreOptions}
             selectedStores={selectedStoreIds}
