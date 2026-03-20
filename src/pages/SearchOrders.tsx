@@ -130,6 +130,7 @@ export default function SearchOrders() {
   const [packMerchantEmail, setPackMerchantEmail] = useState<string | null>(null);
   const [preloading, setPreloading] = useState(true);
   const [preloadProgress, setPreloadProgress] = useState(0);
+  const [sliderValue, setSliderValue] = useState(0);
 
   // Preload: animate progress bar while loading merchant configs
   useEffect(() => {
