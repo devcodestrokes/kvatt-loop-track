@@ -42,6 +42,7 @@ const overviewItems = [
   { title: 'A/B Testing', url: '/ab-testing', icon: FlaskConical },
   { title: 'Insights', url: '/insights', icon: Lightbulb },
   { title: 'Customers', url: '/customers', icon: Users },
+  { title: 'Feedback', url: '/feedback', icon: MessageSquare },
 ];
 
 const packagingItems = [
