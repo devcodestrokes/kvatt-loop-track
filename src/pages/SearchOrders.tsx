@@ -280,6 +280,19 @@ export default function SearchOrders() {
     }
   }, [isRecording]);
 
+  const saveFeedbackToDb = useCallback(async (recordingFile?: string) => {
+    const orderRef = selectedOrderId ? extractOrderNumber(orders.find(o => o.id === selectedOrderId)?.name || 'unknown') : 'unknown';
+    try {
+      await supabase.from('customer_feedback').insert({
+        order_ref: orderRef,
+        sentiment_value: sliderValue,
+        recording_path: recordingFile || null,
+      });
+    } catch (err) {
+      console.error('Failed to save feedback:', err);
+    }
+  }, [selectedOrderId, orders, sliderValue]);
+
   const sendRecording = useCallback(async () => {
     if (!audioBlob) return;
     try {
@@ -298,11 +311,12 @@ export default function SearchOrders() {
         console.error('Upload failed:', uploadError);
         return;
       }
+      await saveFeedbackToDb(fileName);
       setRecordingSent(true);
     } catch (err) {
       console.error('Failed to send recording:', err);
     }
-  }, [audioBlob, selectedOrderId, orders]);
+  }, [audioBlob, selectedOrderId, orders, saveFeedbackToDb]);
 
   useEffect(() => {
     return () => {
