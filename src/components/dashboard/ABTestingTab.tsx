@@ -201,7 +201,7 @@ export function ABTestingTab() {
   const storesWithoutAB = filteredData.filter(item => item.variants.length <= 1);
 
   // Aggregated design data across all stores
-  const { aggregates, designAggregates, rankedDesigns } = useMemo(() => {
+  const { aggregates, designAggregates, rankedDesigns, rankedStores } = useMemo(() => {
     const totalCheckouts = filteredData.reduce((sum, d) => sum + (d.total_checkouts || 0), 0);
     const totalOptIns = filteredData.reduce((sum, d) => sum + (d.opt_ins || 0), 0);
     const totalOptOuts = filteredData.reduce((sum, d) => sum + (d.opt_outs || 0), 0);
@@ -232,6 +232,18 @@ export function ABTestingTab() {
       .filter(d => d.total > 0)
       .sort((a, b) => b.opt_in_rate - a.opt_in_rate);
 
+    // Store ranking by opt-in rate
+    const rankedStores = filteredData
+      .filter(d => d.total_checkouts > 0)
+      .map(d => ({
+        store: d.store,
+        total_checkouts: d.total_checkouts,
+        opt_ins: d.opt_ins,
+        opt_outs: d.opt_outs,
+        optInRate: d.total_checkouts > 0 ? (d.opt_ins / d.total_checkouts) * 100 : 0,
+      }))
+      .sort((a, b) => b.optInRate - a.optInRate);
+
     let bestDesign = '—';
     let bestRate = 0;
     if (rankedDesigns.length > 0) {
@@ -243,6 +255,7 @@ export function ABTestingTab() {
       aggregates: { totalCheckouts, totalOptIns, totalOptOuts, optInRate, activeStores, bestDesign, bestRate },
       designAggregates,
       rankedDesigns,
+      rankedStores,
     };
   }, [filteredData, storesWithAB]);
 
@@ -370,23 +383,23 @@ export function ABTestingTab() {
                 </div>
               </div>
 
-              {/* Design Ranking */}
+              {/* Store Ranking */}
               <div className="data-table">
                 <div className="border-b border-border p-4">
                   <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
                     <Medal className="h-4 w-4 text-primary" />
-                    Design Ranking
+                    Store Ranking
                   </h3>
                 </div>
                 <div className="p-3 space-y-2">
-                  {rankedDesigns.length === 0 ? (
+                  {rankedStores.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-4">No data yet</p>
                   ) : (
-                    rankedDesigns.map((design, i) => {
-                      const maxTotal = rankedDesigns[0]?.total || 1;
-                      const barWidth = Math.max((design.total / maxTotal) * 100, 8);
+                    rankedStores.map((store, i) => {
+                      const maxTotal = rankedStores[0]?.total_checkouts || 1;
+                      const barWidth = Math.max((store.total_checkouts / maxTotal) * 100, 8);
                       return (
-                        <div key={design.name} className="group">
+                        <div key={store.store} className="group">
                           <div className="flex items-center gap-2 mb-1">
                             <span className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                               i === 0 ? 'bg-primary text-primary-foreground' :
@@ -395,13 +408,13 @@ export function ABTestingTab() {
                             }`}>
                               {i + 1}
                             </span>
-                            <span className="text-sm font-medium text-foreground truncate flex-1" title={design.name}>
-                              {design.name}
+                            <span className="text-sm font-medium text-foreground truncate flex-1" title={getDisplayStoreName(store.store)}>
+                              {getDisplayStoreName(store.store)}
                             </span>
                             <span className={`text-sm font-semibold ${
                               i === 0 ? 'text-primary' : 'text-foreground'
                             }`}>
-                              {design.opt_in_rate.toFixed(1)}%
+                              {store.optInRate.toFixed(1)}%
                             </span>
                           </div>
                           <div className="ml-8 flex items-center gap-2">
@@ -412,7 +425,7 @@ export function ABTestingTab() {
                               />
                             </div>
                             <span className="text-xs text-muted-foreground whitespace-nowrap">
-                              {design.opt_ins}/{design.total}
+                              {store.opt_ins}/{store.total_checkouts}
                             </span>
                           </div>
                         </div>
