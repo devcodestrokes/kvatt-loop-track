@@ -726,41 +726,46 @@ export default function SearchOrders() {
               <p>If anything feels off or great, we'd love to hear about it!</p>
             </div>
 
-            {/* Emoji Sentiment Slider - Snaps point by point */}
+            {/* Emoji Sentiment Slider */}
             <div className="my-8">
-              <div className="relative h-10 flex items-center">
-                {/* Track */}
-                <div className="absolute left-0 right-0 h-[6px] bg-stone-300 rounded-full" />
-                {/* Dot markers at each internal stop */}
-                {[1, 2, 3].map(i => (
-                  <div
-                    key={i}
-                    className="absolute w-[7px] h-[7px] rounded-full bg-stone-400 -translate-x-1/2"
-                    style={{ left: `${(i / 4) * 100}%`, top: '50%', transform: 'translate(-50%, -50%)' }}
-                  />
-                ))}
-                {/* Range input - 5 stops (0-4), snaps step by step */}
+              {/* Large emojis at top */}
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-5xl md:text-6xl leading-none block" style={{ lineHeight: 1 }}>😤</span>
+                <span className="text-5xl md:text-6xl leading-none block" style={{ lineHeight: 1 }}>🥳</span>
+              </div>
+
+              {/* Thin divider */}
+              <div className="w-full h-[1px] bg-stone-400/50 mb-5" />
+
+              {/* Slider track with pill knob */}
+              <div className="relative h-12 flex items-center">
+                {/* Thick rounded track */}
+                <div className="absolute left-0 right-0 h-[10px] bg-stone-300 rounded-full shadow-inner" />
+                {/* Range input */}
                 <input
                   type="range"
                   min="0"
                   max="4"
                   step="1"
                   defaultValue="0"
-                  className="absolute w-full appearance-none bg-transparent cursor-pointer h-10 m-0 z-10
-                    [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-runnable-track]:h-[6px]
-                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-12 [&::-webkit-slider-thumb]:h-8
-                    [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-lg
-                    [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-stone-200 [&::-webkit-slider-thumb]:-mt-[13px]
-                    [&::-moz-range-track]:bg-transparent [&::-moz-range-track]:h-[6px]
-                    [&::-moz-range-thumb]:w-12 [&::-moz-range-thumb]:h-8
-                    [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:shadow-lg
+                  className="absolute w-full appearance-none bg-transparent cursor-pointer h-12 m-0 z-10
+                    [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-runnable-track]:h-[10px]
+                    [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-16 [&::-webkit-slider-thumb]:h-10
+                    [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full
+                    [&::-webkit-slider-thumb]:shadow-[0_2px_10px_rgba(0,0,0,0.15),0_0_3px_rgba(0,0,0,0.06)]
+                    [&::-webkit-slider-thumb]:border [&::-webkit-slider-thumb]:border-stone-100 [&::-webkit-slider-thumb]:-mt-[15px]
+                    [&::-moz-range-track]:bg-transparent [&::-moz-range-track]:h-[10px]
+                    [&::-moz-range-thumb]:w-16 [&::-moz-range-thumb]:h-10
+                    [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:rounded-full
+                    [&::-moz-range-thumb]:shadow-[0_2px_10px_rgba(0,0,0,0.15),0_0_3px_rgba(0,0,0,0.06)]
                     [&::-moz-range-thumb]:border-0"
                 />
               </div>
-              {/* Emoji labels below the slider */}
-              <div className="flex items-start justify-between mt-3 px-0">
-                {['😤', '😟', '😐', '🙂', '🥳'].map((emoji, i) => (
-                  <span key={i} className="text-2xl md:text-3xl leading-none block" style={{ lineHeight: 1 }}>{emoji}</span>
+
+              {/* Step dots below slider */}
+              <div className="flex items-center justify-between mt-2 px-1">
+                {[0, 1, 2, 3, 4].map(i => (
+                  <div key={i} className="w-[8px] h-[8px] rounded-full bg-stone-400/70" />
                 ))}
               </div>
             </div>
