@@ -192,7 +192,10 @@ export default function SearchOrders() {
           if (data.merchant.contact_email) {
             setPackMerchantEmail(data.merchant.contact_email);
           }
-          console.log('Pack merchant resolved:', data.merchant.name, 'via product:', data.mintsoft_product_name);
+          if (data.merchant.shopify_domain) {
+            setPackMerchantDomain(data.merchant.shopify_domain);
+          }
+          console.log('Pack merchant resolved:', data.merchant.name, 'domain:', data.merchant.shopify_domain);
         }
         merchantResolved = true;
         checkDone();
