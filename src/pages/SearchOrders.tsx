@@ -529,28 +529,31 @@ export default function SearchOrders() {
         <div className="w-full">
             <h1
             style={{ lineHeight: '100%', letterSpacing: '-0.04em' }}
-            className="text-stone-900 mb-6 md:text-[40px] text-[36px] md:font-medium font-medium">
-
+            className="text-stone-900 mb-14 md:text-[48px] text-[44px] md:font-medium font-medium">
               Thanks for returning<br />the empty pack!
             </h1>
             <div
-            style={{ fontSize: '18px', fontWeight: 400, lineHeight: '130%', letterSpacing: '-0.0425em' }}
+            style={{ fontSize: '24px', fontWeight: 400, lineHeight: '130%', letterSpacing: '-0.0425em' }}
             className="text-stone-900 mb-10">
 
               <p className="mb-4">
-                Fold it into the provided pink pouch and<br />drop it in any UK Royal Mail postbox.
+                Use the prepaid label from your <b>one tap return kit envelope.</b>
               </p>
               <p>
-                We will reuse it for future orders and help<br />reduce waste.
+                Stick it on the packaging and drop it in any UK Royal Mail postbox.
               </p>
+              <br/>
+              <p><b>
+                Please don't use tape on the packaging so we can reuse it.
+              </b></p>
             </div>
 
             <button
             onClick={() => window.open('https://www.royalmail.com/services-near-you#/', '_blank', 'noopener,noreferrer')}
             style={{ letterSpacing: '-0.04em' }}
-            className="w-full md:h-[62px] md:text-[20px] md:max-w-[476px] h-[52px] max-w-[318px] mx-auto text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors flex items-center justify-center">
+            className="w-full md:h-[64px] md:text-[20px] md:max-w-[576px] h-[54px] max-w-[418px] mx-auto text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors flex items-center justify-center">
 
-              find a drop-off near me
+              find a postbox near me
             </button>
             <SupportFooter />
           </div>
