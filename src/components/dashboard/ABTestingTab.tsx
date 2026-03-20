@@ -18,14 +18,7 @@ import {
 import { format } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 
-const DESIGN_LABELS = [
-  'General',
-  'Universal Work',
-  'Toast',
-  'Universal Work Collapsible',
-  'Toast Collapsible',
-  'UW 18-12-2025',
-];
+// Design labels are now dynamically derived from API data
 
 const DESIGN_COLORS = [
   'hsl(var(--primary))',
@@ -77,8 +70,9 @@ function StoreRow({ item }: { item: ABTestingData }) {
           {hasVariants ? `${item.variants.length} design${item.variants.length > 1 ? 's' : ''}` : '—'}
         </TableCell>
       </TableRow>
-      {expanded && DESIGN_LABELS.map((designName) => {
-        const variant = item.variants.find(v => v.name === designName);
+      {expanded && item.variants.map((variant) => {
+        const designName = variant.name;
+        
         return (
           <TableRow key={designName} className="border-border bg-secondary/30">
             <TableCell className="pl-12 text-sm text-muted-foreground">
@@ -222,8 +216,9 @@ export function ABTestingTab() {
       designAgg[v.name].total += v.total;
     }));
 
-    const designAggregates: DesignAggregate[] = DESIGN_LABELS.map(name => {
-      const d = designAgg[name] || { ins: 0, outs: 0, total: 0 };
+    const allVariantNames = Object.keys(designAgg);
+    const designAggregates: DesignAggregate[] = allVariantNames.map(name => {
+      const d = designAgg[name];
       return {
         name,
         total: d.total,
