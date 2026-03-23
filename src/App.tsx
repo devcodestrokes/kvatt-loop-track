@@ -26,6 +26,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import MintsoftStatus from "./pages/MintsoftStatus";
 import Feedback from "./pages/Feedback";
+import CustomerTracking from "./pages/CustomerTracking";
 
 const queryClient = new QueryClient();
 
