@@ -342,7 +342,7 @@ export default function SearchOrders() {
     } catch (err) {
       console.error('Failed to send recording:', err);
     }
-  }, [audioBlob, selectedOrderId, orders, saveFeedbackToDb]);
+  }, [audioBlob, selectedOrderId, orders, saveFeedbackToDb, trackPortalEvent, sliderValue]);
 
   useEffect(() => {
     return () => {
