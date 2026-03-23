@@ -534,7 +534,7 @@ export default function SearchOrders() {
                 An item from my order
               </button>
               <button
-              onClick={() => setStep('pack')}
+              onClick={() => { trackPortalEvent('choose_pack_return'); setStep('pack'); }}
               style={{ letterSpacing: '-0.04em' }}
               className="w-full md:h-[62px] md:text-[20px] h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
 
