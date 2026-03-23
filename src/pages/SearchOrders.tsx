@@ -409,6 +409,7 @@ export default function SearchOrders() {
       });
 
       setOrders(data.orders || []);
+      trackPortalEvent('order_found', { order_count: data.orders?.length || 0 });
       // Set active merchant logo from first order's merchant config
       const firstUserId = data.orders?.[0]?.user_id;
       if (firstUserId && merchantConfigs[firstUserId]?.logo_url) {
