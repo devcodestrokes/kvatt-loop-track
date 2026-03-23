@@ -394,6 +394,7 @@ export default function SearchOrders() {
       }
 
       if (!data?.success || !data?.customer) {
+        trackPortalEvent('order_not_found');
         setError(data?.message || "No orders found for this email");
         setLoading(false);
         setStep('results');
