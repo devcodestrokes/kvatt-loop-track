@@ -180,6 +180,9 @@ export default function SearchOrders() {
       }
     };
 
+    // Track page load
+    trackPortalEvent('page_load');
+
     supabase.functions.invoke('get-merchant-configs').then(({ data }) => {
       if (data?.success && data?.configs) {
         merchantConfigs = data.configs;
