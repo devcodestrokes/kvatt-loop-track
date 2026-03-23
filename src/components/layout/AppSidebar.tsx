@@ -43,6 +43,7 @@ const overviewItems = [
   { title: 'Insights', url: '/insights', icon: Lightbulb },
   { title: 'Customers', url: '/customers', icon: Users },
   { title: 'Feedback', url: '/feedback', icon: MessageSquare },
+  { title: 'Customer Tracking', url: '/customer-tracking', icon: MousePointerClick },
 ];
 
 const packagingItems = [
