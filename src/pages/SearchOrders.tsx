@@ -447,6 +447,7 @@ export default function SearchOrders() {
     if (!selectedOrderId || !customer) return;
     const selectedOrder = orders.find((o) => o.id === selectedOrderId);
     if (!selectedOrder) return;
+    trackPortalEvent('confirm_return');
     const returnUrl = getReturnPortalUrl(selectedOrder, customer.email);
     if (returnUrl) {
       window.open(returnUrl, '_blank', 'noopener,noreferrer');
