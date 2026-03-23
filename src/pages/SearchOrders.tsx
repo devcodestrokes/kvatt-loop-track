@@ -527,7 +527,7 @@ export default function SearchOrders() {
 
             <div className="w-full flex flex-col gap-[31px] md:gap-[44px] md:max-w-[476px]">
               <button
-              onClick={() => setStep('search')}
+              onClick={() => { trackPortalEvent('choose_item_return'); setStep('search'); }}
               style={{ letterSpacing: '-0.04em' }}
               className="w-full md:h-[62px] md:text-[20px] h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
 
