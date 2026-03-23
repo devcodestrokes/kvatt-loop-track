@@ -133,6 +133,24 @@ export default function SearchOrders() {
   const [preloadProgress, setPreloadProgress] = useState(0);
   const [sliderValue, setSliderValue] = useState(0);
 
+  // Session-based portal event tracking
+  const sessionIdRef = useRef<string>(crypto.randomUUID());
+  const trackedStepsRef = useRef<Set<string>>(new Set());
+
+  const trackPortalEvent = useCallback((stepName: string, metadata?: Record<string, unknown>) => {
+    // Deduplicate per session — only track each step once
+    if (trackedStepsRef.current.has(stepName)) return;
+    trackedStepsRef.current.add(stepName);
+    supabase.from('portal_events').insert({
+      session_id: sessionIdRef.current,
+      pack_id: packId || null,
+      step: stepName,
+      metadata: metadata || {},
+    } as any).then(({ error }) => {
+      if (error) console.error('Portal event tracking error:', error);
+    });
+  }, [packId]);
+
   // Preload: animate progress bar while loading merchant configs
   useEffect(() => {
     if (!preloading) return;
