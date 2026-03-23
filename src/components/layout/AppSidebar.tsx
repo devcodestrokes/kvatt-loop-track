@@ -17,7 +17,8 @@ import {
   Search,
   Boxes,
   FlaskConical,
-  MessageSquare
+  MessageSquare,
+  MousePointerClick
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import kvattLogo from '@/assets/kvatt-logo.jpeg';
@@ -43,6 +44,7 @@ const overviewItems = [
   { title: 'Insights', url: '/insights', icon: Lightbulb },
   { title: 'Customers', url: '/customers', icon: Users },
   { title: 'Feedback', url: '/feedback', icon: MessageSquare },
+  { title: 'Customer Tracking', url: '/customer-tracking', icon: MousePointerClick },
 ];
 
 const packagingItems = [
