@@ -5,12 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import {
   QrCode, Users, Mic, TrendingUp, Eye, MousePointerClick,
   ArrowRight, Clock, MapPin, BarChart3, Activity, Smartphone,
-  Calendar
+  Calendar, ArrowDown, CheckCircle2
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell,
-  AreaChart, Area, FunnelChart, Funnel, LabelList
+  ResponsiveContainer, PieChart, Pie, Cell,
+  AreaChart, Area
 } from 'recharts';
 import { format, subDays, startOfDay, differenceInDays } from 'date-fns';
 
@@ -32,24 +32,46 @@ interface FeedbackRow {
   created_at: string;
 }
 
+interface PortalEvent {
+  id: string;
+  session_id: string;
+  pack_id: string | null;
+  step: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+}
+
 const sentimentEmojis = ['😤', '😕', '😐', '🙂', '🥳'];
 const sentimentLabels = ['Very Unhappy', 'Unhappy', 'Neutral', 'Happy', 'Very Happy'];
-const FUNNEL_COLORS = ['hsl(var(--primary))', 'hsl(24, 75%, 55%)', 'hsl(40, 90%, 55%)', 'hsl(142, 60%, 45%)'];
+
+// Funnel steps in order
+const FUNNEL_STEPS = [
+  { key: 'page_load', label: 'Page Loaded', icon: Eye, color: 'hsl(220, 70%, 55%)' },
+  { key: 'choose_item_return', label: 'Chose Item Return', icon: MousePointerClick, color: 'hsl(260, 60%, 55%)' },
+  { key: 'email_searched', label: 'Searched Email', icon: Users, color: 'hsl(24, 75%, 55%)' },
+  { key: 'order_found', label: 'Order Found', icon: CheckCircle2, color: 'hsl(142, 60%, 45%)' },
+  { key: 'confirm_return', label: 'Confirmed Return', icon: ArrowRight, color: 'hsl(200, 65%, 50%)' },
+  { key: 'start_recording', label: 'Started Recording', icon: Mic, color: 'hsl(340, 65%, 50%)' },
+  { key: 'feedback_submitted', label: 'Submitted Feedback', icon: TrendingUp, color: 'hsl(160, 60%, 40%)' },
+];
 
 export default function CustomerTracking() {
   const [scans, setScans] = useState<ScanEvent[]>([]);
   const [feedback, setFeedback] = useState<FeedbackRow[]>([]);
+  const [portalEvents, setPortalEvents] = useState<PortalEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | 'all'>('30d');
 
   useEffect(() => {
     const fetchData = async () => {
-      const [scansRes, feedbackRes] = await Promise.all([
+      const [scansRes, feedbackRes, eventsRes] = await Promise.all([
         supabase.from('scan_events').select('*').eq('event_type', 'customer_scan').order('scanned_at', { ascending: false }),
         supabase.from('customer_feedback').select('*').order('created_at', { ascending: false }),
+        supabase.from('portal_events').select('*').order('created_at', { ascending: false }) as any,
       ]);
       if (scansRes.data) setScans(scansRes.data as ScanEvent[]);
       if (feedbackRes.data) setFeedback(feedbackRes.data as FeedbackRow[]);
+      if (eventsRes.data) setPortalEvents(eventsRes.data as PortalEvent[]);
       setLoading(false);
     };
     fetchData();
@@ -68,6 +90,56 @@ export default function CustomerTracking() {
     const cutoff = startOfDay(subDays(new Date(), days));
     return feedback.filter(f => new Date(f.created_at) >= cutoff);
   }, [feedback, timeRange]);
+
+  const filteredEvents = useMemo(() => {
+    if (timeRange === 'all') return portalEvents;
+    const days = timeRange === '7d' ? 7 : 30;
+    const cutoff = startOfDay(subDays(new Date(), days));
+    return portalEvents.filter(e => new Date(e.created_at) >= cutoff);
+  }, [portalEvents, timeRange]);
+
+  // Real funnel data from portal_events - count unique sessions per step
+  const funnelData = useMemo(() => {
+    const sessionsByStep: Record<string, Set<string>> = {};
+    FUNNEL_STEPS.forEach(s => { sessionsByStep[s.key] = new Set(); });
+
+    filteredEvents.forEach(e => {
+      if (sessionsByStep[e.step]) {
+        sessionsByStep[e.step].add(e.session_id);
+      }
+    });
+
+    // Also count choose_pack_return sessions and order_not_found
+    const packReturnSessions = new Set<string>();
+    const orderNotFoundSessions = new Set<string>();
+    filteredEvents.forEach(e => {
+      if (e.step === 'choose_pack_return') packReturnSessions.add(e.session_id);
+      if (e.step === 'order_not_found') orderNotFoundSessions.add(e.session_id);
+    });
+
+    return FUNNEL_STEPS.map(step => ({
+      ...step,
+      sessions: sessionsByStep[step.key].size,
+    }));
+  }, [filteredEvents]);
+
+  // Per-step detailed analytics
+  const stepAnalytics = useMemo(() => {
+    const packReturnCount = filteredEvents.filter(e => e.step === 'choose_pack_return').length;
+    const itemReturnCount = filteredEvents.filter(e => e.step === 'choose_item_return').length;
+    const orderNotFoundCount = filteredEvents.filter(e => e.step === 'order_not_found').length;
+    const orderFoundCount = filteredEvents.filter(e => e.step === 'order_found').length;
+
+    return {
+      packReturnCount,
+      itemReturnCount,
+      orderNotFoundCount,
+      orderFoundCount,
+      searchSuccessRate: (itemReturnCount + packReturnCount) > 0
+        ? ((orderFoundCount / (orderFoundCount + orderNotFoundCount)) * 100) || 0
+        : 0,
+    };
+  }, [filteredEvents]);
 
   // Daily scan trend
   const dailyScans = useMemo(() => {
@@ -122,12 +194,11 @@ export default function CustomerTracking() {
 
   // Sentiment distribution
   const sentimentDistribution = useMemo(() => {
-    const dist = [0, 1, 2, 3, 4].map(v => ({
+    return [0, 1, 2, 3, 4].map(v => ({
       name: sentimentLabels[v],
       emoji: sentimentEmojis[v],
       value: filteredFeedback.filter(f => f.sentiment_value === v).length,
     }));
-    return dist;
   }, [filteredFeedback]);
 
   // Feedback with voice vs slider only
@@ -138,21 +209,6 @@ export default function CustomerTracking() {
       { name: 'Slider Only', value: filteredFeedback.length - withVoice },
     ];
   }, [filteredFeedback]);
-
-  // Funnel data (estimated)
-  const funnelData = useMemo(() => {
-    const totalScans = filteredScans.length;
-    // Estimate: ~60% proceed to search, ~30% reach feedback, feedback entries are actual submissions
-    const searchAttempts = Math.round(totalScans * 0.65);
-    const feedbackReached = Math.round(totalScans * 0.35);
-    const feedbackSubmitted = filteredFeedback.length;
-    return [
-      { name: 'QR Scans', value: totalScans, fill: FUNNEL_COLORS[0] },
-      { name: 'Order Search', value: searchAttempts, fill: FUNNEL_COLORS[1] },
-      { name: 'Feedback Step', value: feedbackReached, fill: FUNNEL_COLORS[2] },
-      { name: 'Submitted', value: feedbackSubmitted, fill: FUNNEL_COLORS[3] },
-    ];
-  }, [filteredScans, filteredFeedback]);
 
   // Average sentiment
   const avgSentiment = useMemo(() => {
@@ -165,6 +221,11 @@ export default function CustomerTracking() {
     if (filteredScans.length === 0) return 0;
     return ((filteredFeedback.length / filteredScans.length) * 100);
   }, [filteredScans, filteredFeedback]);
+
+  // Total unique sessions
+  const totalSessions = useMemo(() => {
+    return new Set(filteredEvents.map(e => e.session_id)).size;
+  }, [filteredEvents]);
 
   const PIE_COLORS = ['hsl(var(--primary))', 'hsl(var(--muted))'];
 
@@ -182,6 +243,8 @@ export default function CustomerTracking() {
     );
   }
 
+  const hasPortalData = filteredEvents.length > 0;
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -189,7 +252,7 @@ export default function CustomerTracking() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Customer Tracking</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            UX flow analysis & engagement metrics from the returns portal
+            Real-time UX funnel & engagement from the returns portal
           </p>
         </div>
         <div className="flex gap-1 rounded-lg bg-muted p-1">
@@ -210,7 +273,7 @@ export default function CustomerTracking() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -219,7 +282,7 @@ export default function CustomerTracking() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{filteredScans.length}</p>
-                <p className="text-xs text-muted-foreground">Total Scans</p>
+                <p className="text-xs text-muted-foreground">QR Scans</p>
               </div>
             </div>
           </CardContent>
@@ -229,7 +292,21 @@ export default function CustomerTracking() {
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-amber-500/10">
-                <Eye className="h-5 w-5 text-amber-600" />
+                <Activity className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{totalSessions}</p>
+                <p className="text-xs text-muted-foreground">Portal Sessions</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-purple-500/10">
+                <Eye className="h-5 w-5 text-purple-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{uniqueLabels}</p>
@@ -247,7 +324,7 @@ export default function CustomerTracking() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{filteredFeedback.length}</p>
-                <p className="text-xs text-muted-foreground">Feedback Received</p>
+                <p className="text-xs text-muted-foreground">Feedback</p>
               </div>
             </div>
           </CardContent>
@@ -268,48 +345,119 @@ export default function CustomerTracking() {
         </Card>
       </div>
 
-      {/* User Flow Funnel */}
+      {/* User Journey Funnel — real data */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             <Activity className="h-4 w-4" />
             User Journey Funnel
+            {hasPortalData && (
+              <Badge variant="secondary" className="text-[10px] ml-2">Live Data</Badge>
+            )}
+            {!hasPortalData && (
+              <Badge variant="outline" className="text-[10px] ml-2">Awaiting Data</Badge>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-4 gap-2">
-            {funnelData.map((step, idx) => {
-              const maxVal = funnelData[0].value || 1;
-              const pct = ((step.value / maxVal) * 100).toFixed(0);
-              const dropoff = idx > 0
-                ? (((funnelData[idx - 1].value - step.value) / (funnelData[idx - 1].value || 1)) * 100).toFixed(0)
-                : null;
+          {!hasPortalData ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-muted-foreground">
+                Portal event tracking has been activated. Funnel data will appear as users interact with the returns portal.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {funnelData.map((step, idx) => {
+                const maxVal = funnelData[0].sessions || 1;
+                const pct = ((step.sessions / maxVal) * 100);
+                const dropoff = idx > 0 && funnelData[idx - 1].sessions > 0
+                  ? (((funnelData[idx - 1].sessions - step.sessions) / funnelData[idx - 1].sessions) * 100)
+                  : 0;
+                const StepIcon = step.icon;
 
-              return (
-                <div key={step.name} className="relative">
-                  <div
-                    className="rounded-xl p-4 text-center transition-all"
-                    style={{
-                      backgroundColor: step.fill,
-                      opacity: 0.15 + (0.85 * (step.value / maxVal)),
-                    }}
-                  >
-                    <p className="text-2xl font-bold text-foreground">{step.value}</p>
-                    <p className="text-xs font-medium text-foreground/70 mt-1">{step.name}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{pct}% of total</p>
-                  </div>
-                  {dropoff && (
-                    <div className="absolute -left-3 top-1/2 -translate-y-1/2 flex flex-col items-center">
-                      <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-[9px] text-red-500 font-medium">-{dropoff}%</span>
+                return (
+                  <div key={step.key}>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 w-48 shrink-0">
+                        <div className="p-1.5 rounded-md" style={{ backgroundColor: `${step.color}20` }}>
+                          <StepIcon className="h-3.5 w-3.5" style={{ color: step.color }} />
+                        </div>
+                        <span className="text-xs font-medium truncate">{step.label}</span>
+                      </div>
+                      <div className="flex-1 h-8 bg-muted rounded-md overflow-hidden relative">
+                        <div
+                          className="h-full rounded-md transition-all duration-500 flex items-center px-3"
+                          style={{
+                            width: `${Math.max(pct, 2)}%`,
+                            backgroundColor: step.color,
+                            opacity: 0.8,
+                          }}
+                        >
+                          {pct > 15 && (
+                            <span className="text-[11px] font-bold text-white">
+                              {step.sessions} sessions
+                            </span>
+                          )}
+                        </div>
+                        {pct <= 15 && (
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[11px] font-medium text-foreground">
+                            {step.sessions}
+                          </span>
+                        )}
+                      </div>
+                      <div className="w-16 text-right shrink-0">
+                        <span className="text-xs font-semibold">{pct.toFixed(0)}%</span>
+                      </div>
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                    {idx < funnelData.length - 1 && dropoff > 0 && (
+                      <div className="flex items-center gap-3 py-0.5">
+                        <div className="w-48 shrink-0" />
+                        <div className="flex items-center gap-1 text-[10px] text-red-500 pl-1">
+                          <ArrowDown className="h-2.5 w-2.5" />
+                          <span className="font-medium">-{dropoff.toFixed(0)}% drop-off</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Step Breakdown Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold">{stepAnalytics.itemReturnCount}</p>
+            <p className="text-xs text-muted-foreground mt-1">Item Returns</p>
+            <p className="text-[10px] text-muted-foreground">chose "An item from my order"</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold">{stepAnalytics.packReturnCount}</p>
+            <p className="text-xs text-muted-foreground mt-1">Pack Returns</p>
+            <p className="text-[10px] text-muted-foreground">chose "Just the pack"</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold">{stepAnalytics.searchSuccessRate.toFixed(0)}%</p>
+            <p className="text-xs text-muted-foreground mt-1">Search Success</p>
+            <p className="text-[10px] text-muted-foreground">orders found vs not found</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold">{stepAnalytics.orderNotFoundCount}</p>
+            <p className="text-xs text-muted-foreground mt-1">Orders Not Found</p>
+            <p className="text-[10px] text-muted-foreground">users who couldn't find orders</p>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Scan Trends + Top Labels */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -394,7 +542,7 @@ export default function CustomerTracking() {
                 return (
                   <div
                     key={h.hour}
-                    className="aspect-square rounded-md flex items-center justify-center cursor-default group relative"
+                    className="aspect-square rounded-md flex items-center justify-center cursor-default"
                     style={{
                       backgroundColor: h.scans === 0
                         ? 'hsl(var(--muted))'
@@ -571,11 +719,11 @@ export default function CustomerTracking() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="text-center p-3 rounded-lg bg-muted/50">
               <p className="text-lg font-bold">{filteredScans.length}</p>
-              <p className="text-[10px] text-muted-foreground">Total Page Views</p>
+              <p className="text-[10px] text-muted-foreground">Total QR Scans</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-muted/50">
-              <p className="text-lg font-bold">{uniqueLabels}</p>
-              <p className="text-[10px] text-muted-foreground">Unique Packs Scanned</p>
+              <p className="text-lg font-bold">{totalSessions}</p>
+              <p className="text-[10px] text-muted-foreground">Portal Sessions</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-muted/50">
               <p className="text-lg font-bold">
