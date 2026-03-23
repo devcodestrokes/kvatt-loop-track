@@ -366,6 +366,7 @@ export default function SearchOrders() {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
+    trackPortalEvent('email_searched');
     if (!email.trim()) return;
 
     setLoading(true);
