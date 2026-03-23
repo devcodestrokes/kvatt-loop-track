@@ -846,6 +846,7 @@ export default function SearchOrders() {
 
             <button
               onClick={() => {
+                trackPortalEvent('start_recording');
                 setStep('recording');
                 startRecording();
               }}
