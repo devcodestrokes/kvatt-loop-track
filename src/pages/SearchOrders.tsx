@@ -133,6 +133,24 @@ export default function SearchOrders() {
   const [preloadProgress, setPreloadProgress] = useState(0);
   const [sliderValue, setSliderValue] = useState(0);
 
+  // Session-based portal event tracking
+  const sessionIdRef = useRef<string>(crypto.randomUUID());
+  const trackedStepsRef = useRef<Set<string>>(new Set());
+
+  const trackPortalEvent = useCallback((stepName: string, metadata?: Record<string, unknown>) => {
+    // Deduplicate per session — only track each step once
+    if (trackedStepsRef.current.has(stepName)) return;
+    trackedStepsRef.current.add(stepName);
+    supabase.from('portal_events').insert({
+      session_id: sessionIdRef.current,
+      pack_id: packId || null,
+      step: stepName,
+      metadata: metadata || {},
+    } as any).then(({ error }) => {
+      if (error) console.error('Portal event tracking error:', error);
+    });
+  }, [packId]);
+
   // Preload: animate progress bar while loading merchant configs
   useEffect(() => {
     if (!preloading) return;
@@ -161,6 +179,9 @@ export default function SearchOrders() {
         finishPreload();
       }
     };
+
+    // Track page load
+    trackPortalEvent('page_load');
 
     supabase.functions.invoke('get-merchant-configs').then(({ data }) => {
       if (data?.success && data?.configs) {
@@ -316,11 +337,12 @@ export default function SearchOrders() {
         return;
       }
       await saveFeedbackToDb(fileName);
+      trackPortalEvent('feedback_submitted', { has_voice: true, sentiment: sliderValue });
       setRecordingSent(true);
     } catch (err) {
       console.error('Failed to send recording:', err);
     }
-  }, [audioBlob, selectedOrderId, orders, saveFeedbackToDb]);
+  }, [audioBlob, selectedOrderId, orders, saveFeedbackToDb, trackPortalEvent, sliderValue]);
 
   useEffect(() => {
     return () => {
@@ -345,6 +367,7 @@ export default function SearchOrders() {
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
+    trackPortalEvent('email_searched');
     if (!email.trim()) return;
 
     setLoading(true);
@@ -372,6 +395,7 @@ export default function SearchOrders() {
       }
 
       if (!data?.success || !data?.customer) {
+        trackPortalEvent('order_not_found');
         setError(data?.message || "No orders found for this email");
         setLoading(false);
         setStep('results');
@@ -386,6 +410,7 @@ export default function SearchOrders() {
       });
 
       setOrders(data.orders || []);
+      trackPortalEvent('order_found', { order_count: data.orders?.length || 0 });
       // Set active merchant logo from first order's merchant config
       const firstUserId = data.orders?.[0]?.user_id;
       if (firstUserId && merchantConfigs[firstUserId]?.logo_url) {
@@ -423,6 +448,7 @@ export default function SearchOrders() {
     if (!selectedOrderId || !customer) return;
     const selectedOrder = orders.find((o) => o.id === selectedOrderId);
     if (!selectedOrder) return;
+    trackPortalEvent('confirm_return');
     const returnUrl = getReturnPortalUrl(selectedOrder, customer.email);
     if (returnUrl) {
       window.open(returnUrl, '_blank', 'noopener,noreferrer');
@@ -506,14 +532,14 @@ export default function SearchOrders() {
 
             <div className="w-full flex flex-col gap-[31px] md:gap-[44px] md:max-w-[476px]">
               <button
-              onClick={() => setStep('search')}
+              onClick={() => { trackPortalEvent('choose_item_return'); setStep('search'); }}
               style={{ letterSpacing: '-0.04em' }}
               className="w-full md:h-[62px] md:text-[20px] h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
 
                 An item from my order
               </button>
               <button
-              onClick={() => setStep('pack')}
+              onClick={() => { trackPortalEvent('choose_pack_return'); setStep('pack'); }}
               style={{ letterSpacing: '-0.04em' }}
               className="w-full md:h-[62px] md:text-[20px] h-[52px] text-[20px] font-normal bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition-colors">
 
@@ -821,6 +847,7 @@ export default function SearchOrders() {
 
             <button
               onClick={() => {
+                trackPortalEvent('start_recording');
                 setStep('recording');
                 startRecording();
               }}

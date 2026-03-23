@@ -754,6 +754,33 @@ export type Database = {
           },
         ]
       }
+      portal_events: {
+        Row: {
+          created_at: string
+          id: string
+          metadata: Json | null
+          pack_id: string | null
+          session_id: string
+          step: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          pack_id?: string | null
+          session_id: string
+          step: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          pack_id?: string | null
+          session_id?: string
+          step?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
