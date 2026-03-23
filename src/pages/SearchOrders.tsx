@@ -337,6 +337,7 @@ export default function SearchOrders() {
         return;
       }
       await saveFeedbackToDb(fileName);
+      trackPortalEvent('feedback_submitted', { has_voice: true, sentiment: sliderValue });
       setRecordingSent(true);
     } catch (err) {
       console.error('Failed to send recording:', err);
