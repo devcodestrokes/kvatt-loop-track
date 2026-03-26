@@ -17,7 +17,8 @@ const generateJWT = async (secret: string): Promise<string> => {
   const header = { alg: "HS256", typ: "JWT" };
   const now = Math.floor(Date.now() / 1000);
   const payload = {
-    sub: "1",
+    iss: "https://shopify.kvatt.com",
+    sub: 1,
     iat: now,
     exp: now + 3600 // 1 hour expiry
   };
