@@ -195,6 +195,50 @@ const runFullSync = async (
 
     const { inserted, errors } = await processAndUpsertCustomers(supabase, allCustomers);
 
+    // Cleanup: remove DB records that no longer exist in the API (only on full sync)
+    if (pagesLimit === 0 || pagesLimit >= lastPage) {
+      const apiExternalIds = new Set(allCustomers.map((c: any) => c.id?.toString()));
+      console.log(`[Background] Running cleanup: checking for deleted records (API has ${apiExternalIds.size} IDs)`);
+
+      // Fetch all DB external_ids in batches
+      let dbOffset = 0;
+      const dbBatchSize = 5000;
+      const orphanIds: string[] = [];
+
+      while (true) {
+        const { data: dbBatch } = await supabase
+          .from('imported_customers')
+          .select('id, external_id')
+          .range(dbOffset, dbOffset + dbBatchSize - 1);
+
+        if (!dbBatch || dbBatch.length === 0) break;
+
+        for (const row of dbBatch) {
+          if (!apiExternalIds.has(row.external_id)) {
+            orphanIds.push(row.id);
+          }
+        }
+
+        dbOffset += dbBatchSize;
+        if (dbBatch.length < dbBatchSize) break;
+      }
+
+      if (orphanIds.length > 0) {
+        console.log(`[Background] Found ${orphanIds.length} orphan records to delete`);
+        for (let i = 0; i < orphanIds.length; i += 100) {
+          const batch = orphanIds.slice(i, i + 100);
+          const { error: delError } = await supabase
+            .from('imported_customers')
+            .delete()
+            .in('id', batch);
+          if (delError) console.error('[Background] Delete error:', delError);
+        }
+        console.log(`[Background] Cleanup complete: removed ${orphanIds.length} orphan records`);
+      } else {
+        console.log('[Background] No orphan records found');
+      }
+    }
+
     // Get final count
     const { count: finalDbCount } = await supabase
       .from('imported_customers')
