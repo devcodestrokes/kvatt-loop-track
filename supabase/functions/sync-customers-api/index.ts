@@ -133,9 +133,10 @@ const runFullSync = async (
 
     console.log(`[Background] API total customers: ${apiTotalCount}, pages: ${lastPage}`);
 
-    // If DB is up to date and not forcing full sync, skip
-    if (!forceFull && currentDbCount && currentDbCount >= apiTotalCount) {
-      console.log('[Background] Customer database is already up to date');
+    // Only skip by count for full sync calls; incremental/background page syncs must keep upserting latest pages.
+    const allowCountShortcut = !forceFull && pagesLimit === 0;
+    if (allowCountShortcut && currentDbCount && currentDbCount >= apiTotalCount) {
+      console.log('[Background] Customer database is already up to date (full sync shortcut)');
       return;
     }
 
@@ -300,9 +301,11 @@ serve(async (req) => {
 
     console.log(`API total customers: ${apiTotalCount}, pages: ${lastPage}`);
 
-    // If DB is up to date and not forcing full sync, just return
-    if (!forceFull && currentDbCount && currentDbCount >= apiTotalCount) {
-      console.log('Customer database is up to date');
+    // Only use count-based shortcut for full sync calls.
+    // Incremental syncs (pagesLimit > 0) must still upsert newest pages.
+    const allowCountShortcut = !forceFull && pagesLimit === 0;
+    if (allowCountShortcut && currentDbCount && currentDbCount >= apiTotalCount) {
+      console.log('Customer database is up to date (full sync shortcut)');
       return new Response(
         JSON.stringify({ 
           success: true, 
