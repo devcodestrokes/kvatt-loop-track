@@ -107,6 +107,12 @@ const Customers = () => {
 
   useEffect(() => {
     fetchStores();
+    // Load merchant configs for return portal URLs
+    supabase.functions.invoke('get-merchant-configs').then(({ data }) => {
+      if (data?.success && data?.configs) {
+        setMerchantConfigs(data.configs);
+      }
+    });
   }, [fetchStores]);
 
   // Debounce search input
