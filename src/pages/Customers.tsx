@@ -322,25 +322,26 @@ const Customers = () => {
     return name || `Store ${userId}`;
   };
 
-  const getReturnPortalUrl = (storeName: string, email: string, orderName: string) => {
-    const lowerStore = storeName.toLowerCase();
-    if (lowerStore.includes('sirplus')) {
-      return `https://returnsportal.shop/sirplus?s=1&lang=&e=${encodeURIComponent(email)}&o=${encodeURIComponent(orderName)}&a=true`;
-    }
-    if (lowerStore.includes('universal works') || lowerStore.includes('kvatt - demo store')) {
-      return `https://returns.universalworks.co.uk/?s=1&lang=&e=${encodeURIComponent(email)}&o=${encodeURIComponent(orderName)}`;
-    }
-    if (lowerStore.includes('toast')) {
-      return `https://toast.returns.international/`;
+  const getReturnPortalUrl = (userId: string, email: string, orderName: string, destination?: Record<string, any> | null) => {
+    const config = merchantConfigs[userId];
+    if (config?.return_link) {
+      let url = config.return_link;
+      if (config.return_link_params) {
+        const postcode = destination?.zip || '';
+        url += config.return_link_params
+          .replace('{email}', encodeURIComponent(email))
+          .replace('{order_number}', encodeURIComponent(orderName))
+          .replace('{postcode}', encodeURIComponent(postcode));
+      }
+      return url;
     }
     return null;
   };
 
   const handleOrderClick = (customer: CustomerWithOrders, order: Order) => {
-    const storeName = getStoreName(customer.user_id);
     const email = customer.email || '';
     const orderName = (order.name || order.external_id).replace(/^#/, '');
-    const url = getReturnPortalUrl(storeName, email, orderName);
+    const url = getReturnPortalUrl(customer.user_id, email, orderName, order.destination);
     if (url) {
       window.open(url, '_blank');
     }
