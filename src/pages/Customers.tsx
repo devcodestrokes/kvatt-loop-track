@@ -281,6 +281,7 @@ const Customers = () => {
                     shopify_created_at: order.shopify_created_at,
                     city: order.city,
                     country: order.country,
+                    destination: order.destination as Record<string, any> | null,
                   })),
                 };
               }
