@@ -38,6 +38,7 @@ interface Order {
   shopify_created_at: string | null;
   city: string | null;
   country: string | null;
+  destination: Record<string, any> | null;
 }
 
 interface CustomerWithOrders extends Customer {
