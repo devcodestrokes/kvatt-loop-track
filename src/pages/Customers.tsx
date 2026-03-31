@@ -38,6 +38,7 @@ interface Order {
   shopify_created_at: string | null;
   city: string | null;
   country: string | null;
+  destination: Record<string, any> | null;
 }
 
 interface CustomerWithOrders extends Customer {
@@ -64,6 +65,7 @@ const Customers = () => {
   const [availableStores, setAvailableStores] = useState<StoreType[]>([]);
   const [storeNameMapping, setStoreNameMapping] = useState<Map<string, string>>(new Map());
   const [isLoadingStores, setIsLoadingStores] = useState(true);
+  const [merchantConfigs, setMerchantConfigs] = useState<Record<string, any>>({});
   
   const {
     selectedStores,
@@ -105,6 +107,12 @@ const Customers = () => {
 
   useEffect(() => {
     fetchStores();
+    // Load merchant configs for return portal URLs
+    supabase.functions.invoke('get-merchant-configs').then(({ data }) => {
+      if (data?.success && data?.configs) {
+        setMerchantConfigs(data.configs);
+      }
+    });
   }, [fetchStores]);
 
   // Debounce search input
@@ -250,9 +258,9 @@ const Customers = () => {
         setLoadingOrders(prev => new Set(prev).add(customerId));
         
         try {
-          const { data: ordersData, error } = await supabase
+           const { data: ordersData, error } = await supabase
             .from('imported_orders')
-            .select('id, external_id, name, total_price, opt_in, payment_status, shopify_created_at, city, country, customer_id')
+            .select('id, external_id, name, total_price, opt_in, payment_status, shopify_created_at, city, country, customer_id, destination')
             .eq('customer_id', externalId)
             .eq('hidden', false)
             .order('shopify_created_at', { ascending: false })
@@ -273,6 +281,7 @@ const Customers = () => {
                     shopify_created_at: order.shopify_created_at,
                     city: order.city,
                     country: order.country,
+                    destination: order.destination as Record<string, any> | null,
                   })),
                 };
               }
@@ -313,25 +322,26 @@ const Customers = () => {
     return name || `Store ${userId}`;
   };
 
-  const getReturnPortalUrl = (storeName: string, email: string, orderName: string) => {
-    const lowerStore = storeName.toLowerCase();
-    if (lowerStore.includes('sirplus')) {
-      return `https://returnsportal.shop/sirplus?s=1&lang=&e=${encodeURIComponent(email)}&o=${encodeURIComponent(orderName)}&a=true`;
-    }
-    if (lowerStore.includes('universal works') || lowerStore.includes('kvatt - demo store')) {
-      return `https://returns.universalworks.co.uk/?s=1&lang=&e=${encodeURIComponent(email)}&o=${encodeURIComponent(orderName)}`;
-    }
-    if (lowerStore.includes('toast')) {
-      return `https://toast.returns.international/`;
+  const getReturnPortalUrl = (userId: string, email: string, orderName: string, destination?: Record<string, any> | null) => {
+    const config = merchantConfigs[userId];
+    if (config?.return_link) {
+      let url = config.return_link;
+      if (config.return_link_params) {
+        const postcode = destination?.zip || '';
+        url += config.return_link_params
+          .replace('{email}', encodeURIComponent(email))
+          .replace('{order_number}', encodeURIComponent(orderName))
+          .replace('{postcode}', encodeURIComponent(postcode));
+      }
+      return url;
     }
     return null;
   };
 
   const handleOrderClick = (customer: CustomerWithOrders, order: Order) => {
-    const storeName = getStoreName(customer.user_id);
     const email = customer.email || '';
     const orderName = (order.name || order.external_id).replace(/^#/, '');
-    const url = getReturnPortalUrl(storeName, email, orderName);
+    const url = getReturnPortalUrl(customer.user_id, email, orderName, order.destination);
     if (url) {
       window.open(url, '_blank');
     }
@@ -573,8 +583,8 @@ const Customers = () => {
                               </TableHeader>
                               <TableBody>
                                 {customer.orders.slice(0, 10).map((order) => {
-                                  const storeName = getStoreName(customer.user_id);
-                                  const hasPortal = !!getReturnPortalUrl(storeName, customer.email || '', order.name || order.external_id);
+                                  const orderName = (order.name || order.external_id).replace(/^#/, '');
+                                  const hasPortal = !!getReturnPortalUrl(customer.user_id, customer.email || '', orderName, order.destination);
                                   return (
                                     <TableRow 
                                       key={order.id}
