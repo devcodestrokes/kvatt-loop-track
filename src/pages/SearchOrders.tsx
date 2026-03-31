@@ -84,6 +84,7 @@ interface OrderResult {
   province: string;
   country: string;
   user_id: string;
+  destination: Record<string, any> | null;
 }
 
 interface CustomerInfo {
