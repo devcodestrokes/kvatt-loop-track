@@ -65,6 +65,7 @@ const Customers = () => {
   const [availableStores, setAvailableStores] = useState<StoreType[]>([]);
   const [storeNameMapping, setStoreNameMapping] = useState<Map<string, string>>(new Map());
   const [isLoadingStores, setIsLoadingStores] = useState(true);
+  const [merchantConfigs, setMerchantConfigs] = useState<Record<string, any>>({});
   
   const {
     selectedStores,
