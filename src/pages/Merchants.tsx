@@ -647,7 +647,8 @@ const Merchants = () => {
                   {editForm.return_link}
                   {editForm.return_link_params
                     ?.replace('{email}', 'customer@example.com')
-                    .replace('{order_number}', '1234')}
+                    .replace('{order_number}', '1234')
+                    .replace('{postcode}', 'SW1A 1AA')}
                 </p>
               </div>
             )}
