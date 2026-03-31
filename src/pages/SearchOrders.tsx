@@ -58,13 +58,15 @@ const getReturnPortalUrl = (order: OrderResult, customerEmail: string): string |
   const userId = order.user_id;
   const config = merchantConfigs[userId];
   const orderId = extractOrderNumber(order.name || '');
+  const postcode = order.destination?.zip || '';
 
   if (config?.return_link) {
     let url = config.return_link;
     if (config.return_link_params) {
       url += config.return_link_params
         .replace('{email}', encodeURIComponent(customerEmail))
-        .replace('{order_number}', encodeURIComponent(orderId));
+        .replace('{order_number}', encodeURIComponent(orderId))
+        .replace('{postcode}', encodeURIComponent(postcode));
     }
     return url;
   }
@@ -84,6 +86,7 @@ interface OrderResult {
   province: string;
   country: string;
   user_id: string;
+  destination: Record<string, any> | null;
 }
 
 interface CustomerInfo {
