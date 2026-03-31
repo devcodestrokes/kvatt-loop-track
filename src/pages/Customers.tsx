@@ -258,9 +258,9 @@ const Customers = () => {
         setLoadingOrders(prev => new Set(prev).add(customerId));
         
         try {
-          const { data: ordersData, error } = await supabase
+           const { data: ordersData, error } = await supabase
             .from('imported_orders')
-            .select('id, external_id, name, total_price, opt_in, payment_status, shopify_created_at, city, country, customer_id')
+            .select('id, external_id, name, total_price, opt_in, payment_status, shopify_created_at, city, country, customer_id, destination')
             .eq('customer_id', externalId)
             .eq('hidden', false)
             .order('shopify_created_at', { ascending: false })
