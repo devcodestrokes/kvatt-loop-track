@@ -633,8 +633,9 @@ const Merchants = () => {
                 className="font-mono text-sm"
               />
               <p className="text-xs text-muted-foreground">
-                Use <code className="bg-muted px-1 rounded">{'{email}'}</code> and{' '}
-                <code className="bg-muted px-1 rounded">{'{order_number}'}</code> as placeholders.
+                Use <code className="bg-muted px-1 rounded">{'{email}'}</code>,{' '}
+                <code className="bg-muted px-1 rounded">{'{order_number}'}</code>, and{' '}
+                <code className="bg-muted px-1 rounded">{'{postcode}'}</code> as placeholders.
                 These will be dynamically replaced with the customer's data.
               </p>
             </div>
