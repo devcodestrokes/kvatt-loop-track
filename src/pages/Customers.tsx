@@ -583,8 +583,8 @@ const Customers = () => {
                               </TableHeader>
                               <TableBody>
                                 {customer.orders.slice(0, 10).map((order) => {
-                                  const storeName = getStoreName(customer.user_id);
-                                  const hasPortal = !!getReturnPortalUrl(storeName, customer.email || '', order.name || order.external_id);
+                                  const orderName = (order.name || order.external_id).replace(/^#/, '');
+                                  const hasPortal = !!getReturnPortalUrl(customer.user_id, customer.email || '', orderName, order.destination);
                                   return (
                                     <TableRow 
                                       key={order.id}
