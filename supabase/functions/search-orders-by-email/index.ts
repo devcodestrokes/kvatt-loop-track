@@ -119,15 +119,20 @@ Deno.serve(async (req) => {
     const searchEmail = email.trim().toLowerCase();
     console.log(`[search-orders-by-email] Searching for: ${searchEmail}`);
 
-    // Step 1: Find customer by email (indexed lookup)
-    const { data: customer, error: customerError } = await supabase
+    // Step 1: Find all customer records for this email across stores
+    let customerQuery = supabase
       .from('imported_customers')
-      .select('external_id, name, email, telephone, shopify_created_at')
-      .ilike('email', searchEmail)
-      .limit(1)
-      .single();
+      .select('external_id, name, email, telephone, shopify_created_at, user_id')
+      .ilike('email', searchEmail);
 
-    if (customerError || !customer) {
+    if (storeUserIds && storeUserIds.length > 0) {
+      customerQuery = customerQuery.in('user_id', storeUserIds);
+    }
+
+    const { data: customers, error: customerError } = await customerQuery
+      .order('shopify_created_at', { ascending: false });
+
+    if (customerError || !customers || customers.length === 0) {
       console.log('[search-orders-by-email] Customer not found:', customerError?.message);
       return new Response(
         JSON.stringify({ 
@@ -141,7 +146,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log(`[search-orders-by-email] Found customer: ${customer.external_id}`);
+    const customerIds = customers
+      .map((customer) => customer.external_id)
+      .filter((externalId): externalId is string => Boolean(externalId));
+
+    console.log(`[search-orders-by-email] Found ${customerIds.length} customer record(s): ${customerIds.join(', ')}`);
 
     // Step 2: Fetch orders from the last 3 months only (optimization)
     const threeMonthsAgo = new Date();
@@ -150,7 +159,7 @@ Deno.serve(async (req) => {
     let query = supabase
       .from('imported_orders')
       .select('id, name, total_price, opt_in, payment_status, shopify_created_at, city, province, country, user_id, destination')
-      .eq('customer_id', customer.external_id)
+      .in('customer_id', customerIds)
       .gte('shopify_created_at', threeMonthsAgo.toISOString());
 
     // Filter by store if pack merchant resolved
@@ -179,6 +188,17 @@ Deno.serve(async (req) => {
     const optInCount = orderList.filter(o => o.opt_in === true).length;
     const optOutCount = orderList.filter(o => o.opt_in === false).length;
 
+    const primaryCustomer = [...customers].sort((a, b) => {
+      const aHasOrder = orderList.some(order => order.customer_id === a.external_id);
+      const bHasOrder = orderList.some(order => order.customer_id === b.external_id);
+
+      if (aHasOrder !== bHasOrder) {
+        return aHasOrder ? -1 : 1;
+      }
+
+      return new Date(b.shopify_created_at || 0).getTime() - new Date(a.shopify_created_at || 0).getTime();
+    })[0];
+
     // Transform orders with store names
     const transformedOrders = orderList.map(order => ({
       ...order,
@@ -188,11 +208,11 @@ Deno.serve(async (req) => {
     const response = {
       success: true,
       customer: {
-        id: customer.external_id,
-        name: customer.name,
-        email: customer.email,
-        telephone: customer.telephone,
-        created_at: customer.shopify_created_at,
+        id: primaryCustomer.external_id,
+        name: primaryCustomer.name,
+        email: primaryCustomer.email,
+        telephone: primaryCustomer.telephone,
+        created_at: primaryCustomer.shopify_created_at,
       },
       orders: transformedOrders,
       summary: {
