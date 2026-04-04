@@ -129,9 +129,7 @@ export default function SearchOrders() {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [step, setStep] = useState<'start' | 'search' | 'results' | 'pack' | 'feedback' | 'recording'>('start');
   const [showAllOrders, setShowAllOrders] = useState(false);
-  const [activeMerchantLogo, setActiveMerchantLogo] = useState<string | null>(null);
   const [packMerchantEmail, setPackMerchantEmail] = useState<string | null>(null);
-  const [packMerchantDomain, setPackMerchantDomain] = useState<string | null>(null);
   const [preloading, setPreloading] = useState(true);
   const [preloadProgress, setPreloadProgress] = useState(0);
   const [sliderValue, setSliderValue] = useState(0);
@@ -189,9 +187,6 @@ export default function SearchOrders() {
     supabase.functions.invoke('get-merchant-configs').then(({ data }) => {
       if (data?.success && data?.configs) {
         merchantConfigs = data.configs;
-        if (storeId && merchantConfigs[storeId]?.logo_url) {
-          setActiveMerchantLogo(merchantConfigs[storeId].logo_url);
-        }
         if (storeId && merchantConfigs[storeId]?.contact_email) {
           setPackMerchantEmail(merchantConfigs[storeId].contact_email);
         }
@@ -210,14 +205,8 @@ export default function SearchOrders() {
         body: { packId }
       }).then(({ data }) => {
         if (data?.success && data?.merchant) {
-          if (data.merchant.logo_url) {
-            setActiveMerchantLogo(data.merchant.logo_url);
-          }
           if (data.merchant.contact_email) {
             setPackMerchantEmail(data.merchant.contact_email);
-          }
-          if (data.merchant.shopify_domain) {
-            setPackMerchantDomain(data.merchant.shopify_domain);
           }
           console.log('Pack merchant resolved:', data.merchant.name, 'domain:', data.merchant.shopify_domain);
         }
@@ -382,9 +371,8 @@ export default function SearchOrders() {
     setShowAllOrders(false);
     try {
       const searchBody: Record<string, unknown> = { email: email.trim() };
-      // When accessed via pack QR, filter to that retailer's opt-in orders only
-      if (packId && packMerchantDomain) {
-        searchBody.store_domain = packMerchantDomain;
+      // When accessed via pack QR, show eligible opt-in orders across all stores for this email
+      if (packId) {
         searchBody.opt_in_only = true;
       }
       const { data, error: fnError } = await supabase.functions.invoke('search-orders-by-email', {
@@ -414,11 +402,6 @@ export default function SearchOrders() {
 
       setOrders(data.orders || []);
       trackPortalEvent('order_found', { order_count: data.orders?.length || 0 });
-      // Set active merchant logo from first order's merchant config
-      const firstUserId = data.orders?.[0]?.user_id;
-      if (firstUserId && merchantConfigs[firstUserId]?.logo_url) {
-        setActiveMerchantLogo(merchantConfigs[firstUserId].logo_url);
-      }
       setStep('results');
     } catch (err) {
       setError("An error occurred while searching");
@@ -441,7 +424,6 @@ export default function SearchOrders() {
       setCustomer(null);
       setSelectedOrderId(null);
       setShowAllOrders(false);
-      if (!storeId) setActiveMerchantLogo(null);
     } else if (step === 'search' || step === 'pack') {
       setStep('start');
     }
@@ -511,12 +493,6 @@ export default function SearchOrders() {
             src={kvattLogo}
             alt="Kvatt"
             className="object-contain md:w-[70px] md:h-[60px] w-[50px] h-[43px]" />
-          {activeMerchantLogo && (
-              <img
-                src={activeMerchantLogo}
-                alt="Merchant"
-                className="object-contain md:h-[60px] h-[43px] max-w-[150px]" />
-          )}
         </div>
       </div>
 
