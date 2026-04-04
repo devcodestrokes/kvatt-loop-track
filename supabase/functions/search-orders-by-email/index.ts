@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
 
     let query = supabase
       .from('imported_orders')
-      .select('id, name, total_price, opt_in, payment_status, shopify_created_at, city, province, country, user_id, destination')
+      .select('id, name, total_price, opt_in, payment_status, shopify_created_at, city, province, country, user_id, customer_id, destination')
       .in('customer_id', customerIds)
       .gte('shopify_created_at', threeMonthsAgo.toISOString());
 
