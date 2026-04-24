@@ -624,7 +624,7 @@ export function ABTestingTab() {
                           {design.checkouts.toLocaleString()}
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-1">
-                          checkouts · {sharePct.toFixed(1)}% share
+                          sessions · {sharePct.toFixed(1)}% share
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-0.5">
                           {design.total.toLocaleString()} orders ({design.opt_ins.toLocaleString()} opt-in)
