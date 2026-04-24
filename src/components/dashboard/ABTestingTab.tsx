@@ -456,7 +456,7 @@ export function ABTestingTab() {
                               />
                             </div>
                             <span className="text-xs text-muted-foreground whitespace-nowrap font-mono">
-                              <span className="text-foreground font-semibold">{(design.checkouts || design.total).toLocaleString()}</span> {design.checkouts > 0 ? 'checkouts' : 'orders'} · {design.opt_ins.toLocaleString()} opt-ins
+                              <span className="text-foreground font-semibold">{(design.checkouts || 0).toLocaleString()}</span> sessions · {design.opt_ins.toLocaleString()} opt-ins
                             </span>
                           </div>
                         </div>
