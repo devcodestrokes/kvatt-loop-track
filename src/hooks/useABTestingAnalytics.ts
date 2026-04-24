@@ -60,9 +60,14 @@ export function useABTestingAnalytics() {
     }
   }, []);
 
-  const parseVariants = (abTesting: any): VariantData[] => {
+  const parseVariants = (abTesting: any, checkoutCounts: any): VariantData[] => {
     if (!abTesting || typeof abTesting !== 'object') return [];
-    
+
+    const counts: Record<string, number> =
+      checkoutCounts && typeof checkoutCounts === 'object' && !Array.isArray(checkoutCounts)
+        ? checkoutCounts
+        : {};
+
     const variants: VariantData[] = [];
     for (const [name, values] of Object.entries(abTesting)) {
       if (values && typeof values === 'object' && 'total' in (values as any)) {
@@ -76,6 +81,7 @@ export function useABTestingAnalytics() {
           opt_ins: optIns,
           opt_outs: optOuts,
           opt_in_rate: total > 0 ? (optIns / total) * 100 : 0,
+          checkouts: Number(counts[name] ?? 0),
         });
       }
     }
