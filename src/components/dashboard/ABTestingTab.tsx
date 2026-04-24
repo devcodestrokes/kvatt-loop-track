@@ -278,6 +278,7 @@ export function ABTestingTab() {
       .map(d => ({
         name: d.name.length > 15 ? d.name.substring(0, 14) + '…' : d.name,
         fullName: d.name,
+        Checkouts: d.total,
         'Opt-ins': d.opt_ins,
         'Opt-outs': d.opt_outs,
         Total: d.total,
