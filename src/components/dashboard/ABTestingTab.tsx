@@ -456,7 +456,7 @@ export function ABTestingTab() {
                               />
                             </div>
                             <span className="text-xs text-muted-foreground whitespace-nowrap font-mono">
-                              <span className="text-foreground font-semibold">{(design.checkouts || design.total).toLocaleString()}</span> {design.checkouts > 0 ? 'checkouts' : 'orders'} · {design.opt_ins.toLocaleString()} opt-ins
+                              <span className="text-foreground font-semibold">{(design.checkouts || 0).toLocaleString()}</span> sessions · {design.opt_ins.toLocaleString()} opt-ins
                             </span>
                           </div>
                         </div>
@@ -515,12 +515,8 @@ export function ABTestingTab() {
                             ? store.variants
                             : [{ name: 'Default', total: store.total_checkouts || 0, opt_ins: store.opt_ins || 0, opt_outs: store.opt_outs || 0, opt_in_rate: 0, checkouts: store.total_checkouts || 0 }];
                           const storeTotal = store.total_checkouts || 0;
-                          // Use real per-design checkouts when available; fallback to orders distribution
-                          const sumCheckouts = variants.reduce((s, v) => s + (v.checkouts || 0), 0);
-                          const useRealCheckouts = sumCheckouts > 0;
-                          const distTotal = useRealCheckouts
-                            ? sumCheckouts
-                            : variants.reduce((s, v) => s + v.total, 0);
+                          // Always use real per-design sessions (checkouts). If unavailable, show 0.
+                          const distTotal = variants.reduce((s, v) => s + (v.checkouts || 0), 0);
                           return (
                             <TableRow key={idx} className="border-border hover:bg-secondary/50 align-top">
                               <TableCell className="font-medium text-foreground py-3">
@@ -534,7 +530,7 @@ export function ABTestingTab() {
                                 {distTotal > 0 && (
                                   <div className="flex h-2 w-full rounded-full overflow-hidden bg-secondary mb-2">
                                     {variants.map((v) => {
-                                      const value = useRealCheckouts ? (v.checkouts || 0) : v.total;
+                                      const value = v.checkouts || 0;
                                       const pct = distTotal > 0 ? (value / distTotal) * 100 : 0;
                                       if (pct <= 0) return null;
                                       return (
@@ -551,9 +547,9 @@ export function ABTestingTab() {
                                 <div className="flex flex-wrap gap-x-3 gap-y-1">
                                   {variants
                                     .slice()
-                                    .sort((a, b) => (useRealCheckouts ? (b.checkouts || 0) - (a.checkouts || 0) : b.total - a.total))
+                                    .sort((a, b) => (b.checkouts || 0) - (a.checkouts || 0))
                                     .map((v) => {
-                                      const value = useRealCheckouts ? (v.checkouts || 0) : v.total;
+                                      const value = v.checkouts || 0;
                                       const pct = distTotal > 0 ? (value / distTotal) * 100 : 0;
                                       return (
                                         <span key={v.name} className="inline-flex items-center gap-1.5 text-xs">
