@@ -221,12 +221,13 @@ export function ABTestingTab() {
     const optInRate = totalCheckouts > 0 ? (totalOptIns / totalCheckouts) * 100 : 0;
     const activeStores = storesWithAB.length;
 
-    const designAgg: Record<string, { ins: number; outs: number; total: number }> = {};
+    const designAgg: Record<string, { ins: number; outs: number; total: number; checkouts: number }> = {};
     storesWithAB.forEach(d => d.variants.forEach(v => {
-      if (!designAgg[v.name]) designAgg[v.name] = { ins: 0, outs: 0, total: 0 };
+      if (!designAgg[v.name]) designAgg[v.name] = { ins: 0, outs: 0, total: 0, checkouts: 0 };
       designAgg[v.name].ins += v.opt_ins;
       designAgg[v.name].outs += v.opt_outs;
       designAgg[v.name].total += v.total;
+      designAgg[v.name].checkouts += v.checkouts || 0;
     }));
 
     const allVariantNames = Object.keys(designAgg);
@@ -238,6 +239,7 @@ export function ABTestingTab() {
         opt_ins: d.ins,
         opt_outs: d.outs,
         opt_in_rate: d.total > 0 ? (d.ins / d.total) * 100 : 0,
+        checkouts: d.checkouts,
       };
     });
 
