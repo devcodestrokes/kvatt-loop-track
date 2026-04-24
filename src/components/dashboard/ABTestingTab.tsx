@@ -686,7 +686,7 @@ export function ABTestingTab() {
                   <TableHeader>
                     <TableRow className="hover:bg-transparent border-border">
                       <TableHead className="text-muted-foreground">Store</TableHead>
-                      <TableHead className="text-right text-muted-foreground">Total Checkouts</TableHead>
+                      <TableHead className="text-right text-muted-foreground">Total Sessions</TableHead>
                       <TableHead className="text-right text-muted-foreground">Opt-ins</TableHead>
                       <TableHead className="text-right text-muted-foreground">Opt-outs</TableHead>
                     </TableRow>
