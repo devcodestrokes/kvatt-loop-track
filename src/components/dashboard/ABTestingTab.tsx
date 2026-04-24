@@ -33,10 +33,11 @@ const DESIGN_COLORS = [
 
 interface DesignAggregate {
   name: string;
-  total: number;
+  total: number;       // total orders for this design (in + out)
   opt_ins: number;
   opt_outs: number;
   opt_in_rate: number;
+  checkouts: number;   // real per-design checkout count from API
 }
 
 function StoreRow({ item }: { item: ABTestingData }) {
