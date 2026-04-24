@@ -456,6 +456,111 @@ export function ABTestingTab() {
             </div>
           )}
 
+          {/* All Stores: Checkouts by Design — full breakdown across every store */}
+          {filteredData.length > 0 && (() => {
+            // Collect all unique design names across ALL filtered stores (AB + non-AB)
+            const allDesignNames = Array.from(
+              new Set(
+                filteredData.flatMap(s =>
+                  s.variants.length > 0
+                    ? s.variants.map(v => v.name)
+                    : ['Default']
+                )
+              )
+            );
+            // Color map per design (stable order)
+            const designColorMap: Record<string, string> = {};
+            allDesignNames.forEach((name, idx) => {
+              designColorMap[name] = DESIGN_COLORS[idx % DESIGN_COLORS.length];
+            });
+            const grandTotal = filteredData.reduce((s, d) => s + (d.total_checkouts || 0), 0);
+
+            return (
+              <div className="data-table">
+                <div className="border-b border-border p-4 flex items-center justify-between flex-wrap gap-2">
+                  <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <Layers className="h-4 w-4 text-primary" />
+                    All Store Checkouts by Design
+                  </h3>
+                  <span className="text-xs text-muted-foreground">
+                    {filteredData.length} stores · {grandTotal.toLocaleString()} total checkouts
+                  </span>
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent border-border">
+                        <TableHead className="text-muted-foreground">Store</TableHead>
+                        <TableHead className="text-right text-muted-foreground">Total Checkouts</TableHead>
+                        <TableHead className="text-muted-foreground min-w-[280px]">Checkouts by Design</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {[...filteredData]
+                        .sort((a, b) => (b.total_checkouts || 0) - (a.total_checkouts || 0))
+                        .map((store, idx) => {
+                          const variants = store.variants.length > 0
+                            ? store.variants
+                            : [{ name: 'Default', total: store.total_checkouts || 0, opt_ins: store.opt_ins || 0, opt_outs: store.opt_outs || 0, opt_in_rate: 0 }];
+                          const storeTotal = store.total_checkouts || 0;
+                          return (
+                            <TableRow key={idx} className="border-border hover:bg-secondary/50 align-top">
+                              <TableCell className="font-medium text-foreground py-3">
+                                {getDisplayStoreName(store.store)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-foreground py-3">
+                                {storeTotal.toLocaleString()}
+                              </TableCell>
+                              <TableCell className="py-3">
+                                {/* Stacked bar */}
+                                {storeTotal > 0 && (
+                                  <div className="flex h-2 w-full rounded-full overflow-hidden bg-secondary mb-2">
+                                    {variants.map((v) => {
+                                      const pct = storeTotal > 0 ? (v.total / storeTotal) * 100 : 0;
+                                      if (pct <= 0) return null;
+                                      return (
+                                        <div
+                                          key={v.name}
+                                          style={{ width: `${pct}%`, background: designColorMap[v.name] || 'hsl(var(--muted-foreground))' }}
+                                          title={`${v.name}: ${v.total.toLocaleString()} (${pct.toFixed(1)}%)`}
+                                        />
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                                {/* Per-design counts */}
+                                <div className="flex flex-wrap gap-x-3 gap-y-1">
+                                  {variants
+                                    .slice()
+                                    .sort((a, b) => b.total - a.total)
+                                    .map((v) => {
+                                      const pct = storeTotal > 0 ? (v.total / storeTotal) * 100 : 0;
+                                      return (
+                                        <span key={v.name} className="inline-flex items-center gap-1.5 text-xs">
+                                          <span
+                                            className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+                                            style={{ background: designColorMap[v.name] || 'hsl(var(--muted-foreground))' }}
+                                          />
+                                          <span className="text-muted-foreground">{v.name}:</span>
+                                          <span className="font-mono font-semibold text-foreground">
+                                            {v.total.toLocaleString()}
+                                          </span>
+                                          <span className="text-muted-foreground">({pct.toFixed(1)}%)</span>
+                                        </span>
+                                      );
+                                    })}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Checkouts by Design — prominent count cards */}
           {designAggregates.filter(d => d.total > 0).length > 0 && (
             <div className="data-table">
