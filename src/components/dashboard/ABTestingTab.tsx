@@ -160,12 +160,13 @@ export function ABTestingTab() {
   const exportToCSV = () => {
     const today = new Date();
     const dateStr = format(today, 'yyyy-MM-dd');
-    const headers = ['Store', 'Design', 'Total', 'Opt-ins', 'Opt-outs', 'Opt-in Rate'];
+    const headers = ['Store', 'Design', 'Checkouts', 'Orders', 'Opt-ins', 'Opt-outs', 'Opt-in Rate'];
     const rows: string[][] = [];
     data.forEach((item) => {
-      rows.push([getDisplayStoreName(item.store), '', String(item.total_checkouts), String(item.opt_ins), String(item.opt_outs), '']);
+      const variantOrders = item.variants.reduce((s, v) => s + v.total, 0);
+      rows.push([getDisplayStoreName(item.store), '', String(item.total_checkouts), String(variantOrders), String(item.opt_ins), String(item.opt_outs), '']);
       item.variants.forEach(v => {
-        rows.push(['', v.name, String(v.total), String(v.opt_ins), String(v.opt_outs), `${v.opt_in_rate.toFixed(1)}%`]);
+        rows.push(['', v.name, String(v.checkouts || 0), String(v.total), String(v.opt_ins), String(v.opt_outs), `${v.opt_in_rate.toFixed(1)}%`]);
       });
     });
     const csv = [headers.join(','), ...rows.map((row) => row.map(c => `"${c}"`).join(','))].join('\n');
