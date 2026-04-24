@@ -504,8 +504,14 @@ export function ABTestingTab() {
                         .map((store, idx) => {
                           const variants = store.variants.length > 0
                             ? store.variants
-                            : [{ name: 'Default', total: store.total_checkouts || 0, opt_ins: store.opt_ins || 0, opt_outs: store.opt_outs || 0, opt_in_rate: 0 }];
+                            : [{ name: 'Default', total: store.total_checkouts || 0, opt_ins: store.opt_ins || 0, opt_outs: store.opt_outs || 0, opt_in_rate: 0, checkouts: store.total_checkouts || 0 }];
                           const storeTotal = store.total_checkouts || 0;
+                          // Use real per-design checkouts when available; fallback to orders distribution
+                          const sumCheckouts = variants.reduce((s, v) => s + (v.checkouts || 0), 0);
+                          const useRealCheckouts = sumCheckouts > 0;
+                          const distTotal = useRealCheckouts
+                            ? sumCheckouts
+                            : variants.reduce((s, v) => s + v.total, 0);
                           return (
                             <TableRow key={idx} className="border-border hover:bg-secondary/50 align-top">
                               <TableCell className="font-medium text-foreground py-3">
@@ -516,16 +522,17 @@ export function ABTestingTab() {
                               </TableCell>
                               <TableCell className="py-3">
                                 {/* Stacked bar */}
-                                {storeTotal > 0 && (
+                                {distTotal > 0 && (
                                   <div className="flex h-2 w-full rounded-full overflow-hidden bg-secondary mb-2">
                                     {variants.map((v) => {
-                                      const pct = storeTotal > 0 ? (v.total / storeTotal) * 100 : 0;
+                                      const value = useRealCheckouts ? (v.checkouts || 0) : v.total;
+                                      const pct = distTotal > 0 ? (value / distTotal) * 100 : 0;
                                       if (pct <= 0) return null;
                                       return (
                                         <div
                                           key={v.name}
                                           style={{ width: `${pct}%`, background: designColorMap[v.name] || 'hsl(var(--muted-foreground))' }}
-                                          title={`${v.name}: ${v.total.toLocaleString()} (${pct.toFixed(1)}%)`}
+                                          title={`${v.name}: ${value.toLocaleString()} (${pct.toFixed(1)}%)`}
                                         />
                                       );
                                     })}
@@ -535,9 +542,10 @@ export function ABTestingTab() {
                                 <div className="flex flex-wrap gap-x-3 gap-y-1">
                                   {variants
                                     .slice()
-                                    .sort((a, b) => b.total - a.total)
+                                    .sort((a, b) => (useRealCheckouts ? (b.checkouts || 0) - (a.checkouts || 0) : b.total - a.total))
                                     .map((v) => {
-                                      const pct = storeTotal > 0 ? (v.total / storeTotal) * 100 : 0;
+                                      const value = useRealCheckouts ? (v.checkouts || 0) : v.total;
+                                      const pct = distTotal > 0 ? (value / distTotal) * 100 : 0;
                                       return (
                                         <span key={v.name} className="inline-flex items-center gap-1.5 text-xs">
                                           <span
@@ -546,9 +554,11 @@ export function ABTestingTab() {
                                           />
                                           <span className="text-muted-foreground">{v.name}:</span>
                                           <span className="font-mono font-semibold text-foreground">
-                                            {v.total.toLocaleString()}
+                                            {value.toLocaleString()}
                                           </span>
-                                          <span className="text-muted-foreground">({pct.toFixed(1)}%)</span>
+                                          <span className="text-muted-foreground">
+                                            ({pct.toFixed(1)}%) · {v.total.toLocaleString()} orders
+                                          </span>
                                         </span>
                                       );
                                     })}
