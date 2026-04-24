@@ -564,8 +564,8 @@ export function ABTestingTab() {
             );
           })()}
 
-          {/* Checkouts by Design — prominent count cards */}
-          {designAggregates.filter(d => d.total > 0).length > 0 && (
+          {/* Checkouts by Design — prominent count cards (real checkout impressions) */}
+          {designAggregates.filter(d => d.checkouts > 0 || d.total > 0).length > 0 && (
             <div className="data-table">
               <div className="border-b border-border p-4 flex items-center justify-between">
                 <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
@@ -573,17 +573,17 @@ export function ABTestingTab() {
                   Checkouts by Design
                 </h3>
                 <span className="text-xs text-muted-foreground">
-                  Total checkout count per design variant across selected stores
+                  Actual checkout impressions per design across selected stores
                 </span>
               </div>
               <div className="p-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {[...designAggregates]
-                  .filter(d => d.total > 0)
-                  .sort((a, b) => b.total - a.total)
+                  .filter(d => d.checkouts > 0 || d.total > 0)
+                  .sort((a, b) => b.checkouts - a.checkouts || b.total - a.total)
                   .map((design, i) => {
                     const color = DESIGN_COLORS[i % DESIGN_COLORS.length];
-                    const totalAll = designAggregates.reduce((s, d) => s + d.total, 0);
-                    const sharePct = totalAll > 0 ? (design.total / totalAll) * 100 : 0;
+                    const totalCheckouts = designAggregates.reduce((s, d) => s + d.checkouts, 0);
+                    const sharePct = totalCheckouts > 0 ? (design.checkouts / totalCheckouts) * 100 : 0;
                     return (
                       <div
                         key={design.name}
@@ -602,10 +602,13 @@ export function ABTestingTab() {
                           </span>
                         </div>
                         <div className="text-2xl font-bold text-foreground font-mono">
-                          {design.total.toLocaleString()}
+                          {design.checkouts.toLocaleString()}
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-1">
                           checkouts · {sharePct.toFixed(1)}% share
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                          {design.total.toLocaleString()} orders ({design.opt_ins.toLocaleString()} opt-in)
                         </div>
                         <div className="mt-2 h-1 rounded-full bg-secondary overflow-hidden">
                           <div
