@@ -277,14 +277,14 @@ export function ABTestingTab() {
   // Chart data
   const chartData = useMemo(() => {
     return designAggregates
-      .filter(d => d.total > 0)
+      .filter(d => d.checkouts > 0 || d.total > 0)
       .map(d => ({
         name: d.name.length > 15 ? d.name.substring(0, 14) + '…' : d.name,
         fullName: d.name,
-        Checkouts: d.total,
+        Checkouts: d.checkouts,
+        Orders: d.total,
         'Opt-ins': d.opt_ins,
         'Opt-outs': d.opt_outs,
-        Total: d.total,
         'Opt-in Rate': Number(d.opt_in_rate.toFixed(1)),
       }));
   }, [designAggregates]);
