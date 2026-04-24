@@ -9,10 +9,11 @@ const AUTH_TOKEN = "Bearer %^75464tnfsdhndsfbgr54";
 
 export interface VariantData {
   name: string;
-  total: number;
+  total: number;          // total orders/interactions for this design (ab_testing.total)
   opt_ins: number;
   opt_outs: number;
   opt_in_rate: number;
+  checkouts: number;      // actual checkouts shown for this design (total_checkout_count)
 }
 
 export interface ABTestingData {
@@ -59,9 +60,14 @@ export function useABTestingAnalytics() {
     }
   }, []);
 
-  const parseVariants = (abTesting: any): VariantData[] => {
+  const parseVariants = (abTesting: any, checkoutCounts: any): VariantData[] => {
     if (!abTesting || typeof abTesting !== 'object') return [];
-    
+
+    const counts: Record<string, number> =
+      checkoutCounts && typeof checkoutCounts === 'object' && !Array.isArray(checkoutCounts)
+        ? checkoutCounts
+        : {};
+
     const variants: VariantData[] = [];
     for (const [name, values] of Object.entries(abTesting)) {
       if (values && typeof values === 'object' && 'total' in (values as any)) {
@@ -75,6 +81,7 @@ export function useABTestingAnalytics() {
           opt_ins: optIns,
           opt_outs: optOuts,
           opt_in_rate: total > 0 ? (optIns / total) * 100 : 0,
+          checkouts: Number(counts[name] ?? 0),
         });
       }
     }
@@ -110,21 +117,22 @@ export function useABTestingAnalytics() {
       if (result.status === 200 && result.data?.length) {
         const parsed: ABTestingData[] = result.data.map((item: any) => {
           const ab = item.ab_testing || {};
-          const variants = parseVariants(ab);
-          
-          // Sum variant totals for AB metrics
-          const abCheckout = variants.reduce((sum, v) => sum + v.total, 0);
+          const variants = parseVariants(ab, item.total_checkout_count);
+
+          // Sum across variants
+          const variantOrders = variants.reduce((sum, v) => sum + v.total, 0);
           const abOptIn = variants.reduce((sum, v) => sum + v.opt_ins, 0);
           const abOptOut = variants.reduce((sum, v) => sum + v.opt_outs, 0);
+          const abCheckouts = variants.reduce((sum, v) => sum + v.checkouts, 0);
 
           return {
             store: item.store,
             total_checkouts: item.total_checkouts || 0,
             opt_ins: item.opt_ins || 0,
             opt_outs: item.opt_outs || 0,
-            ab_testing_checkout: abCheckout > 0 ? abCheckout : (item.total_checkouts ?? 0),
-            ab_testing_opt_in: abOptIn > 0 ? abOptIn : (item.opt_ins ?? 0),
-            ab_testing_opt_out: abOptOut > 0 ? abOptOut : (item.opt_outs ?? 0),
+            ab_testing_checkout: abCheckouts > 0 ? abCheckouts : variantOrders,
+            ab_testing_opt_in: abOptIn,
+            ab_testing_opt_out: abOptOut,
             variants,
           };
         });

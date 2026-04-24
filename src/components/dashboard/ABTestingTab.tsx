@@ -33,15 +33,17 @@ const DESIGN_COLORS = [
 
 interface DesignAggregate {
   name: string;
-  total: number;
+  total: number;       // total orders for this design (in + out)
   opt_ins: number;
   opt_outs: number;
   opt_in_rate: number;
+  checkouts: number;   // real per-design checkout count from API
 }
 
 function StoreRow({ item }: { item: ABTestingData }) {
   const [expanded, setExpanded] = useState(false);
   const hasVariants = item.variants.length > 0;
+  const variantOrders = item.variants.reduce((s, v) => s + v.total, 0);
 
   return (
     <>
@@ -62,6 +64,9 @@ function StoreRow({ item }: { item: ABTestingData }) {
         <TableCell className="text-right font-mono text-foreground">
           {(item.total_checkouts || 0).toLocaleString()}
         </TableCell>
+        <TableCell className="text-right font-mono text-foreground">
+          {variantOrders.toLocaleString()}
+        </TableCell>
         <TableCell className="text-right font-mono text-primary">
           {(item.opt_ins || 0).toLocaleString()}
         </TableCell>
@@ -74,7 +79,7 @@ function StoreRow({ item }: { item: ABTestingData }) {
       </TableRow>
       {expanded && item.variants.map((variant) => {
         const designName = variant.name;
-        
+
         return (
           <TableRow key={designName} className="border-border bg-secondary/30">
             <TableCell className="pl-12 text-sm text-muted-foreground">
@@ -84,16 +89,19 @@ function StoreRow({ item }: { item: ABTestingData }) {
               </span>
             </TableCell>
             <TableCell className="text-right font-mono text-sm text-foreground">
-              {variant ? variant.total.toLocaleString() : '0'}
+              {(variant.checkouts || 0).toLocaleString()}
+            </TableCell>
+            <TableCell className="text-right font-mono text-sm text-foreground">
+              {variant.total.toLocaleString()}
             </TableCell>
             <TableCell className="text-right font-mono text-sm text-primary">
-              {variant ? variant.opt_ins.toLocaleString() : '0'}
+              {variant.opt_ins.toLocaleString()}
             </TableCell>
             <TableCell className="text-right font-mono text-sm text-muted-foreground">
-              {variant ? variant.opt_outs.toLocaleString() : '0'}
+              {variant.opt_outs.toLocaleString()}
             </TableCell>
             <TableCell className="text-right font-mono text-sm">
-              {variant && variant.total > 0 ? (
+              {variant.total > 0 ? (
                 <span className={variant.opt_in_rate >= 50 ? 'text-primary font-medium' : 'text-muted-foreground'}>
                   {variant.opt_in_rate.toFixed(1)}%
                 </span>
@@ -152,12 +160,13 @@ export function ABTestingTab() {
   const exportToCSV = () => {
     const today = new Date();
     const dateStr = format(today, 'yyyy-MM-dd');
-    const headers = ['Store', 'Design', 'Total', 'Opt-ins', 'Opt-outs', 'Opt-in Rate'];
+    const headers = ['Store', 'Design', 'Checkouts', 'Orders', 'Opt-ins', 'Opt-outs', 'Opt-in Rate'];
     const rows: string[][] = [];
     data.forEach((item) => {
-      rows.push([getDisplayStoreName(item.store), '', String(item.total_checkouts), String(item.opt_ins), String(item.opt_outs), '']);
+      const variantOrders = item.variants.reduce((s, v) => s + v.total, 0);
+      rows.push([getDisplayStoreName(item.store), '', String(item.total_checkouts), String(variantOrders), String(item.opt_ins), String(item.opt_outs), '']);
       item.variants.forEach(v => {
-        rows.push(['', v.name, String(v.total), String(v.opt_ins), String(v.opt_outs), `${v.opt_in_rate.toFixed(1)}%`]);
+        rows.push(['', v.name, String(v.checkouts || 0), String(v.total), String(v.opt_ins), String(v.opt_outs), `${v.opt_in_rate.toFixed(1)}%`]);
       });
     });
     const csv = [headers.join(','), ...rows.map((row) => row.map(c => `"${c}"`).join(','))].join('\n');
@@ -220,12 +229,13 @@ export function ABTestingTab() {
     const optInRate = totalCheckouts > 0 ? (totalOptIns / totalCheckouts) * 100 : 0;
     const activeStores = storesWithAB.length;
 
-    const designAgg: Record<string, { ins: number; outs: number; total: number }> = {};
+    const designAgg: Record<string, { ins: number; outs: number; total: number; checkouts: number }> = {};
     storesWithAB.forEach(d => d.variants.forEach(v => {
-      if (!designAgg[v.name]) designAgg[v.name] = { ins: 0, outs: 0, total: 0 };
+      if (!designAgg[v.name]) designAgg[v.name] = { ins: 0, outs: 0, total: 0, checkouts: 0 };
       designAgg[v.name].ins += v.opt_ins;
       designAgg[v.name].outs += v.opt_outs;
       designAgg[v.name].total += v.total;
+      designAgg[v.name].checkouts += v.checkouts || 0;
     }));
 
     const allVariantNames = Object.keys(designAgg);
@@ -237,6 +247,7 @@ export function ABTestingTab() {
         opt_ins: d.ins,
         opt_outs: d.outs,
         opt_in_rate: d.total > 0 ? (d.ins / d.total) * 100 : 0,
+        checkouts: d.checkouts,
       };
     });
 
@@ -274,14 +285,14 @@ export function ABTestingTab() {
   // Chart data
   const chartData = useMemo(() => {
     return designAggregates
-      .filter(d => d.total > 0)
+      .filter(d => d.checkouts > 0 || d.total > 0)
       .map(d => ({
         name: d.name.length > 15 ? d.name.substring(0, 14) + '…' : d.name,
         fullName: d.name,
-        Checkouts: d.total,
+        Checkouts: d.checkouts,
+        Orders: d.total,
         'Opt-ins': d.opt_ins,
         'Opt-outs': d.opt_outs,
-        Total: d.total,
         'Opt-in Rate': Number(d.opt_in_rate.toFixed(1)),
       }));
   }, [designAggregates]);
@@ -395,6 +406,7 @@ export function ABTestingTab() {
                       />
                       <Legend wrapperStyle={{ fontSize: '12px' }} />
                       <Bar dataKey="Checkouts" fill="hsl(210, 70%, 55%)" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Orders" fill="hsl(45, 80%, 50%)" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="Opt-ins" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="Opt-outs" fill="hsl(var(--muted-foreground) / 0.4)" radius={[4, 4, 0, 0]} />
                     </BarChart>
@@ -444,7 +456,7 @@ export function ABTestingTab() {
                               />
                             </div>
                             <span className="text-xs text-muted-foreground whitespace-nowrap font-mono">
-                              <span className="text-foreground font-semibold">{design.total.toLocaleString()}</span> checkouts · {design.opt_ins.toLocaleString()} opt-ins
+                              <span className="text-foreground font-semibold">{(design.checkouts || design.total).toLocaleString()}</span> {design.checkouts > 0 ? 'checkouts' : 'orders'} · {design.opt_ins.toLocaleString()} opt-ins
                             </span>
                           </div>
                         </div>
@@ -501,8 +513,14 @@ export function ABTestingTab() {
                         .map((store, idx) => {
                           const variants = store.variants.length > 0
                             ? store.variants
-                            : [{ name: 'Default', total: store.total_checkouts || 0, opt_ins: store.opt_ins || 0, opt_outs: store.opt_outs || 0, opt_in_rate: 0 }];
+                            : [{ name: 'Default', total: store.total_checkouts || 0, opt_ins: store.opt_ins || 0, opt_outs: store.opt_outs || 0, opt_in_rate: 0, checkouts: store.total_checkouts || 0 }];
                           const storeTotal = store.total_checkouts || 0;
+                          // Use real per-design checkouts when available; fallback to orders distribution
+                          const sumCheckouts = variants.reduce((s, v) => s + (v.checkouts || 0), 0);
+                          const useRealCheckouts = sumCheckouts > 0;
+                          const distTotal = useRealCheckouts
+                            ? sumCheckouts
+                            : variants.reduce((s, v) => s + v.total, 0);
                           return (
                             <TableRow key={idx} className="border-border hover:bg-secondary/50 align-top">
                               <TableCell className="font-medium text-foreground py-3">
@@ -513,16 +531,17 @@ export function ABTestingTab() {
                               </TableCell>
                               <TableCell className="py-3">
                                 {/* Stacked bar */}
-                                {storeTotal > 0 && (
+                                {distTotal > 0 && (
                                   <div className="flex h-2 w-full rounded-full overflow-hidden bg-secondary mb-2">
                                     {variants.map((v) => {
-                                      const pct = storeTotal > 0 ? (v.total / storeTotal) * 100 : 0;
+                                      const value = useRealCheckouts ? (v.checkouts || 0) : v.total;
+                                      const pct = distTotal > 0 ? (value / distTotal) * 100 : 0;
                                       if (pct <= 0) return null;
                                       return (
                                         <div
                                           key={v.name}
                                           style={{ width: `${pct}%`, background: designColorMap[v.name] || 'hsl(var(--muted-foreground))' }}
-                                          title={`${v.name}: ${v.total.toLocaleString()} (${pct.toFixed(1)}%)`}
+                                          title={`${v.name}: ${value.toLocaleString()} (${pct.toFixed(1)}%)`}
                                         />
                                       );
                                     })}
@@ -532,9 +551,10 @@ export function ABTestingTab() {
                                 <div className="flex flex-wrap gap-x-3 gap-y-1">
                                   {variants
                                     .slice()
-                                    .sort((a, b) => b.total - a.total)
+                                    .sort((a, b) => (useRealCheckouts ? (b.checkouts || 0) - (a.checkouts || 0) : b.total - a.total))
                                     .map((v) => {
-                                      const pct = storeTotal > 0 ? (v.total / storeTotal) * 100 : 0;
+                                      const value = useRealCheckouts ? (v.checkouts || 0) : v.total;
+                                      const pct = distTotal > 0 ? (value / distTotal) * 100 : 0;
                                       return (
                                         <span key={v.name} className="inline-flex items-center gap-1.5 text-xs">
                                           <span
@@ -543,9 +563,11 @@ export function ABTestingTab() {
                                           />
                                           <span className="text-muted-foreground">{v.name}:</span>
                                           <span className="font-mono font-semibold text-foreground">
-                                            {v.total.toLocaleString()}
+                                            {value.toLocaleString()}
                                           </span>
-                                          <span className="text-muted-foreground">({pct.toFixed(1)}%)</span>
+                                          <span className="text-muted-foreground">
+                                            ({pct.toFixed(1)}%) · {v.total.toLocaleString()} orders
+                                          </span>
                                         </span>
                                       );
                                     })}
@@ -561,8 +583,8 @@ export function ABTestingTab() {
             );
           })()}
 
-          {/* Checkouts by Design — prominent count cards */}
-          {designAggregates.filter(d => d.total > 0).length > 0 && (
+          {/* Checkouts by Design — prominent count cards (real checkout impressions) */}
+          {designAggregates.filter(d => d.checkouts > 0 || d.total > 0).length > 0 && (
             <div className="data-table">
               <div className="border-b border-border p-4 flex items-center justify-between">
                 <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
@@ -570,17 +592,17 @@ export function ABTestingTab() {
                   Checkouts by Design
                 </h3>
                 <span className="text-xs text-muted-foreground">
-                  Total checkout count per design variant across selected stores
+                  Actual checkout impressions per design across selected stores
                 </span>
               </div>
               <div className="p-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {[...designAggregates]
-                  .filter(d => d.total > 0)
-                  .sort((a, b) => b.total - a.total)
+                  .filter(d => d.checkouts > 0 || d.total > 0)
+                  .sort((a, b) => b.checkouts - a.checkouts || b.total - a.total)
                   .map((design, i) => {
                     const color = DESIGN_COLORS[i % DESIGN_COLORS.length];
-                    const totalAll = designAggregates.reduce((s, d) => s + d.total, 0);
-                    const sharePct = totalAll > 0 ? (design.total / totalAll) * 100 : 0;
+                    const totalCheckouts = designAggregates.reduce((s, d) => s + d.checkouts, 0);
+                    const sharePct = totalCheckouts > 0 ? (design.checkouts / totalCheckouts) * 100 : 0;
                     return (
                       <div
                         key={design.name}
@@ -599,10 +621,13 @@ export function ABTestingTab() {
                           </span>
                         </div>
                         <div className="text-2xl font-bold text-foreground font-mono">
-                          {design.total.toLocaleString()}
+                          {design.checkouts.toLocaleString()}
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-1">
                           checkouts · {sharePct.toFixed(1)}% share
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5">
+                          {design.total.toLocaleString()} orders ({design.opt_ins.toLocaleString()} opt-in)
                         </div>
                         <div className="mt-2 h-1 rounded-full bg-secondary overflow-hidden">
                           <div
@@ -630,7 +655,8 @@ export function ABTestingTab() {
                   <TableHeader>
                     <TableRow className="hover:bg-transparent border-border">
                       <TableHead className="text-muted-foreground">Store / Design</TableHead>
-                      <TableHead className="text-right text-muted-foreground">Total</TableHead>
+                      <TableHead className="text-right text-muted-foreground">Checkouts</TableHead>
+                      <TableHead className="text-right text-muted-foreground">Orders</TableHead>
                       <TableHead className="text-right text-muted-foreground">Opt-ins</TableHead>
                       <TableHead className="text-right text-muted-foreground">Opt-outs</TableHead>
                       <TableHead className="text-right text-muted-foreground">Designs / Rate</TableHead>
