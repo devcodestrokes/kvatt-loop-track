@@ -589,10 +589,10 @@ export function ABTestingTab() {
               <div className="border-b border-border p-4 flex items-center justify-between">
                 <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
                   <ShoppingCart className="h-4 w-4 text-primary" />
-                  Checkouts by Design
+                  Sessions with Design
                 </h3>
                 <span className="text-xs text-muted-foreground">
-                  Actual checkout impressions per design across selected stores
+                  Actual sessions per design across selected stores
                 </span>
               </div>
               <div className="p-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
@@ -624,7 +624,7 @@ export function ABTestingTab() {
                           {design.checkouts.toLocaleString()}
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-1">
-                          checkouts · {sharePct.toFixed(1)}% share
+                          sessions · {sharePct.toFixed(1)}% share
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-0.5">
                           {design.total.toLocaleString()} orders ({design.opt_ins.toLocaleString()} opt-in)
