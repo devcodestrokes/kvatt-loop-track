@@ -43,6 +43,7 @@ interface DesignAggregate {
 function StoreRow({ item }: { item: ABTestingData }) {
   const [expanded, setExpanded] = useState(false);
   const hasVariants = item.variants.length > 0;
+  const variantOrders = item.variants.reduce((s, v) => s + v.total, 0);
 
   return (
     <>
@@ -63,6 +64,9 @@ function StoreRow({ item }: { item: ABTestingData }) {
         <TableCell className="text-right font-mono text-foreground">
           {(item.total_checkouts || 0).toLocaleString()}
         </TableCell>
+        <TableCell className="text-right font-mono text-foreground">
+          {variantOrders.toLocaleString()}
+        </TableCell>
         <TableCell className="text-right font-mono text-primary">
           {(item.opt_ins || 0).toLocaleString()}
         </TableCell>
@@ -75,7 +79,7 @@ function StoreRow({ item }: { item: ABTestingData }) {
       </TableRow>
       {expanded && item.variants.map((variant) => {
         const designName = variant.name;
-        
+
         return (
           <TableRow key={designName} className="border-border bg-secondary/30">
             <TableCell className="pl-12 text-sm text-muted-foreground">
@@ -85,16 +89,19 @@ function StoreRow({ item }: { item: ABTestingData }) {
               </span>
             </TableCell>
             <TableCell className="text-right font-mono text-sm text-foreground">
-              {variant ? variant.total.toLocaleString() : '0'}
+              {(variant.checkouts || 0).toLocaleString()}
+            </TableCell>
+            <TableCell className="text-right font-mono text-sm text-foreground">
+              {variant.total.toLocaleString()}
             </TableCell>
             <TableCell className="text-right font-mono text-sm text-primary">
-              {variant ? variant.opt_ins.toLocaleString() : '0'}
+              {variant.opt_ins.toLocaleString()}
             </TableCell>
             <TableCell className="text-right font-mono text-sm text-muted-foreground">
-              {variant ? variant.opt_outs.toLocaleString() : '0'}
+              {variant.opt_outs.toLocaleString()}
             </TableCell>
             <TableCell className="text-right font-mono text-sm">
-              {variant && variant.total > 0 ? (
+              {variant.total > 0 ? (
                 <span className={variant.opt_in_rate >= 50 ? 'text-primary font-medium' : 'text-muted-foreground'}>
                   {variant.opt_in_rate.toFixed(1)}%
                 </span>
