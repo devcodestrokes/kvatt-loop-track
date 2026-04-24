@@ -61,29 +61,33 @@ export function useABTestingAnalytics() {
   }, []);
 
   const parseVariants = (abTesting: any, checkoutCounts: any): VariantData[] => {
-    if (!abTesting || typeof abTesting !== 'object') return [];
-
     const counts: Record<string, number> =
       checkoutCounts && typeof checkoutCounts === 'object' && !Array.isArray(checkoutCounts)
         ? checkoutCounts
         : {};
 
+    const ab: Record<string, { in?: number; out?: number; total?: number }> =
+      abTesting && typeof abTesting === 'object' && !Array.isArray(abTesting)
+        ? abTesting
+        : {};
+
+    // Merge keys from both sources so designs that only have checkouts (no orders) still appear
+    const allNames = new Set<string>([...Object.keys(ab), ...Object.keys(counts)]);
+
     const variants: VariantData[] = [];
-    for (const [name, values] of Object.entries(abTesting)) {
-      if (values && typeof values === 'object' && 'total' in (values as any)) {
-        const v = values as { in?: number; out?: number; total?: number };
-        const total = v.total || 0;
-        const optIns = v.in || 0;
-        const optOuts = v.out || 0;
-        variants.push({
-          name,
-          total,
-          opt_ins: optIns,
-          opt_outs: optOuts,
-          opt_in_rate: total > 0 ? (optIns / total) * 100 : 0,
-          checkouts: Number(counts[name] ?? 0),
-        });
-      }
+    for (const name of allNames) {
+      const v = ab[name] || {};
+      const total = v.total || 0;
+      const optIns = v.in || 0;
+      const optOuts = v.out || 0;
+      variants.push({
+        name,
+        total,
+        opt_ins: optIns,
+        opt_outs: optOuts,
+        opt_in_rate: total > 0 ? (optIns / total) * 100 : 0,
+        checkouts: Number(counts[name] ?? 0),
+      });
     }
     return variants;
   };
