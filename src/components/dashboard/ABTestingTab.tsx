@@ -456,7 +456,62 @@ export function ABTestingTab() {
             </div>
           )}
 
-          {/* Stores WITH A/B Tests */}
+          {/* Checkouts by Design — prominent count cards */}
+          {designAggregates.filter(d => d.total > 0).length > 0 && (
+            <div className="data-table">
+              <div className="border-b border-border p-4 flex items-center justify-between">
+                <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+                  <ShoppingCart className="h-4 w-4 text-primary" />
+                  Checkouts by Design
+                </h3>
+                <span className="text-xs text-muted-foreground">
+                  Total checkout count per design variant across selected stores
+                </span>
+              </div>
+              <div className="p-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {[...designAggregates]
+                  .filter(d => d.total > 0)
+                  .sort((a, b) => b.total - a.total)
+                  .map((design, i) => {
+                    const color = DESIGN_COLORS[i % DESIGN_COLORS.length];
+                    const totalAll = designAggregates.reduce((s, d) => s + d.total, 0);
+                    const sharePct = totalAll > 0 ? (design.total / totalAll) * 100 : 0;
+                    return (
+                      <div
+                        key={design.name}
+                        className="rounded-lg border border-border bg-card p-3 transition-all hover:shadow-md"
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <span
+                            className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
+                            style={{ background: color }}
+                          />
+                          <span
+                            className="text-xs font-medium text-muted-foreground truncate"
+                            title={design.name}
+                          >
+                            {design.name}
+                          </span>
+                        </div>
+                        <div className="text-2xl font-bold text-foreground font-mono">
+                          {design.total.toLocaleString()}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-1">
+                          checkouts · {sharePct.toFixed(1)}% share
+                        </div>
+                        <div className="mt-2 h-1 rounded-full bg-secondary overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${sharePct}%`, background: color }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
           {storesWithAB.length > 0 && (
             <div className="data-table">
               <div className="border-b border-border p-4">
