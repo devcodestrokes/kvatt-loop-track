@@ -398,6 +398,7 @@ export function ABTestingTab() {
                       />
                       <Legend wrapperStyle={{ fontSize: '12px' }} />
                       <Bar dataKey="Checkouts" fill="hsl(210, 70%, 55%)" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Orders" fill="hsl(45, 80%, 50%)" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="Opt-ins" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="Opt-outs" fill="hsl(var(--muted-foreground) / 0.4)" radius={[4, 4, 0, 0]} />
                     </BarChart>
