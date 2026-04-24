@@ -492,10 +492,10 @@ export function ABTestingTab() {
                 <div className="border-b border-border p-4 flex items-center justify-between flex-wrap gap-2">
                   <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
                     <Layers className="h-4 w-4 text-primary" />
-                    All Store Checkouts by Design
+                    All Store Sessions with Design
                   </h3>
                   <span className="text-xs text-muted-foreground">
-                    {filteredData.length} stores · {grandTotal.toLocaleString()} total checkouts
+                    {filteredData.length} stores · {grandTotal.toLocaleString()} total sessions
                   </span>
                 </div>
                 <div className="overflow-x-auto">
@@ -503,8 +503,8 @@ export function ABTestingTab() {
                     <TableHeader>
                       <TableRow className="hover:bg-transparent border-border">
                         <TableHead className="text-muted-foreground">Store</TableHead>
-                        <TableHead className="text-right text-muted-foreground">Total Checkouts</TableHead>
-                        <TableHead className="text-muted-foreground min-w-[280px]">Checkouts by Design</TableHead>
+                        <TableHead className="text-right text-muted-foreground">Total Sessions</TableHead>
+                        <TableHead className="text-muted-foreground min-w-[280px]">Sessions with Design</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
