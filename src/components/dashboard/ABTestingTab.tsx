@@ -443,8 +443,8 @@ export function ABTestingTab() {
                                 style={{ width: `${barWidth}%` }}
                               />
                             </div>
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">
-                              {design.opt_ins}/{design.total}
+                            <span className="text-xs text-muted-foreground whitespace-nowrap font-mono">
+                              <span className="text-foreground font-semibold">{design.total.toLocaleString()}</span> checkouts · {design.opt_ins.toLocaleString()} opt-ins
                             </span>
                           </div>
                         </div>
