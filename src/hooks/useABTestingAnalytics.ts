@@ -9,10 +9,11 @@ const AUTH_TOKEN = "Bearer %^75464tnfsdhndsfbgr54";
 
 export interface VariantData {
   name: string;
-  total: number;
+  total: number;          // total orders/interactions for this design (ab_testing.total)
   opt_ins: number;
   opt_outs: number;
   opt_in_rate: number;
+  checkouts: number;      // actual checkouts shown for this design (total_checkout_count)
 }
 
 export interface ABTestingData {
