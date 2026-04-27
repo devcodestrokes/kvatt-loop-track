@@ -44,6 +44,7 @@ function StoreRow({ item }: { item: ABTestingData }) {
   const [expanded, setExpanded] = useState(false);
   const hasVariants = item.variants.length > 0;
   const variantOrders = item.variants.reduce((s, v) => s + v.total, 0);
+  const variantSessions = item.variants.reduce((s, v) => s + (v.checkouts || 0), 0);
 
   return (
     <>
