@@ -63,7 +63,7 @@ function StoreRow({ item }: { item: ABTestingData }) {
           </div>
         </TableCell>
         <TableCell className="text-right font-mono text-foreground">
-          {(item.total_checkouts || 0).toLocaleString()}
+          {(hasVariants ? variantSessions : (item.total_checkouts || 0)).toLocaleString()}
         </TableCell>
         <TableCell className="text-right font-mono text-foreground">
           {variantOrders.toLocaleString()}
