@@ -44,6 +44,7 @@ function StoreRow({ item }: { item: ABTestingData }) {
   const [expanded, setExpanded] = useState(false);
   const hasVariants = item.variants.length > 0;
   const variantOrders = item.variants.reduce((s, v) => s + v.total, 0);
+  const variantSessions = item.variants.reduce((s, v) => s + (v.checkouts || 0), 0);
 
   return (
     <>
@@ -62,7 +63,7 @@ function StoreRow({ item }: { item: ABTestingData }) {
           </div>
         </TableCell>
         <TableCell className="text-right font-mono text-foreground">
-          {(item.total_checkouts || 0).toLocaleString()}
+          {(hasVariants ? variantSessions : (item.total_checkouts || 0)).toLocaleString()}
         </TableCell>
         <TableCell className="text-right font-mono text-foreground">
           {variantOrders.toLocaleString()}
