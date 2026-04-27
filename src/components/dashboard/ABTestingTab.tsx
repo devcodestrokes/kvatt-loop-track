@@ -486,7 +486,10 @@ export function ABTestingTab() {
             allDesignNames.forEach((name, idx) => {
               designColorMap[name] = DESIGN_COLORS[idx % DESIGN_COLORS.length];
             });
-            const grandTotal = filteredData.reduce((s, d) => s + (d.total_checkouts || 0), 0);
+            const grandTotal = filteredData.reduce((sum, store) => {
+              const variantSessionTotal = store.variants.reduce((s, v) => s + (v.checkouts || 0), 0);
+              return sum + (store.variants.length > 0 ? variantSessionTotal : (store.total_checkouts || 0));
+            }, 0);
 
             return (
               <div className="data-table">
@@ -510,12 +513,22 @@ export function ABTestingTab() {
                     </TableHeader>
                     <TableBody>
                       {[...filteredData]
-                        .sort((a, b) => (b.total_checkouts || 0) - (a.total_checkouts || 0))
+                        .sort((a, b) => {
+                          const aSessionTotal = a.variants.length > 0
+                            ? a.variants.reduce((s, v) => s + (v.checkouts || 0), 0)
+                            : (a.total_checkouts || 0);
+                          const bSessionTotal = b.variants.length > 0
+                            ? b.variants.reduce((s, v) => s + (v.checkouts || 0), 0)
+                            : (b.total_checkouts || 0);
+                          return bSessionTotal - aSessionTotal;
+                        })
                         .map((store, idx) => {
                           const variants = store.variants.length > 0
                             ? store.variants
                             : [{ name: 'Default', total: store.total_checkouts || 0, opt_ins: store.opt_ins || 0, opt_outs: store.opt_outs || 0, opt_in_rate: 0, checkouts: store.total_checkouts || 0 }];
-                          const storeTotal = store.total_checkouts || 0;
+                          const storeTotal = store.variants.length > 0
+                            ? store.variants.reduce((s, v) => s + (v.checkouts || 0), 0)
+                            : (store.total_checkouts || 0);
                           // Always use real per-design sessions (checkouts). If unavailable, show 0.
                           const distTotal = variants.reduce((s, v) => s + (v.checkouts || 0), 0);
                           return (
