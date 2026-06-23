@@ -15,6 +15,15 @@ import { MultiStoreSelector } from '@/components/dashboard/MultiStoreSelector';
 import { useStoreFilter } from '@/hooks/useStoreFilter';
 import { Store as StoreType } from '@/types/analytics';
 import { isDevTestStoreId } from '@/hooks/useAnalytics';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+type OptInFilter = 'all' | 'opt_in' | 'opt_out';
 
 interface Customer {
   id: string;
