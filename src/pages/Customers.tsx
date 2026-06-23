@@ -373,6 +373,16 @@ const Customers = () => {
         </div>
         
         <div className="flex items-center gap-3">
+          <Select value={optInFilter} onValueChange={(value) => setOptInFilter(value as OptInFilter)}>
+            <SelectTrigger className="w-[180px] bg-card border-border/50 text-sm">
+              <SelectValue placeholder="Filter orders" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Orders</SelectItem>
+              <SelectItem value="opt_in">Opt-in Orders</SelectItem>
+              <SelectItem value="opt_out">Opt-out Orders</SelectItem>
+            </SelectContent>
+          </Select>
           <MultiStoreSelector
             stores={availableStores}
             selectedStores={selectedStores}
