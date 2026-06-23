@@ -186,6 +186,7 @@ const Customers = () => {
           search_query: debouncedSearch || null,
           page_offset: offset,
           page_limit: pageSize,
+          opt_in_filter: optInFilter,
         });
 
       if (rpcError) throw rpcError;
