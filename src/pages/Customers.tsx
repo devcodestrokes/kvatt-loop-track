@@ -15,6 +15,15 @@ import { MultiStoreSelector } from '@/components/dashboard/MultiStoreSelector';
 import { useStoreFilter } from '@/hooks/useStoreFilter';
 import { Store as StoreType } from '@/types/analytics';
 import { isDevTestStoreId } from '@/hooks/useAnalytics';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+type OptInFilter = 'all' | 'opt_in' | 'opt_out';
 
 interface Customer {
   id: string;
@@ -58,6 +67,7 @@ const Customers = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [expandedCustomers, setExpandedCustomers] = useState<Set<string>>(new Set());
   const [loadingOrders, setLoadingOrders] = useState<Set<string>>(new Set());
+  const [optInFilter, setOptInFilter] = useState<OptInFilter>('all');
   const { toast } = useToast();
   const pageSize = 50;
   
@@ -176,6 +186,7 @@ const Customers = () => {
           search_query: debouncedSearch || null,
           page_offset: offset,
           page_limit: pageSize,
+          opt_in_filter: optInFilter,
         });
 
       if (rpcError) throw rpcError;
@@ -216,13 +227,13 @@ const Customers = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedStores, debouncedSearch, toast, isInitialized, availableStores.length]);
+  }, [selectedStores, debouncedSearch, optInFilter, toast, isInitialized, availableStores.length]);
 
   useEffect(() => {
     if (isInitialized) {
       fetchCustomers(currentPage);
     }
-  }, [currentPage, selectedStores, debouncedSearch, fetchCustomers, isInitialized]);
+  }, [currentPage, selectedStores, debouncedSearch, optInFilter, fetchCustomers, isInitialized]);
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -258,13 +269,21 @@ const Customers = () => {
         setLoadingOrders(prev => new Set(prev).add(customerId));
         
         try {
-           const { data: ordersData, error } = await supabase
+           let ordersQuery = supabase
             .from('imported_orders')
             .select('id, external_id, name, total_price, opt_in, payment_status, shopify_created_at, city, country, customer_id, destination')
             .eq('customer_id', externalId)
             .eq('hidden', false)
             .order('shopify_created_at', { ascending: false })
             .limit(50); // Limit orders per customer for performance
+
+          if (optInFilter === 'opt_in') {
+            ordersQuery = ordersQuery.eq('opt_in', true);
+          } else if (optInFilter === 'opt_out') {
+            ordersQuery = ordersQuery.eq('opt_in', false);
+          }
+
+          const { data: ordersData, error } = await ordersQuery;
 
           if (!error && ordersData) {
             setCustomers(prev => prev.map(c => {
@@ -362,6 +381,16 @@ const Customers = () => {
         </div>
         
         <div className="flex items-center gap-3">
+          <Select value={optInFilter} onValueChange={(value) => setOptInFilter(value as OptInFilter)}>
+            <SelectTrigger className="w-[180px] bg-card border-border/50 text-sm">
+              <SelectValue placeholder="Filter orders" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Orders</SelectItem>
+              <SelectItem value="opt_in">Opt-in Orders</SelectItem>
+              <SelectItem value="opt_out">Opt-out Orders</SelectItem>
+            </SelectContent>
+          </Select>
           <MultiStoreSelector
             stores={availableStores}
             selectedStores={selectedStores}
