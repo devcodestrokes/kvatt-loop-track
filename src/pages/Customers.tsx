@@ -67,6 +67,7 @@ const Customers = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [expandedCustomers, setExpandedCustomers] = useState<Set<string>>(new Set());
   const [loadingOrders, setLoadingOrders] = useState<Set<string>>(new Set());
+  const [optInFilter, setOptInFilter] = useState<OptInFilter>('all');
   const { toast } = useToast();
   const pageSize = 50;
   
