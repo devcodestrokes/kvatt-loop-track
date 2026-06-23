@@ -227,13 +227,13 @@ const Customers = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedStores, debouncedSearch, toast, isInitialized, availableStores.length]);
+  }, [selectedStores, debouncedSearch, optInFilter, toast, isInitialized, availableStores.length]);
 
   useEffect(() => {
     if (isInitialized) {
       fetchCustomers(currentPage);
     }
-  }, [currentPage, selectedStores, debouncedSearch, fetchCustomers, isInitialized]);
+  }, [currentPage, selectedStores, debouncedSearch, optInFilter, fetchCustomers, isInitialized]);
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
