@@ -269,13 +269,21 @@ const Customers = () => {
         setLoadingOrders(prev => new Set(prev).add(customerId));
         
         try {
-           const { data: ordersData, error } = await supabase
+           let ordersQuery = supabase
             .from('imported_orders')
             .select('id, external_id, name, total_price, opt_in, payment_status, shopify_created_at, city, country, customer_id, destination')
             .eq('customer_id', externalId)
             .eq('hidden', false)
             .order('shopify_created_at', { ascending: false })
             .limit(50); // Limit orders per customer for performance
+
+          if (optInFilter === 'opt_in') {
+            ordersQuery = ordersQuery.eq('opt_in', true);
+          } else if (optInFilter === 'opt_out') {
+            ordersQuery = ordersQuery.eq('opt_in', false);
+          }
+
+          const { data: ordersData, error } = await ordersQuery;
 
           if (!error && ordersData) {
             setCustomers(prev => prev.map(c => {
