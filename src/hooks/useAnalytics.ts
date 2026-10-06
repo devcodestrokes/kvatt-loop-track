@@ -27,6 +27,9 @@ const STORE_NAME_MAPPING: Record<string, string> = {
   'arkitaip.myshopify.com': 'Arkitaip',
 };
 
+// Former stores no longer returned by the stores API, kept for historical data
+const HISTORICAL_STORE_DOMAINS = ['toast-uk.myshopify.com', 'sirplus.myshopify.com'];
+
 // Dev/test/demo stores to exclude from production analytics (not A/B testing)
 export const DEV_TEST_STORE_DOMAINS = new Set([
   'kvatt-green-package-demo.myshopify.com',
@@ -100,20 +103,17 @@ export function useAnalytics() {
       
       const result = await response.json();
       
-      if (result.status === 200 && result.data?.length) {
-        // Filter out dev/test stores from production
-        const storesList: Store[] = result.data
-          .filter((storeDomain: string) => !isDevTestStore(storeDomain))
-          .map((storeDomain: string) => ({
-            id: storeDomain,
-            name: getDisplayStoreName(storeDomain)
-          }));
-        setStores(storesList);
-        return storesList;
-      }
-      
-      setStores([]);
-      return [];
+      const liveDomains: string[] = result.status === 200 && Array.isArray(result.data) ? result.data : [];
+      // Include former stores so their historical data remains viewable
+      const allDomains = Array.from(new Set([...liveDomains, ...HISTORICAL_STORE_DOMAINS]));
+      const storesList: Store[] = allDomains
+        .filter((storeDomain: string) => !isDevTestStore(storeDomain))
+        .map((storeDomain: string) => ({
+          id: storeDomain,
+          name: getDisplayStoreName(storeDomain)
+        }));
+      setStores(storesList);
+      return storesList;
     } catch (err) {
       console.error("Error fetching stores:", err);
       setStores([]);
