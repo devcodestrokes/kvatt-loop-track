@@ -27,8 +27,44 @@ const STORE_NAME_MAPPING: Record<string, string> = {
   'arkitaip.myshopify.com': 'Arkitaip',
 };
 
-// Former stores no longer returned by the stores API, kept for historical data
-const HISTORICAL_STORE_DOMAINS = ['toast-uk.myshopify.com', 'sirplus.myshopify.com'];
+// Former stores no longer returned by the stores API, kept for historical data.
+// Maps Shopify domain -> store id in saved orders (imported_orders.user_id).
+const HISTORICAL_STORES: Record<string, string> = {
+  'toast-uk.myshopify.com': '12',
+  'sirplus.myshopify.com': '17',
+};
+const HISTORICAL_STORE_DOMAINS = Object.keys(HISTORICAL_STORES);
+
+// Fill in former stores from saved orders when the live API has no data for them
+async function appendHistoricalStores(
+  data: AnalyticsData[],
+  dateRange: DateRange | undefined,
+  storeId: string,
+): Promise<AnalyticsData[]> {
+  const present = new Set(data.filter(d => d.total_checkouts > 0 || d.opt_ins > 0).map(d => d.store));
+  const missing = HISTORICAL_STORE_DOMAINS.filter(
+    d => !present.has(d) && (storeId === 'all' || storeId === d),
+  );
+  if (!missing.length) return data;
+  try {
+    const { data: stats, error } = await supabase.rpc('get_store_stats', {
+      store_filter: missing.map(d => HISTORICAL_STORES[d]),
+      date_from: dateRange?.from ? format(dateRange.from, "yyyy-MM-dd'T'00:00:00") : null,
+      date_to: dateRange?.to ? format(dateRange.to, "yyyy-MM-dd'T'23:59:59") : null,
+    } as any);
+    if (error) throw error;
+    const extra: AnalyticsData[] = missing.map(domain => {
+      const row = (stats || []).find((s: any) => String(s.store_id) === HISTORICAL_STORES[domain]);
+      const total = Number(row?.total_orders) || 0;
+      const optIns = Number(row?.opt_in_count) || 0;
+      return { store: domain, total_checkouts: total, opt_ins: optIns, opt_outs: total - optIns };
+    }).filter(r => r.total_checkouts > 0);
+    return [...data.filter(d => !missing.includes(d.store)), ...extra];
+  } catch (e) {
+    console.error('Failed to load historical store data:', e);
+    return data;
+  }
+}
 
 // Dev/test/demo stores to exclude from production analytics (not A/B testing)
 export const DEV_TEST_STORE_DOMAINS = new Set([
@@ -165,14 +201,16 @@ export function useAnalytics() {
           await sendFailureNotification(dateRange, storeId, "All stores returned zero data");
         }
 
-        setData(filteredData);
-        return result.data;
+        const withHistorical = await appendHistoricalStores(filteredData, dateRange, storeId);
+        setData(withHistorical);
+        return withHistorical;
       } else {
         // No data returned - send notification
         console.log("Analytics API returned no data, sending notification...");
         await sendFailureNotification(dateRange, storeId, "API returned empty data array");
-        setData([]);
-        return [];
+        const historicalOnly = await appendHistoricalStores([], dateRange, storeId);
+        setData(historicalOnly);
+        return historicalOnly;
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch analytics';
