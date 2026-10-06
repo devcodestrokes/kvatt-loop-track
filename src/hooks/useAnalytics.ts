@@ -208,8 +208,9 @@ export function useAnalytics() {
         // No data returned - send notification
         console.log("Analytics API returned no data, sending notification...");
         await sendFailureNotification(dateRange, storeId, "API returned empty data array");
-        setData([]);
-        return [];
+        const historicalOnly = await appendHistoricalStores([], dateRange, storeId);
+        setData(historicalOnly);
+        return historicalOnly;
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch analytics';
