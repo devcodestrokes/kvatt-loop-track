@@ -116,8 +116,12 @@ serve(async (req: Request): Promise<Response> => {
     const emailResponse = await response.json();
 
     if (!response.ok) {
-      console.error("Resend API error:", emailResponse);
-      throw new Error(emailResponse.message || "Failed to send email");
+      // Non-blocking: log and return 200 so the dashboard isn't affected
+      console.warn("Resend API error (notification skipped):", emailResponse);
+      return new Response(
+        JSON.stringify({ success: false, skipped: true, reason: emailResponse.message || "Failed to send email" }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
 
     console.log("Notification email sent successfully:", emailResponse);
