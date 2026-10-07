@@ -144,7 +144,12 @@ const Merchants = () => {
           });
         }
 
-        const merchantsData: Merchant[] = storesData.data.map((domain: string, index: number) => {
+        // Include former stores (e.g. TOAST, SIRPLUS) saved in our merchants list
+        const allDomains: string[] = Array.from(new Set([
+          ...storesData.data,
+          ...(dbRes.data || []).map((r: any) => r.shopify_domain),
+        ]));
+        const merchantsData: Merchant[] = allDomains.map((domain: string, index: number) => {
           const analytics = analyticsMap.get(domain);
           const totalCheckouts = analytics?.total_checkouts || 0;
           const optIns = analytics?.opt_ins || 0;
