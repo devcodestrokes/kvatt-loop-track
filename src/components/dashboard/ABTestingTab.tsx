@@ -181,14 +181,17 @@ export function ABTestingTab() {
 
   // Build store list for MultiStoreSelector, labeling AB-enabled stores (>1 design)
   const allStoreOptions: Store[] = useMemo(() => {
-    return data.map(item => {
+    const fromData = data.map(item => {
       const isAB = item.variants.length > 1;
       return {
         id: item.store,
         name: `${getDisplayStoreName(item.store)}${isAB ? ' (AB)' : ''}`,
       };
     });
-  }, [data]);
+    const seen = new Set(fromData.map(s => s.id));
+    const extra = stores.filter(s => !seen.has(s.id)).map(s => ({ id: s.id, name: getDisplayStoreName(s.id) }));
+    return [...fromData, ...extra];
+  }, [data, stores]);
 
   // Auto-select AB-enabled stores on first data load
   useEffect(() => {
