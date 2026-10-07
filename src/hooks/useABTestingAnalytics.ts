@@ -43,8 +43,11 @@ export function useABTestingAnalytics() {
         }
       });
       const result = await response.json();
-      if (result.status === 200 && result.data?.length) {
-        const storesList: Store[] = result.data.map((storeDomain: string) => ({
+      const live: string[] = result.status === 200 && Array.isArray(result.data) ? result.data : [];
+      // Keep former stores (TOAST, SIRPLUS) selectable for historical data
+      const all = Array.from(new Set([...live, 'toast-uk.myshopify.com', 'sirplus.myshopify.com']));
+      if (all.length) {
+        const storesList: Store[] = all.map((storeDomain: string) => ({
           id: storeDomain,
           name: getDisplayStoreName(storeDomain)
         }));
